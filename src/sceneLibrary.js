@@ -1,6 +1,7 @@
 import tabsData from "./tabsData.json";
 import audioSources from "../audio-sources.json";
 import videoSources from "./videoLoops.resolved.json";
+import { siteUrl } from "./siteUrl.mjs";
 
 const meta = {
   tab_rain: ["Rain", "Weather", "Soft rain settling against the window.", "#83b7d2", "131, 183, 210"],
@@ -18,7 +19,25 @@ const meta = {
   tab_foot_steps: ["Footsteps", "Movement", "An evening walk with nowhere to be.", "#c59d76", "197, 157, 118"],
   tab_birds: ["Birds", "Nature", "Early light and small movement in the branches.", "#b9c767", "185, 199, 103"],
   tab_white_noise: ["Soft static", "Focus", "A quiet field with nothing asking for attention.", "#bac2cb", "186, 194, 203"],
+  tab_onsen: ["Japanese onsen", "Retreat", "Steam, flowing water, and a quiet garden ritual.", "#9bc7b0", "155, 199, 176"],
+  tab_cat_window: ["Cat by the window", "Home", "A sleepy companion beside rain-softened glass.", "#d6a37d", "214, 163, 125"],
+  tab_library: ["Quiet library", "Focus", "Pages, soft footsteps, and a room built for deep thought.", "#c6a36e", "198, 163, 110"],
+  tab_forest: ["Forest", "Nature", "Moss, branches, birds, and air moving beneath tall trees.", "#6fa77c", "111, 167, 124"],
+  tab_jungle: ["Jungle", "Nature", "Dense tropical life layered with rain, birds, and falling water.", "#55ad7a", "85, 173, 122"],
+  tab_beach_shore: ["Beach / shore", "Water", "Waves folding onto sand beneath an open coastal sky.", "#66bfd0", "102, 191, 208"],
+  tab_traffic: ["Traffic", "City", "A steady urban current of roads, engines, and passing light.", "#d08f68", "208, 143, 104"],
 };
+
+const remoteFirstScenes = new Set([
+  "tab_foot_steps",
+  "tab_onsen",
+  "tab_cat_window",
+  "tab_library",
+  "tab_forest",
+  "tab_jungle",
+  "tab_beach_shore",
+  "tab_traffic",
+]);
 
 function withoutExtension(filename) {
   return filename.replace(/\.[^.]+$/, "");
@@ -28,7 +47,7 @@ export const scenes = tabsData.map((scene) => {
   const [title, category, description, accent, accentRgb] = meta[scene.id] || [scene.title, "Atmosphere", scene.description, "#a9bfd0", "169, 191, 208"];
   const mediaName = withoutExtension(scene.background);
   const sourcedLoops = videoSources[scene.id] || [];
-  const replacesLegacyOriginal = scene.id === "tab_foot_steps";
+  const replacesLegacyOriginal = remoteFirstScenes.has(scene.id);
   const originalSource = replacesLegacyOriginal ? sourcedLoops[0] : null;
   const alternateLoops = replacesLegacyOriginal ? sourcedLoops.slice(1) : sourcedLoops;
   return {
@@ -41,7 +60,7 @@ export const scenes = tabsData.map((scene) => {
     audioTracks: audioSources[scene.id].map((track, index) => ({
       ...track,
       id: `${scene.id}-audio-${index}`,
-      src: `/assets/audio/${scene.id.replace(/^tab_/, "")}/${track.file}`,
+      src: siteUrl(track.src || `assets/audio/${scene.id.replace(/^tab_/, "")}/${track.file}`),
     })),
     videoLoops: [
       {

@@ -123,6 +123,55 @@
         "background": "white-noise.mp4",
         "description": "Majestic Birds",
         "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_onsen",
+        "title": "Japanese Onsen",
+        "background": "onsen.mp4",
+        "description": "Japanese hot spring",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_cat_window",
+        "title": "Cat by the Window",
+        "background": "cat-window.mp4",
+        "description": "A sleepy cat by the window",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_library",
+        "title": "Quiet Library",
+        "background": "quiet-library.mp4",
+        "description": "A hushed reading room",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_forest",
+        "title": "Forest",
+        "background": "forest.mp4",
+        "description": "Deep woodland sounds",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_jungle",
+        "title": "Jungle",
+        "background": "jungle.mp4",
+        "description": "Tropical rainforest sounds",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_beach_shore",
+        "title": "Beach / Shore",
+        "background": "beach-shore.mp4",
+        "description": "Waves meeting the shore",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_traffic",
+        "title": "Traffic",
+        "background": "traffic.mp4",
+        "description": "Steady city traffic",
+        "levels": [1, 2, 3]
       }
 
     

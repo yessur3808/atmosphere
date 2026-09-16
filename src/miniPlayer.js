@@ -126,18 +126,75 @@ const MINI_PLAYER_STYLES = `
   .mini-track { margin: 0; overflow: hidden; font-size: clamp(21px, 7vw, 30px); font-weight: 470; letter-spacing: -.045em; text-overflow: ellipsis; white-space: nowrap; }
   .mini-note { margin: 4px 0 0; overflow: hidden; color: rgba(255, 255, 255, .55); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 
-  .mini-visualizer { height: 28px; display: flex; align-items: center; gap: 3px; margin-right: auto; }
+  .mini-visualizer { height: 28px; display: flex; align-items: center; gap: 3px; }
   .mini-visualizer i { width: 3px; min-height: 4px; border-radius: 999px; background: linear-gradient(to top, rgba(255, 255, 255, .52), var(--accent)); transition: height 80ms linear; }
-  .mini-volume { min-width: 34px; color: rgba(255, 255, 255, .64); font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; }
+  .mini-volume-control {
+    min-width: 112px;
+    flex: 1;
+    display: grid;
+    grid-template-columns: 14px minmax(48px, 1fr) 31px;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 999px;
+    background: rgba(10, 13, 15, .5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+  }
+  .mini-volume-control svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    color: rgba(255, 255, 255, .58);
+  }
+  .mini-volume-slider {
+    --volume-progress: 52%;
+    width: 100%;
+    height: 16px;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .mini-volume-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent) 0 var(--volume-progress), rgba(255, 255, 255, .16) var(--volume-progress) 100%);
+  }
+  .mini-volume-slider::-moz-range-track { height: 4px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, .16); }
+  .mini-volume-slider::-moz-range-progress { height: 4px; border-radius: 999px; background: var(--accent); }
+  .mini-volume-slider::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid rgba(255, 255, 255, .72);
+    border-radius: 50%;
+    background: #f7f7f3;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, .38), 0 0 0 3px rgba(var(--accent-rgb), .12);
+  }
+  .mini-volume-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 1px solid rgba(255, 255, 255, .72);
+    border-radius: 50%;
+    background: #f7f7f3;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, .38), 0 0 0 3px rgba(var(--accent-rgb), .12);
+  }
+  .mini-volume-slider:focus-visible { outline: 2px solid rgba(var(--accent-rgb), .72); outline-offset: 3px; border-radius: 999px; }
+  .mini-volume { min-width: 31px; color: rgba(255, 255, 255, .64); font-size: 10px; font-variant-numeric: tabular-nums; text-align: right; }
 `;
 
-function isSafariBrowser() {
-  return /Safari/i.test(navigator.userAgent) && !/(Chrome|Chromium|CriOS|Edg|OPR)/i.test(navigator.userAgent);
-}
-
-export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nextTrack, onStateChange }) {
+export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, previousTrack, nextTrack, onStateChange }) {
   let floatingWindow;
   let floatingDocument;
+  let inlineFrame;
   let miniVideo;
   let attachedVideo;
   let mode = "";
@@ -153,10 +210,10 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
     setOpenState(open, open ? "native" : "", open ? automatic : false);
   };
   const handleNativePause = () => {
-    if (mode === "native") setAudioPlaying(false);
+    if (mode === "native") setPlaybackPlaying(false);
   };
   const handleNativePlay = () => {
-    if (mode === "native") setAudioPlaying(true);
+    if (mode === "native") setPlaybackPlaying(true);
   };
 
   function setOpenState(open, nextMode = "", wasAutomatic = false) {
@@ -222,19 +279,29 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
           </div>
           <footer class="mini-controls">
             <button class="mini-control previous" type="button" aria-label="Previous audio track">‹</button>
-            <button class="mini-control play" type="button" aria-label="Play audio">▶</button>
+            <button class="mini-control play" type="button" aria-label="Play audio and video">▶</button>
             <button class="mini-control next" type="button" aria-label="Next audio track">›</button>
             <div class="mini-visualizer" aria-hidden="true">${Array.from({ length: 8 }, () => "<i></i>").join("")}</div>
-            <span class="mini-volume"></span>
+            <label class="mini-volume-control" aria-label="Audio volume">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7L8 10H5Z" /><path d="M15 9.5c1.2 1.4 1.2 3.6 0 5" /></svg>
+              <input class="mini-volume-slider" type="range" min="0" max="100" step="1" value="52" aria-label="Audio volume" />
+              <span class="mini-volume">52%</span>
+            </label>
           </footer>
         </section>
       </main>`;
 
     miniVideo = floatingDocument.querySelector("video");
     floatingDocument.querySelector(".mini-close").addEventListener("click", close);
-    floatingDocument.querySelector(".play").addEventListener("click", () => setAudioPlaying(!getState().isAudioPlaying));
+    floatingDocument.querySelector(".play").addEventListener("click", () => {
+      const state = getState();
+      setPlaybackPlaying(!(state.isAudioPlaying && state.isVideoPlaying));
+    });
     floatingDocument.querySelector(".previous").addEventListener("click", previousTrack);
     floatingDocument.querySelector(".next").addEventListener("click", nextTrack);
+    floatingDocument.querySelector(".mini-volume-slider").addEventListener("input", (event) => {
+      setVolume(Number(event.currentTarget.value) / 100);
+    });
     targetWindow.addEventListener("pagehide", handleFloatingWindowClosed, { once: true });
     targetWindow.addEventListener("beforeunload", handleFloatingWindowClosed, { once: true });
     setOpenState(true, targetMode, automatic);
@@ -247,8 +314,9 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
     clearInterval(syncTimer);
     floatingWindow = undefined;
     floatingDocument = undefined;
+    inlineFrame = undefined;
     miniVideo = undefined;
-    if (mode === "document" || mode === "popup") setOpenState(false, "", false);
+    if (mode === "document" || mode === "popup" || mode === "inline") setOpenState(false, "", false);
   }
 
   function syncVideo(state) {
@@ -275,8 +343,8 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
     if (attachedVideo && "autoPictureInPicture" in attachedVideo) {
       attachedVideo.autoPictureInPicture = Boolean(state.isAudioPlaying && state.pipPreference === "automatic");
     }
-    if (!floatingDocument || floatingWindow?.closed) {
-      if (floatingWindow?.closed) handleFloatingWindowClosed();
+    if (!floatingDocument || (mode !== "inline" && floatingWindow?.closed)) {
+      if (mode !== "inline" && floatingWindow?.closed) handleFloatingWindowClosed();
       return;
     }
 
@@ -289,11 +357,16 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
     floatingDocument.querySelector(".mini-scene").textContent = `${state.category} · ${state.sceneTitle}`;
     floatingDocument.querySelector(".mini-track").textContent = state.trackTitle;
     floatingDocument.querySelector(".mini-note").textContent = state.trackNote;
-    floatingDocument.querySelector(".mini-volume").textContent = `${Math.round(state.volume * 100)}%`;
+    const volumePercent = Math.round(state.volume * 100);
+    const volumeSlider = floatingDocument.querySelector(".mini-volume-slider");
+    volumeSlider.value = volumePercent;
+    volumeSlider.style.setProperty("--volume-progress", `${volumePercent}%`);
+    floatingDocument.querySelector(".mini-volume").textContent = `${volumePercent}%`;
 
     const playButton = floatingDocument.querySelector(".play");
-    playButton.textContent = state.isAudioPlaying ? "Ⅱ" : "▶";
-    playButton.setAttribute("aria-label", state.isAudioPlaying ? "Pause audio" : "Play audio");
+    const isPlaybackPlaying = state.isAudioPlaying && state.isVideoPlaying;
+    playButton.textContent = isPlaybackPlaying ? "Ⅱ" : "▶";
+    playButton.setAttribute("aria-label", isPlaybackPlaying ? "Pause audio and video" : "Play audio and video");
 
     floatingDocument.querySelectorAll(".mini-visualizer i").forEach((bar, index) => {
       bar.style.height = `${Math.max(4, Math.min(28, state.visualLevels[index] || 4))}px`;
@@ -326,35 +399,34 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
     return false;
   }
 
-  function openPopup() {
-    const width = 380;
-    const height = 240;
-    const left = Math.max(0, (window.screen.availLeft || 0) + window.screen.availWidth - width - 24);
-    const top = Math.max(0, (window.screen.availTop || 0) + window.screen.availHeight - height - 56);
-    const popupUrl = new URL("/mini-player.html", window.location.href).href;
-    const targetWindow = window.open(popupUrl, "atmosphere-mini-player", `popup=yes,width=${width},height=${height},left=${left},top=${top}`);
-    if (!targetWindow) return false;
-
-    const initialize = () => {
-      if (targetWindow.closed) return;
-      try {
-        targetWindow.moveTo(left, top);
-        targetWindow.resizeTo(width, height);
-      } catch (error) { /* The browser may own popup placement. */ }
-      buildThemedWindow(targetWindow, "popup");
-      targetWindow.focus();
-    };
-
-    try {
-      if (targetWindow.location.pathname === "/mini-player.html" && targetWindow.document.readyState === "complete") initialize();
-      else targetWindow.addEventListener("load", initialize, { once: true });
-    } catch (error) {
-      targetWindow.addEventListener("load", initialize, { once: true });
-    }
+  function openInlinePlayer() {
+    if (inlineFrame?.isConnected) return true;
+    inlineFrame = document.createElement("iframe");
+    inlineFrame.title = "Atmosphere mini player";
+    inlineFrame.setAttribute("allow", "autoplay; picture-in-picture");
+    inlineFrame.style.cssText = [
+      "position:fixed",
+      "z-index:60",
+      "right:18px",
+      "bottom:18px",
+      "width:min(380px,calc(100vw - 24px))",
+      "height:240px",
+      "border:0",
+      "border-radius:24px",
+      "overflow:hidden",
+      "background:#090b0d",
+      "box-shadow:0 24px 80px rgba(0,0,0,.48),0 0 0 1px rgba(255,255,255,.12)",
+    ].join(";");
+    document.body.appendChild(inlineFrame);
+    buildThemedWindow(inlineFrame.contentWindow, "inline");
+    inlineFrame.animate(
+      [{ opacity: 0, transform: "translateY(18px) scale(.96)" }, { opacity: 1, transform: "none" }],
+      { duration: 360, easing: "cubic-bezier(.16,1,.3,1)" }
+    );
     return true;
   }
 
-  async function open({ automatic: automaticRequest = false } = {}) {
+  async function open({ automatic: automaticRequest = false, userInitiated = false } = {}) {
     if (opening || isOpen()) return true;
     opening = true;
     automatic = automaticRequest;
@@ -365,15 +437,18 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
         return true;
       }
 
-      if (automaticRequest || isSafariBrowser()) {
-        try {
-          if (await openNativePip(video)) return true;
-        } catch (error) { /* Fall through to the next compatible option. */ }
-      }
+      // Never use window.open as a fallback: mobile and embedded browsers
+      // commonly turn it into a full tab. Keep the themed controls in a
+      // fixed bottom-right corner instead.
+      if ((!automaticRequest || userInitiated) && openInlinePlayer()) return true;
 
-      if (!automaticRequest && openPopup()) return true;
+      // Native PiP remains a last-resort fallback for automatic transitions
+      // where browsers refuse a new popup without a user gesture.
+      try {
+        if (await openNativePip(video)) return true;
+      } catch (error) { /* PiP is unavailable in this browser context. */ }
 
-      try { return await openNativePip(video); } catch (error) { return false; }
+      return false;
     } finally {
       opening = false;
     }
@@ -381,6 +456,11 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
 
   async function close() {
     clearInterval(syncTimer);
+    if (mode === "inline") {
+      inlineFrame?.remove();
+      handleFloatingWindowClosed();
+      return;
+    }
     if (mode === "document" || mode === "popup") {
       floatingWindow?.close();
       handleFloatingWindowClosed();
@@ -396,6 +476,7 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
 
   function isOpen() {
     return Boolean(
+      (mode === "inline" && inlineFrame?.isConnected) ||
       (floatingWindow && !floatingWindow.closed) ||
       document.pictureInPictureElement ||
       attachedVideo?.webkitPresentationMode === "picture-in-picture"
@@ -414,8 +495,6 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
     const state = getState();
     if (document.hidden && state.pipPreference === "automatic" && state.isAudioPlaying && !isOpen()) {
       await open({ automatic: true });
-    } else if (!document.hidden && automatic && isOpen()) {
-      await close();
     }
   }
 
@@ -433,8 +512,8 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
   }
 
   document.addEventListener("visibilitychange", handleVisibilityChange);
-  setMediaAction("play", () => setAudioPlaying(true));
-  setMediaAction("pause", () => setAudioPlaying(false));
+  setMediaAction("play", () => setPlaybackPlaying(true));
+  setMediaAction("pause", () => setPlaybackPlaying(false));
   setMediaAction("previoustrack", previousTrack);
   setMediaAction("nexttrack", nextTrack);
   setMediaAction("enterpictureinpicture", () => {
@@ -442,5 +521,5 @@ export function createMiniPlayer({ getState, setAudioPlaying, previousTrack, nex
   });
   sync();
 
-  return { open, close, toggle, sync, destroy, isOpen };
+  return { open, close, toggle, sync, destroy, isOpen, getMode: () => mode };
 }

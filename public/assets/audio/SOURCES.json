@@ -441,14 +441,14 @@
   },
   {
     "sceneId": "tab_leaves",
-    "file": "/assets/audio/leaves/01-aspen-canopy.mp3",
-    "title": "Aspen canopy",
-    "sourceTitle": "Leaves in the wind (Gravity Sound).wav",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File:Leaves_in_the_wind_(Gravity_Sound).wav",
-    "artist": "Gravity Sound",
-    "license": "CC BY 4.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
-    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+    "file": "/assets/audio/leaves/01-canopy-rustle.mp3",
+    "title": "Canopy rustle",
+    "sourceTitle": "wind_forest_08_strong_l_01.wav",
+    "sourcePage": "https://freesound.org/people/teadrinker/sounds/403051/",
+    "artist": "teadrinker",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "edit": "Freesound high-quality MP3 preview of the 81-second stereo field recording; 44.1 kHz; approximately 182 kbps VBR"
   },
   {
     "sceneId": "tab_leaves",
@@ -823,5 +823,27 @@
     "license": "CC BY-SA 3.0",
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
     "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_cat_window",
+    "file": "/assets/audio/cat_window/01-sleepy-purr.mp3",
+    "title": "Sleepy purr",
+    "sourceTitle": "Cat Purring",
+    "sourcePage": "https://freesound.org/people/rareguy27/sounds/690620/",
+    "artist": "rareguy27",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 192 kbps"
+  },
+  {
+    "sceneId": "tab_library",
+    "file": "/assets/audio/library/01-turning-pages.mp3",
+    "title": "Turning pages",
+    "sourceTitle": "Page Turn (2)",
+    "sourcePage": "https://freesound.org/people/OwlStorm/sounds/151221/",
+    "artist": "OwlStorm / Ashe Kirk",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "edit": "60-second arranged page-turn ambience; stereo 44.1 kHz at 192 kbps"
   }
 ]

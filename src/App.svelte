@@ -1,8 +1,10 @@
 <script>
   import { onDestroy, onMount } from "svelte";
   import Background from "./components/Background.svelte";
+  import AtmosphereIcon from "./components/AtmosphereIcon.svelte";
   import { createMiniPlayer } from "./miniPlayer";
   import { scenes } from "./sceneLibrary";
+  import { siteUrl } from "./siteUrl.mjs";
 
   let audioElement;
   let backgroundComponent;
@@ -33,10 +35,13 @@
   let pipPromptVisible = false;
 
   const pipPreferences = [
-    { id: "automatic", title: "Automatic", detail: "Open when you leave this tab" },
+    { id: "automatic", title: "Automatic", detail: "Use floating PiP when your browser supports it" },
     { id: "manual", title: "Manual only", detail: "Open only when you press the button" },
     { id: "off", title: "Off", detail: "Never open the mini player" },
   ];
+  const homeHref = siteUrl("");
+  const faviconHref = siteUrl("favicon-v2.png");
+  const creditsHref = siteUrl("audio-credits.html");
 
   $: activeScene = scenes[activeIndex];
   $: activeTrack = activeScene.audioTracks[selectedAudio];
@@ -54,7 +59,7 @@
     visualLevels,
     videoPosition: activeVideo.position,
     videoScale: activeVideo.scale,
-    poster: `/assets/videos/${activeVideo.poster}`,
+    poster: siteUrl(`assets/videos/${activeVideo.poster}`),
     video: backgroundComponent?.getVideoElement(),
     pipPreference,
   };
@@ -167,6 +172,20 @@
     else if (!shouldPlay && isAudioPlaying) audioElement.pause();
   }
 
+  async function setMiniPlayerPlayback(shouldPlay) {
+    const video = backgroundComponent?.getVideoElement();
+    isVideoPlaying = shouldPlay;
+
+    if (!shouldPlay) {
+      audioElement?.pause();
+      video?.pause();
+      return;
+    }
+
+    const videoPlayback = video?.play?.().catch(() => {});
+    await Promise.allSettled([setAudioPlaying(true), videoPlayback]);
+  }
+
   async function previousAudioTrack() {
     const nextIndex = (selectedAudio - 1 + activeScene.audioTracks.length) % activeScene.audioTracks.length;
     await selectTrack(nextIndex);
@@ -207,10 +226,14 @@
     isVideoPlaying = true;
   }
 
-  function updateVolume(event) {
-    volume = Number(event.currentTarget.value);
+  function setMiniPlayerVolume(nextVolume) {
+    volume = Math.max(0, Math.min(1, Number(nextVolume)));
     resumeAudioGraph();
     applyVolume();
+  }
+
+  function updateVolume(event) {
+    setMiniPlayerVolume(event.currentTarget.value);
   }
 
   function getMiniPlayerState() {
@@ -231,7 +254,7 @@
     miniPlayerStatus = wasOpen ? "Closing mini player" : "Opening mini player";
     const opened = await miniPlayerController.toggle();
     if (!wasOpen && !opened) {
-      miniPlayerStatus = "Mini player was blocked. Allow popups or use your browser's video Picture-in-Picture control.";
+      miniPlayerStatus = "Mini player could not open in this browser.";
     }
   }
 
@@ -245,7 +268,18 @@
       if (miniPlayerController?.isOpen()) await miniPlayerController.close();
       miniPlayerStatus = "Mini player turned off";
     } else if (nextPreference === "automatic") {
-      miniPlayerStatus = "Automatic mini player enabled";
+      // PiP and popup creation must happen while this user click still owns
+      // browser activation. Waiting until visibilitychange is too late in
+      // every major browser, so enabling Automatic opens the player now and
+      // keeps it ready when the user leaves the tab.
+      miniPlayerStatus = "Opening automatic mini player";
+      const opened = await miniPlayerController?.open({ automatic: true, userInitiated: true });
+      const openedMode = miniPlayerController?.getMode();
+      miniPlayerStatus = !opened
+        ? "Automatic mode is on. Press Open mini once to allow the floating player."
+        : openedMode === "inline"
+          ? "Corner mini player opened. Always-on-top PiP requires a secure browser connection."
+          : "Automatic mini player is on and ready when you leave this tab";
     } else {
       miniPlayerStatus = "Mini player set to manual only";
     }
@@ -263,16 +297,23 @@
 
   onMount(() => {
     const savedPipPreference = localStorage.getItem("atmosphere-pip-preference");
-    if (["automatic", "manual", "off"].includes(savedPipPreference)) pipPreference = savedPipPreference;
+    if (["automatic", "manual", "off"].includes(savedPipPreference)) {
+      pipPreference = savedPipPreference;
+      // Reloading destroys the browser activation that allowed the floating
+      // window. Automatic therefore needs one fresh, explicit re-arm click
+      // each browsing session.
+      if (savedPipPreference === "automatic") pipPromptVisible = true;
+    }
     miniPlayerController = createMiniPlayer({
       getState: getMiniPlayerState,
-      setAudioPlaying,
+      setPlaybackPlaying: setMiniPlayerPlayback,
+      setVolume: setMiniPlayerVolume,
       previousTrack: previousAudioTrack,
       nextTrack: nextAudioTrack,
       onStateChange: (open, mode) => {
         miniPlayerOpen = open;
         miniPlayerMode = mode;
-        const label = mode === "document" ? "Picture-in-Picture" : mode === "native" ? "Video Picture-in-Picture" : "Mini player window";
+        const label = mode === "document" ? "Picture-in-Picture" : mode === "native" ? "Video Picture-in-Picture" : mode === "inline" ? "Corner mini player" : "Mini player window";
         miniPlayerStatus = open ? `${label} opened` : "Mini player closed";
       },
     });
@@ -288,14 +329,6 @@
     miniPlayerController?.destroy();
   });
 </script>
-
-<svelte:head>
-  <title>Atmosphere — Ambient Sounds & Cinematic Nature Videos</title>
-  <meta
-    name="description"
-    content="Stream immersive rain, ocean, fireplace, café, forest and white-noise soundscapes with cinematic video loops for focus, relaxation, sleep and study."
-  />
-</svelte:head>
 
 <div class="app-shell" style={`--accent: ${activeScene.accent}; --accent-rgb: ${activeScene.accentRgb}`}>
   <Background
@@ -321,11 +354,12 @@
   ></audio>
 
   <header class="topbar">
-    <a class="wordmark" href="/" aria-label="Atmosphere home">
-      <span>ATMO</span><i></i><span>SPHERE</span>
+    <a class="wordmark" href={homeHref} aria-label="Atmosphere home">
+      <img class="brand-icon" src={faviconHref} width="30" height="30" alt="" aria-hidden="true" decoding="async" />
+      <span class="wordmark-copy"><span>ATMO</span><i></i><span>SPHERE</span></span>
     </a>
     <div class="topbar-actions">
-      <a class="credits-link" href="/audio-credits.html" target="_blank" rel="noreferrer">Audio credits</a>
+      <a class="credits-link" href={creditsHref} target="_blank" rel="noreferrer">Audio credits</a>
       <div class="pip-control">
         <button
           class:pip-active={miniPlayerOpen}
@@ -403,11 +437,11 @@
       </span>
       <div>
         <p class="kicker">Mini player</p>
-        <h2 id="pip-consent-title">Keep Atmosphere visible?</h2>
-        <p id="pip-consent-copy">Open the mini player automatically when audio is playing and you leave this tab.</p>
+        <h2 id="pip-consent-title">{pipPreference === "automatic" ? "Start automatic mini player?" : "Keep Atmosphere visible?"}</h2>
+        <p id="pip-consent-copy">Open a corner player now. On secure supported browsers it can remain visible when you leave this tab.</p>
       </div>
       <div class="pip-consent-actions">
-        <button class="pip-primary" type="button" on:click={() => choosePipPreference("automatic")}>Turn on automatic</button>
+        <button class="pip-primary" type="button" on:click={() => choosePipPreference("automatic")}>{pipPreference === "automatic" ? "Start automatic player" : "Turn on automatic"}</button>
         <button type="button" on:click={() => choosePipPreference("manual")}>Manual only</button>
         <button type="button" on:click={() => choosePipPreference("off")}>Turn off</button>
       </div>
@@ -444,7 +478,7 @@
               aria-current={index === activeIndex ? "true" : undefined}
               on:click={() => selectScene(index)}
             >
-              <span class="scene-index">{String(index + 1).padStart(2, "0")}</span>
+              <AtmosphereIcon scene={scene.id} active={index === activeIndex} />
               <span class="scene-card-copy">
                 <strong>{scene.title}</strong>
                 <small>{scene.category}</small>
@@ -578,6 +612,13 @@
     align-items: center;
     justify-content: space-between;
     padding: 22px clamp(18px, 3.5vw, 52px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    background:
+      linear-gradient(180deg, rgba(10, 13, 15, 0.58), rgba(10, 13, 15, 0.3)),
+      radial-gradient(circle at 12% 0%, rgba(var(--accent-rgb), 0.075), transparent 44%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 34px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(20px) saturate(145%);
+    -webkit-backdrop-filter: blur(20px) saturate(145%);
     pointer-events: none;
   }
 
@@ -602,12 +643,35 @@
   .wordmark {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
     color: inherit;
     font-size: 0.72rem;
     font-weight: 680;
     letter-spacing: 0.19em;
     text-decoration: none;
+  }
+
+  .brand-icon {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 9px;
+    background: rgba(8, 11, 14, 0.56);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 6px 18px rgba(0, 0, 0, 0.24), 0 0 20px rgba(var(--accent-rgb), 0.1);
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color 220ms ease, box-shadow 300ms ease;
+  }
+
+  .wordmark:hover .brand-icon {
+    transform: translateY(-1px) scale(1.04);
+    border-color: rgba(var(--accent-rgb), 0.48);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 22px rgba(0, 0, 0, 0.28), 0 0 24px rgba(var(--accent-rgb), 0.18);
+  }
+
+  .wordmark-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
   }
 
   .wordmark i {
@@ -962,10 +1026,12 @@
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 32px;
-    background: linear-gradient(145deg, rgba(24, 27, 29, 0.78), rgba(11, 14, 16, 0.68));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 28px 90px rgba(0, 0, 0, 0.28), 0 0 70px rgba(var(--accent-rgb), 0.045);
-    backdrop-filter: blur(28px) saturate(142%);
-    -webkit-backdrop-filter: blur(28px) saturate(142%);
+    background:
+      radial-gradient(circle at 14% 0%, rgba(var(--accent-rgb), 0.075), transparent 46%),
+      linear-gradient(145deg, rgba(24, 27, 29, 0.5), rgba(11, 14, 16, 0.36));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 28px 90px rgba(0, 0, 0, 0.24), 0 0 70px rgba(var(--accent-rgb), 0.055);
+    backdrop-filter: blur(24px) saturate(148%);
+    -webkit-backdrop-filter: blur(24px) saturate(148%);
   }
 
   .liquid-panel::before {
@@ -973,7 +1039,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(115deg, rgba(255, 255, 255, 0.1), transparent 24% 72%, rgba(255, 255, 255, 0.035));
+    background: linear-gradient(115deg, rgba(255, 255, 255, 0.085), transparent 24% 72%, rgba(255, 255, 255, 0.025));
     mask-image: linear-gradient(#000, transparent 74%);
   }
 
@@ -1075,7 +1141,6 @@
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16), 0 0 30px rgba(var(--accent-rgb), 0.13), inset 0 1px 0 white;
   }
 
-  .scene-index,
   .track-number,
   .video-card > span {
     color: rgba(255, 255, 255, 0.35);
@@ -1083,7 +1148,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .active .scene-index,
   .active .track-number,
   .video-card.active > span { color: rgba(17, 19, 21, 0.42); }
 
@@ -1311,6 +1375,14 @@
 
   .video-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; }
 
+  @media (min-width: 1121px) {
+    .library-panel {
+      position: sticky;
+      top: 80px;
+      align-self: start;
+    }
+  }
+
   @media (max-width: 1120px) {
     .workspace { grid-template-columns: 1fr; }
     .mixer-panel { order: -1; }
@@ -1362,6 +1434,10 @@
   }
 
   @media (max-width: 420px) {
+    .wordmark { gap: 7px; font-size: 0.65rem; letter-spacing: 0.15em; }
+    .brand-icon { width: 26px; height: 26px; flex-basis: 26px; border-radius: 8px; }
+    .wordmark-copy { gap: 6px; }
+    .wordmark i { width: 16px; }
     .scene-hero > p { display: none; }
     .scene-hero { min-height: 106px; }
     .scene-grid { gap: 6px; }

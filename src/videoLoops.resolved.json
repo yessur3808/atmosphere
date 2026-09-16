@@ -350,5 +350,47 @@
       "high": "https://cdn.coverr.co/videos/coverr-tree-in-the-mist-4598/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-tree-in-the-mist-4598/720p.mp4"
     }
+  ],
+  "tab_onsen": [
+    { "title": "Thermal steam", "source": "https://coverr.co/videos/steam-from-the-hot-springs-bliadwwrrw", "high": "https://cdn.coverr.co/videos/coverr-steam-from-the-hot-springs-3057/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-steam-from-the-hot-springs-3057/720p.mp4" },
+    { "title": "Night pool", "source": "https://coverr.co/videos/steamy-rooftop-pool-vkzt94wl9q", "high": "https://cdn.coverr.co/videos/coverr-steamy-rooftop-pool-8919/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-steamy-rooftop-pool-8919/720p.mp4" },
+    { "title": "Mountain vapor", "source": "https://coverr.co/videos/steam-from-a-geyser-pacgj46a46", "high": "https://cdn.coverr.co/videos/coverr-steam-from-a-geyser-7802/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-steam-from-a-geyser-7802/720p.mp4" },
+    { "title": "Garden water", "source": "https://coverr.co/videos/water-fountain-in-the-park-zg1o6oyppv", "high": "https://cdn.coverr.co/videos/coverr-water-fountain-in-the-park-7943/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-water-fountain-in-the-park-7943/720p.mp4" }
+  ],
+  "tab_cat_window": [
+    { "title": "Window hideaway", "source": "https://coverr.co/videos/a-red-cat-in-a-fabric-pet-house-jy8vnfaata", "high": "https://cdn.coverr.co/videos/coverr-a-red-cat-in-a-fabric-pet-house-6867/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-a-red-cat-in-a-fabric-pet-house-6867/720p.mp4" },
+    { "title": "Quiet company", "source": "https://coverr.co/videos/a-man-plays-with-his-cat-nm6jxrsxl8", "high": "https://cdn.coverr.co/videos/coverr-a-man-plays-with-his-cat-3547/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-a-man-plays-with-his-cat-3547/720p.mp4" },
+    { "title": "Garden cat", "source": "https://coverr.co/videos/cat-eating-grass-ailvrtlfzn", "high": "https://cdn.coverr.co/videos/coverr-cat-eating-grass-1749/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-cat-eating-grass-1749/720p.mp4" },
+    { "title": "Breakfast watch", "source": "https://coverr.co/videos/cat-standing-on-a-table-b7j1gk8gz0", "high": "https://cdn.coverr.co/videos/coverr-cat-standing-on-a-table-7835/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-cat-standing-on-a-table-7835/720p.mp4" }
+  ],
+  "tab_library": [
+    { "title": "Reading hall", "source": "https://coverr.co/videos/cozy-reading-moments-in-a-library", "high": "https://cdn.coverr.co/videos/user-ai-generation-WwpWQ28vsOsU/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/user-ai-generation-WwpWQ28vsOsU/720p.mp4" },
+    { "title": "Old volumes", "source": "https://coverr.co/videos/tower-of-old-hardcover-books-on-library-shelf-close-up", "high": "https://cdn.coverr.co/videos/user-ai-generation-AhqYMGBC7DPE/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/user-ai-generation-AhqYMGBC7DPE/720p.mp4" },
+    { "title": "Turning pages", "source": "https://coverr.co/videos/reading-a-book-in-a-home-office-bk6zs6dzas", "high": "https://cdn.coverr.co/videos/coverr-reading-a-book-in-a-home-office-1583/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-reading-a-book-in-a-home-office-1583/720p.mp4" },
+    { "title": "Study desk", "source": "https://coverr.co/videos/studying-re5bmzc3dg", "high": "https://cdn.coverr.co/videos/coverr-studying-9024/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-studying-9024/720p.mp4" }
+  ],
+  "tab_forest": [
+    { "title": "Mossy grove", "source": "https://coverr.co/videos/trees-covered-in-moss-d0c5yk6kso", "high": "https://cdn.coverr.co/videos/coverr-trees-covered-in-moss-7783/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-trees-covered-in-moss-7783/720p.mp4" },
+    { "title": "Rain-dark branch", "source": "https://coverr.co/videos/branch-covered-in-moss-qnzw1we2og", "high": "https://cdn.coverr.co/videos/coverr-branch-covered-in-moss-5495/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-branch-covered-in-moss-5495/720p.mp4" },
+    { "title": "Woodland path", "source": "https://coverr.co/videos/forest-landscape-idnupuyma4", "high": "https://cdn.coverr.co/videos/coverr-forest-landscape-8507/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-forest-landscape-8507/720p.mp4" },
+    { "title": "Conifer hush", "source": "https://coverr.co/videos/coniferous-forest-q4t1vnzq7a", "high": "https://cdn.coverr.co/videos/coverr-coniferous-forest-9381/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-coniferous-forest-9381/720p.mp4" }
+  ],
+  "tab_jungle": [
+    { "title": "Rainforest path", "source": "https://coverr.co/videos/footpath-in-the-rainforest-t87bbaizvh", "high": "https://cdn.coverr.co/videos/coverr-footpath-in-the-rainforest-9968/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-footpath-in-the-rainforest-9968/720p.mp4" },
+    { "title": "Dense foliage", "source": "https://coverr.co/videos/jungle-plants-txefj5bhlc", "high": "https://cdn.coverr.co/videos/coverr-jungle-plants-3922/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-jungle-plants-3922/720p.mp4" },
+    { "title": "Canopy light", "source": "https://coverr.co/videos/sunlight-shining-through-green-leaves-95n7qiwzte", "high": "https://cdn.coverr.co/videos/coverr-sunlight-shining-through-green-leaves-3256/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-sunlight-shining-through-green-leaves-3256/720p.mp4" },
+    { "title": "Tropical falls", "source": "https://coverr.co/videos/waterfall-near-a-rainbow-jon9zcmkgh", "high": "https://cdn.coverr.co/videos/coverr-waterfall-near-a-rainbow-9900/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-waterfall-near-a-rainbow-9900/720p.mp4" }
+  ],
+  "tab_beach_shore": [
+    { "title": "Shore break", "source": "https://coverr.co/videos/waves-on-the-shore-ahnpaksfdt", "high": "https://cdn.coverr.co/videos/coverr-waves-on-the-shore-807/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-waves-on-the-shore-807/720p.mp4" },
+    { "title": "Open beach", "source": "https://coverr.co/videos/panoramic-view-of-serene-beach-landscape-on-a-sunny-day", "high": "https://cdn.coverr.co/videos/coverr-panoramic-view-of-serene-beach-landscape/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-panoramic-view-of-serene-beach-landscape/720p.mp4" },
+    { "title": "Coastline above", "source": "https://coverr.co/videos/drone-footage-of-waves-at-a-beach-q4pfnks6up", "high": "https://cdn.coverr.co/videos/coverr-drone-footage-of-waves-at-a-beach-5600/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-drone-footage-of-waves-at-a-beach-5600/720p.mp4" },
+    { "title": "Evening coast", "source": "https://coverr.co/videos/beach-p4eqa8mlgn", "high": "https://cdn.coverr.co/videos/coverr-beach-5537/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-beach-5537/720p.mp4" }
+  ],
+  "tab_traffic": [
+    { "title": "Night lanes", "source": "https://coverr.co/videos/cars-in-the-city-at-night-hwww4ekcvq", "high": "https://cdn.coverr.co/videos/coverr-cars-in-the-city-at-night-5837/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-cars-in-the-city-at-night-5837/720p.mp4" },
+    { "title": "Brake lights", "source": "https://coverr.co/videos/cars-driving-at-night-6y0qt4ji1t", "high": "https://cdn.coverr.co/videos/coverr-cars-driving-at-night-7638/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-cars-driving-at-night-7638/720p.mp4" },
+    { "title": "City interchange", "source": "https://coverr.co/videos/road-traffic-0blhjb3eik", "high": "https://cdn.coverr.co/videos/coverr-road-traffic-3374/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-road-traffic-3374/720p.mp4" },
+    { "title": "Daytime current", "source": "https://coverr.co/videos/traffic-in-the-city-nqfup6dv2i", "high": "https://cdn.coverr.co/videos/coverr-traffic-in-the-city-4869/1080p.mp4", "adaptive": "https://cdn.coverr.co/videos/coverr-traffic-in-the-city-4869/720p.mp4" }
   ]
 }

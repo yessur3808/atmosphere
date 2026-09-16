@@ -5,8 +5,14 @@
   "type": "commonjs",
   "scripts": {
     "build": "rollup -c",
+    "check": "npm run lint && npm run test && npm run security:audit && npm run build && npm run verify:build",
     "dev": "rollup -c -w",
-    "start": "node server.cjs"
+    "lint": "eslint . --ext .js,.mjs,.cjs,.svelte --max-warnings=0",
+    "prepare:media": "bash scripts/prepare-media.sh",
+    "security:audit": "npm audit --omit=dev --audit-level=high",
+    "start": "node server.cjs",
+    "test": "node --test tests/*.test.mjs",
+    "verify:build": "node scripts/verify-build.mjs"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.0",
@@ -14,6 +20,8 @@
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-terser": "^0.4.0",
     "@tsconfig/svelte": "^5.0.2",
+    "eslint": "8.57.1",
+    "eslint-plugin-svelte3": "4.0.0",
     "rollup": "^3.15.0",
     "rollup-plugin-css-only": "^4.3.0",
     "rollup-plugin-livereload": "^2.0.0",

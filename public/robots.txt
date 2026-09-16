@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /mini-player.html
+
+Sitemap: https://yessur3808.github.io/atmosphere/sitemap.xml

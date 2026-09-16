@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
+  import { siteUrl } from "../siteUrl.mjs";
 
   export let background = "";
   export let adaptiveBackground = "";
@@ -39,7 +40,7 @@
 
   function resolveVideoSource(source) {
     if (/^https?:\/\//i.test(source || "")) return source;
-    return source ? `/assets/videos/${source}` : "";
+    return source ? siteUrl(`assets/videos/${source}`) : "";
   }
 
   onMount(() => {
@@ -52,6 +53,7 @@
 
   $: selectedBackground = mediaReady ? (useAdaptive && adaptiveBackground ? adaptiveBackground : background) : "";
   $: nextSource = resolveVideoSource(selectedBackground);
+  $: posterSource = poster ? siteUrl(`assets/videos/${poster}`) : "";
   $: if (videoElement && nextSource && nextSource !== activeSource) {
     activeSource = nextSource;
     activeView = "";
@@ -113,7 +115,7 @@
   class:failed
   class="backdrop"
   aria-hidden="true"
-  style={`--video-scale: ${scale}; --video-position: ${position}; --poster: url('/assets/videos/${poster}')`}
+  style={`--video-scale: ${scale}; --video-position: ${position}; --poster: url('${posterSource}')`}
 >
   <div class="poster"></div>
   <video
@@ -123,7 +125,7 @@
     loop
     playsinline
     preload="metadata"
-    poster={poster ? `/assets/videos/${poster}` : undefined}
+    poster={posterSource || undefined}
     on:loadedmetadata={handleLoadedMetadata}
     on:loadstart={() => (loading = true)}
     on:waiting={() => (loading = true)}
