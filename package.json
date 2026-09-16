@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "start": "sirv public --no-clear"
+    "start": "node server.cjs"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.0",
@@ -24,6 +24,7 @@
     "typescript": "^5.3.2"
   },
   "dependencies": {
+    "sirv": "^2.0.4",
     "sirv-cli": "^2.0.0"
   }
 }
