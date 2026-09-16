@@ -32,6 +32,9 @@ test("manifest and static entry points use project-relative paths", async () => 
   assert.equal(manifest.scope, "./");
   assert.ok(manifest.icons.every(({ src }) => !src.startsWith("/")));
   assert.match(html, /href='global\.css'/);
-  assert.match(html, /src='build\/bundle\.js\?v=atmosphere-21'/);
+  const scriptVersion = html.match(/src='build\/bundle\.js\?v=atmosphere-(\d+)'/)?.[1];
+  const styleVersion = html.match(/href='build\/bundle\.css\?v=atmosphere-(\d+)'/)?.[1];
+  assert.ok(scriptVersion, "JavaScript bundle should have a numeric cache version");
+  assert.equal(styleVersion, scriptVersion, "CSS and JavaScript cache versions should match");
   assert.doesNotMatch(html, /(?:href|src)=["']\/(?!\/)/);
 });

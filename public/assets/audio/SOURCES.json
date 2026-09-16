@@ -144,13 +144,13 @@
   },
   {
     "sceneId": "tab_waterfall",
-    "file": "/assets/audio/waterfall/04-forest-water.mp3",
-    "title": "Forest water",
-    "sourceTitle": "Waterfall Gully, South Australia.ogg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File:Waterfall_Gully,_South_Australia.ogg",
-    "artist": "The original uploader was Tristessa de St Ange at English Wikipedia.",
-    "license": "CC BY-SA 3.0",
-    "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "file": "/assets/audio/waterfall/04-forest-waterfall.mp3",
+    "title": "Forest waterfall",
+    "sourceTitle": "Relaxing Iguaza Falls Waterfall ASMR - JD Savanyu.webm",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Relaxing_Iguaza_Falls_Waterfall_ASMR_-_JD_Savanyu.webm",
+    "artist": "Jarrod stanley",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
     "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
   },
   {
