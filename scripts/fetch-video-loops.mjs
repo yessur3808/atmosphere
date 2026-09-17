@@ -43,12 +43,19 @@ let cursor = 0;
 
 async function prepareEntry(entry) {
   try {
-    const sources = await resolveSources(entry.source);
+    const sources = entry.high && entry.adaptive
+      ? { high: entry.high, adaptive: entry.adaptive }
+      : await resolveSources(entry.source);
     if (resolveOnly) {
       entry.high = sources.high;
       entry.adaptive = sources.adaptive;
       console.log(`✓ ${entry.file} (CDN resolved)`);
     } else if (!checkOnly) {
+      if (!/^https?:\/\//.test(sources.high) || !/^https?:\/\//.test(sources.adaptive)) {
+        console.log(`✓ ${entry.file} (local source)`);
+        completed += 1;
+        return;
+      }
       const highPath = resolve(projectRoot, "public/assets/videos/loops", entry.file);
       const adaptivePath = resolve(projectRoot, "public/assets/videos/adaptive/loops", entry.file);
       const [highStatus, adaptiveStatus] = await Promise.all([

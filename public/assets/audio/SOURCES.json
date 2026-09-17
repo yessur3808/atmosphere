@@ -300,11 +300,11 @@
     "sceneId": "tab_fire",
     "file": "/assets/audio/fire/03-low-embers.mp3",
     "title": "Low embers",
-    "sourceTitle": "Bones breaking wood fire ice crackling.ogg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File:Bones_breaking_wood_fire_ice_crackling.ogg",
-    "artist": "stephan",
-    "license": "Public domain",
-    "licenseUrl": "",
+    "sourceTitle": "Mount Rainier Holiday Hearth.webm",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Mount_Rainier_Holiday_Hearth.webm",
+    "artist": "Mount Rainier National Park",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
     "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
   },
   {
@@ -354,7 +354,7 @@
   {
     "sceneId": "tab_snow",
     "file": "/assets/audio/snow/03-frozen-air.mp3",
-    "title": "Frozen air",
+    "title": "Fresh snow steps",
     "sourceTitle": "Walking through snow.mp3",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:Walking_through_snow.mp3",
     "artist": "Lukas Beck",
@@ -365,7 +365,7 @@
   {
     "sceneId": "tab_snow",
     "file": "/assets/audio/snow/04-distant-wind.mp3",
-    "title": "Distant wind",
+    "title": "Crunching trail",
     "sourceTitle": "Crunchy Snow Walking Sound Effect - Human Sounds.opus",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:Crunchy_Snow_Walking_Sound_Effect_-_Human_Sounds.opus",
     "artist": "Free Sounds Library User Spanac",
@@ -376,7 +376,7 @@
   {
     "sceneId": "tab_snow",
     "file": "/assets/audio/snow/05-snow-at-night.mp3",
-    "title": "Snow at night",
+    "title": "Snow walker",
     "sourceTitle": "Man walking on the snow.ogg",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:Man_walking_on_the_snow.ogg",
     "artist": "Clément Bucco-Lechat",
@@ -387,7 +387,7 @@
   {
     "sceneId": "tab_street",
     "file": "/assets/audio/street/01-after-midnight.mp3",
-    "title": "After midnight",
+    "title": "City crossing",
     "sourceTitle": "Sagetyrtle - citystreet3 (cc0) (freesound).mp3",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:Sagetyrtle_-_citystreet3_(cc0)_(freesound).mp3",
     "artist": "sagetyrtle",
@@ -508,12 +508,12 @@
   {
     "sceneId": "tab_ocean_waves",
     "file": "/assets/audio/ocean_waves/02-deep-tide.mp3",
-    "title": "Deep tide",
-    "sourceTitle": "Waves.ogg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File:Waves.ogg",
-    "artist": "Dsw4",
-    "license": "Public domain",
-    "licenseUrl": "",
+    "title": "Iceland surf",
+    "sourceTitle": "Ocean waves at Lækjavik beach, Iceland.webm",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Ocean_waves_at_L%C3%A6kjavik_beach,_Iceland.webm",
+    "artist": "Alexander Grebenkov",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
     "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
   },
   {
@@ -652,11 +652,11 @@
     "sceneId": "tab_typing",
     "file": "/assets/audio/typing/05-studio-desk.mp3",
     "title": "Studio desk",
-    "sourceTitle": "Getting set to chat.ogg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File:Getting_set_to_chat.ogg",
-    "artist": "ezwa",
-    "license": "Public domain",
-    "licenseUrl": "",
+    "sourceTitle": "399603 dustin-davis typing.wav",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:399603_dustin-davis_typing.wav",
+    "artist": "Dustin_Davis",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
     "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
   },
   {
@@ -695,7 +695,7 @@
   {
     "sceneId": "tab_foot_steps",
     "file": "/assets/audio/foot_steps/04-slow-hallway.mp3",
-    "title": "Slow hallway",
+    "title": "Forest pace",
     "sourceTitle": "Forest track 2.ogg",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:Forest_track_2.ogg",
     "artist": "tball74",
@@ -761,7 +761,7 @@
   {
     "sceneId": "tab_birds",
     "file": "/assets/audio/birds/05-distant-flock.mp3",
-    "title": "Distant flock",
+    "title": "Nightingale dusk",
     "sourceTitle": "Nightingale wind crickets - cut.ogg",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:Nightingale_wind_crickets_-_cut.ogg",
     "artist": "Serg Childed",
@@ -816,12 +816,45 @@
   {
     "sceneId": "tab_white_noise",
     "file": "/assets/audio/white_noise/05-sleep-layer.mp3",
-    "title": "Sleep layer",
+    "title": "Violet focus",
     "sourceTitle": "Purple noise.ogg",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:Purple_noise.ogg",
     "artist": "Omegatron",
     "license": "CC BY-SA 3.0",
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_onsen",
+    "file": "/assets/audio/onsen/01-hot-spring-pool.mp3",
+    "title": "Thermal bubbling",
+    "sourceTitle": "Rincón de la Vieja hot spring.ogv",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Rinc%C3%B3n_de_la_Vieja_hot_spring.ogv",
+    "artist": "Cephas",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_onsen",
+    "file": "/assets/audio/onsen/02-stone-basin.mp3",
+    "title": "Suikinkutsu garden",
+    "sourceTitle": "Suikinkutsu recording.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Suikinkutsu_recording.ogg",
+    "artist": "Torsodog / Shizhao",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_onsen",
+    "file": "/assets/audio/onsen/03-garden-rain.mp3",
+    "title": "Warm bath flow",
+    "sourceTitle": "Warm water 5.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Warm_water_5.ogg",
+    "artist": "Raresvent",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
     "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
   },
   {
@@ -845,5 +878,49 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "edit": "60-second arranged page-turn ambience; stereo 44.1 kHz at 192 kbps"
+  },
+  {
+    "sceneId": "tab_library",
+    "file": "/assets/audio/library/05-archive-room.mp3",
+    "title": "Quiet study room",
+    "sourceTitle": "20121112 TU Delft Library, quiet study room - general ambience - SoundCloud - el mar.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:20121112_TU_Delft_Library,_quiet_study_room_-_general_ambience_-_SoundCloud_-_el_mar.ogg",
+    "artist": "el_mar",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_jungle",
+    "file": "/assets/audio/jungle/02-tropical-chorus.mp3",
+    "title": "Amazon toucans",
+    "sourceTitle": "404114 felix-blume toucans-singing-in-the-amazonian-rainforest-brazil.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:404114_felix-blume_toucans-singing-in-the-amazonian-rainforest-brazil.ogg",
+    "artist": "Felix Blume",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_jungle",
+    "file": "/assets/audio/jungle/04-broad-leaves.mp3",
+    "title": "Phuket rainforest",
+    "sourceTitle": "Jungle Sound Thailand Phuket.flac",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Jungle_Sound_Thailand_Phuket.flac",
+    "artist": "Amada44",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_jungle",
+    "file": "/assets/audio/jungle/05-night-insects.mp3",
+    "title": "Thai jungle",
+    "sourceTitle": "Sound of the jungle in Thailand.flac",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Sound_of_the_jungle_in_Thailand.flac",
+    "artist": "Amada44",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
   }
 ]

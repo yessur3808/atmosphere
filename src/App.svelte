@@ -42,6 +42,7 @@
   const homeHref = siteUrl("");
   const faviconHref = siteUrl("favicon-v2.png");
   const creditsHref = siteUrl("audio-credits.html");
+  const videoCreditsHref = siteUrl("video-credits.html");
 
   $: activeScene = scenes[activeIndex];
   $: activeTrack = activeScene.audioTracks[selectedAudio];
@@ -360,6 +361,7 @@
     </a>
     <div class="topbar-actions">
       <a class="credits-link" href={creditsHref} target="_blank" rel="noreferrer">Audio credits</a>
+      <a class="credits-link" href={videoCreditsHref} target="_blank" rel="noreferrer">Video credits</a>
       <div class="pip-control">
         <button
           class:pip-active={miniPlayerOpen}

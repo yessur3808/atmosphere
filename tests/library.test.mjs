@@ -48,8 +48,22 @@ test("every atmosphere exposes five playable audio choices", async () => {
     }
   }
 
+  const publishedFiles = [];
+  const pending = [path.join(publicRoot, "assets/audio")];
+  while (pending.length) {
+    const current = pending.pop();
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      const target = path.join(current, entry.name);
+      if (entry.isDirectory()) pending.push(target);
+      if (entry.isFile() && entry.name.endsWith(".mp3")) {
+        publishedFiles.push(path.relative(publicRoot, target));
+      }
+    }
+  }
+
   assert.equal(choiceCount, 110);
-  assert.equal(uniqueFiles.size, 77);
+  assert.equal(uniqueFiles.size, 84);
+  assert.deepEqual(publishedFiles.sort(), [...uniqueFiles].sort(), "published audio should contain no orphaned files");
 });
 
 test("every atmosphere exposes four distinct video loops and a local poster", async () => {
@@ -63,9 +77,17 @@ test("every atmosphere exposes four distinct video loops and a local poster", as
 
     assert.equal(new Set(loops.map(({ high }) => high)).size, loops.length, `${scene.id} should not repeat 1080p loops`);
     for (const loop of loops) {
-      assert.match(loop.high, /^https:\/\/cdn\.coverr\.co\/.+\/1080p\.mp4$/);
-      assert.match(loop.adaptive, /^https:\/\/cdn\.coverr\.co\/.+\/720p\.mp4$/);
-      assert.match(loop.source, /^https:\/\/coverr\.co\/videos\//);
+      const coverrLoop = /^https:\/\/cdn\.coverr\.co\/.+\/1080p\.mp4$/.test(loop.high);
+      if (coverrLoop) {
+        assert.match(loop.adaptive, /^https:\/\/cdn\.coverr\.co\/.+\/720p\.mp4$/);
+        assert.match(loop.source, /^https:\/\/coverr\.co\/videos\//);
+      } else {
+        assert.match(loop.high, /^assets\/videos\/loops\/.+\.mp4$/);
+        assert.match(loop.adaptive, /^assets\/videos\/adaptive\/loops\/.+\.mp4$/);
+        assert.match(loop.source, /^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+        await access(publicPath(loop.high));
+        await access(publicPath(loop.adaptive));
+      }
     }
 
     const mediaName = scene.background.replace(/\.[^.]+$/, "");
@@ -77,6 +99,40 @@ test("every atmosphere exposes four distinct video loops and a local poster", as
   }
 
   assert.equal(loopCount, 88);
+});
+
+test("audited atmosphere mappings reject known semantic mismatches", () => {
+  const activeAudioSources = new Set(Object.values(audioSources).flat().map(({ sourceTitle }) => sourceTitle));
+  for (const rejectedSource of [
+    "File:Bones breaking wood fire ice crackling.ogg",
+    "File:Getting set to chat.ogg",
+    "File:Waves.ogg",
+  ]) {
+    assert.ok(!activeAudioSources.has(rejectedSource), `${rejectedSource} should not remain active`);
+  }
+
+  assert.deepEqual(
+    audioSources.tab_onsen.slice(0, 3).map(({ sourceTitle }) => sourceTitle),
+    [
+      "File:Rincón de la Vieja hot spring.ogv",
+      "File:Suikinkutsu recording.ogg",
+      "File:Warm water 5.ogg",
+    ],
+  );
+  assert.deepEqual(
+    audioSources.tab_jungle.filter(({ file }) => ["02-tropical-chorus.mp3", "04-broad-leaves.mp3", "05-night-insects.mp3"].includes(file)).map(({ sourceTitle }) => sourceTitle),
+    [
+      "File:404114 felix-blume toucans-singing-in-the-amazonian-rainforest-brazil.ogg",
+      "File:Jungle Sound Thailand Phuket.flac",
+      "File:Sound of the jungle in Thailand.flac",
+    ],
+  );
+
+  for (const loop of videoSources.tab_snow) {
+    assert.match(loop.source, /snow/i);
+  }
+  assert.equal(videoSources.tab_onsen.filter(({ source }) => source.includes("commons.wikimedia.org")).length, 3);
+  assert.equal(videoSources.tab_cat_window.filter(({ source }) => source.includes("Cat_body_language")).length, 1);
 });
 
 test("all published media files remain within GitHub's per-file limit", async () => {

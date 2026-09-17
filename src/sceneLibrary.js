@@ -66,8 +66,8 @@ export const scenes = tabsData.map((scene) => {
       {
         id: `${scene.id}-video-0`,
         title: originalSource?.title || "Original scene",
-        background: originalSource?.high || scene.background,
-        adaptiveBackground: originalSource?.adaptive || `adaptive/${mediaName}-720.mp4`,
+        background: originalSource ? siteUrl(originalSource.high) : scene.background,
+        adaptiveBackground: originalSource ? siteUrl(originalSource.adaptive) : `adaptive/${mediaName}-720.mp4`,
         poster: `posters/${mediaName}.jpg`,
         source: originalSource?.source,
         start: 0,
@@ -78,8 +78,8 @@ export const scenes = tabsData.map((scene) => {
       ...alternateLoops.map((loop, index) => ({
         id: `${scene.id}-video-${index + 1}`,
         title: loop.title,
-        background: loop.high,
-        adaptiveBackground: loop.adaptive,
+        background: siteUrl(loop.high),
+        adaptiveBackground: siteUrl(loop.adaptive),
         poster: `posters/${mediaName}.jpg`,
         source: loop.source,
         start: 0,

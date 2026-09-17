@@ -8,6 +8,8 @@
     "check": "npm run lint && npm run test && npm run security:audit && npm run build && npm run verify:build",
     "dev": "rollup -c -w",
     "lint": "eslint . --ext .js,.mjs,.cjs,.svelte --max-warnings=0",
+    "media:credits": "node scripts/rebuild-audio-credits.mjs",
+    "media:refresh-audit": "node scripts/refresh-audited-media.mjs",
     "prepare:media": "bash scripts/prepare-media.sh",
     "security:audit": "npm audit --omit=dev --audit-level=high",
     "start": "node server.cjs",

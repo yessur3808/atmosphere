@@ -30,9 +30,9 @@
     { "title": "Kindling", "file": "fire/kindling.mp4", "source": "https://coverr.co/videos/lighting-a-fire-with-a-gas-lighter-qf8nqknyb7" }
   ],
   "tab_snow": [
-    { "title": "Snowy ridge", "file": "snow/snowy-ridge.mp4", "source": "https://coverr.co/videos/edge-of-a-rocky-mountain-vam08ie4yi" },
-    { "title": "Winter camp", "file": "snow/winter-camp.mp4", "source": "https://coverr.co/videos/igloo-tents-near-the-mountains-lsf2x8ukip" },
-    { "title": "Alpine thaw", "file": "snow/alpine-thaw.mp4", "source": "https://coverr.co/videos/remnants-of-snow-on-mountains-a22sro662u" }
+    { "title": "Forest snowfall", "file": "snow/forest-snowfall.mp4", "source": "https://coverr.co/videos/snow-falling-in-a-forest-fssnjipogi" },
+    { "title": "Winter wonderland", "file": "snow/winter-wonderland.mp4", "source": "https://coverr.co/videos/snow-in-a-winter-wonderland-ska8xmo3rd" },
+    { "title": "Snowy trees", "file": "snow/snowy-trees.mp4", "source": "https://coverr.co/videos/snow-falling-by-the-trees-sf3avbh4tq" }
   ],
   "tab_street": [
     { "title": "Passing lights", "file": "street/passing-lights.mp4", "source": "https://coverr.co/videos/driving-past-a-building-at-night-ugzaaghmau" },
@@ -74,5 +74,47 @@
     { "title": "Liquid grain", "file": "white-noise/liquid-grain.mp4", "source": "https://coverr.co/videos/green-liquid-with-black-particles-6xjzaarjrz" },
     { "title": "Soft fog", "file": "white-noise/soft-fog.mp4", "source": "https://coverr.co/videos/foggy-forest-06yshrbpk8" },
     { "title": "Misty field", "file": "white-noise/misty-field.mp4", "source": "https://coverr.co/videos/tree-in-the-mist-jl07anu9ty" }
+  ],
+  "tab_onsen": [
+    { "title": "Thermal steam", "file": "onsen/thermal-steam.mp4", "source": "https://coverr.co/videos/steam-from-the-hot-springs-bliadwwrrw" },
+    { "title": "Winter rotenburo", "file": "onsen/winter-rotenburo.mp4", "source": "https://commons.wikimedia.org/wiki/File:Onsen-rotenburo-winter2014.ogv", "high": "assets/videos/loops/onsen/winter-rotenburo.mp4", "adaptive": "assets/videos/adaptive/loops/onsen/winter-rotenburo.mp4" },
+    { "title": "Kusatsu yubatake", "file": "onsen/kusatsu-yubatake.mp4", "source": "https://commons.wikimedia.org/wiki/File:Kusatsu_gunma_yubatake_-_2020_3_1.webm", "high": "assets/videos/loops/onsen/kusatsu-yubatake.mp4", "adaptive": "assets/videos/adaptive/loops/onsen/kusatsu-yubatake.mp4" },
+    { "title": "Jigokudani spring", "file": "onsen/jigokudani-spring.mp4", "source": "https://commons.wikimedia.org/wiki/File:Jigokudani_Monkey_Park_-_hotsprings.ogv", "high": "assets/videos/loops/onsen/jigokudani-spring.mp4", "adaptive": "assets/videos/adaptive/loops/onsen/jigokudani-spring.mp4" }
+  ],
+  "tab_cat_window": [
+    { "title": "Window hideaway", "file": "cat-window/window-hideaway.mp4", "source": "https://coverr.co/videos/a-red-cat-in-a-fabric-pet-house-jy8vnfaata" },
+    { "title": "Quiet company", "file": "cat-window/quiet-company.mp4", "source": "https://coverr.co/videos/a-man-plays-with-his-cat-nm6jxrsxl8" },
+    { "title": "Breakfast watch", "file": "cat-window/breakfast-watch.mp4", "source": "https://coverr.co/videos/cat-standing-on-a-table-b7j1gk8gz0" },
+    { "title": "Window watchers", "file": "cat-window/window-watchers.mp4", "source": "https://commons.wikimedia.org/wiki/File:Cat_body_language.webm", "high": "assets/videos/loops/cat-window/window-watchers.mp4", "adaptive": "assets/videos/adaptive/loops/cat-window/window-watchers.mp4" }
+  ],
+  "tab_library": [
+    { "title": "Reading hall", "file": "library/reading-hall.mp4", "source": "https://coverr.co/videos/cozy-reading-moments-in-a-library" },
+    { "title": "Old volumes", "file": "library/old-volumes.mp4", "source": "https://coverr.co/videos/tower-of-old-hardcover-books-on-library-shelf-close-up" },
+    { "title": "Turning pages", "file": "library/turning-pages.mp4", "source": "https://coverr.co/videos/reading-a-book-in-a-home-office-bk6zs6dzas" },
+    { "title": "Study desk", "file": "library/study-desk.mp4", "source": "https://coverr.co/videos/studying-re5bmzc3dg" }
+  ],
+  "tab_forest": [
+    { "title": "Mossy grove", "file": "forest/mossy-grove.mp4", "source": "https://coverr.co/videos/trees-covered-in-moss-d0c5yk6kso" },
+    { "title": "Rain-dark branch", "file": "forest/rain-dark-branch.mp4", "source": "https://coverr.co/videos/branch-covered-in-moss-qnzw1we2og" },
+    { "title": "Woodland path", "file": "forest/woodland-path.mp4", "source": "https://coverr.co/videos/forest-landscape-idnupuyma4" },
+    { "title": "Conifer hush", "file": "forest/conifer-hush.mp4", "source": "https://coverr.co/videos/coniferous-forest-q4t1vnzq7a" }
+  ],
+  "tab_jungle": [
+    { "title": "Rainforest path", "file": "jungle/rainforest-path.mp4", "source": "https://coverr.co/videos/footpath-in-the-rainforest-t87bbaizvh" },
+    { "title": "Dense foliage", "file": "jungle/dense-foliage.mp4", "source": "https://coverr.co/videos/jungle-plants-txefj5bhlc" },
+    { "title": "Canopy light", "file": "jungle/canopy-light.mp4", "source": "https://coverr.co/videos/sunlight-shining-through-green-leaves-95n7qiwzte" },
+    { "title": "Tropical falls", "file": "jungle/tropical-falls.mp4", "source": "https://coverr.co/videos/waterfall-near-a-rainbow-jon9zcmkgh" }
+  ],
+  "tab_beach_shore": [
+    { "title": "Shore break", "file": "beach-shore/shore-break.mp4", "source": "https://coverr.co/videos/waves-on-the-shore-ahnpaksfdt" },
+    { "title": "Open beach", "file": "beach-shore/open-beach.mp4", "source": "https://coverr.co/videos/panoramic-view-of-serene-beach-landscape-on-a-sunny-day" },
+    { "title": "Coastline above", "file": "beach-shore/coastline-above.mp4", "source": "https://coverr.co/videos/drone-footage-of-waves-at-a-beach-q4pfnks6up" },
+    { "title": "Evening coast", "file": "beach-shore/evening-coast.mp4", "source": "https://coverr.co/videos/beach-p4eqa8mlgn" }
+  ],
+  "tab_traffic": [
+    { "title": "Night lanes", "file": "traffic/night-lanes.mp4", "source": "https://coverr.co/videos/cars-in-the-city-at-night-hwww4ekcvq" },
+    { "title": "Brake lights", "file": "traffic/brake-lights.mp4", "source": "https://coverr.co/videos/cars-driving-at-night-6y0qt4ji1t" },
+    { "title": "City interchange", "file": "traffic/city-interchange.mp4", "source": "https://coverr.co/videos/road-traffic-0blhjb3eik" },
+    { "title": "Daytime current", "file": "traffic/daytime-current.mp4", "source": "https://coverr.co/videos/traffic-in-the-city-nqfup6dv2i" }
   ]
 }
