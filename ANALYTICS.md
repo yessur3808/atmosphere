@@ -23,7 +23,8 @@ The ID is intentionally kept in one meta tag. A GA4 Measurement ID is public con
 - The Google tag is loaded only after consent.
 - Advertising storage, advertising user data, ad personalization, Google Signals, and ad-personalization signals remain disabled.
 - Visitors can change their choice under Settings → Privacy.
-- No browser geolocation request is made. GA4 provides approximate country/region/city reporting from the network connection and discards the IP before it is logged.
+- Analytics never requests browser geolocation. GA4 provides approximate country/region/city reporting from the network connection and discards the IP before it is logged.
+- The separate, optional header weather feature requests browser location only after a visitor chooses **Add local weather**. Coordinates are rounded to two decimals, kept only in memory, sent only to Open-Meteo, and never added to analytics events. Open-Meteo may retain API logs containing coordinates for up to 90 days under its published terms.
 - Do not add names, email addresses, user-entered text, full media URLs, or other personal data to event parameters.
 
 Before enabling production collection, publish a privacy policy naming Google Analytics, the purposes of collection, the retention period, and the visitor's withdrawal controls. Review consent requirements for every market where the site is offered.
@@ -55,6 +56,9 @@ GA4 automatically provides acquisition, device, approximate region, `first_visit
 | `web_vital` | LCP, CLS, and INP field performance |
 | `monetization_eligible` | A session reaches five minutes of active listening |
 | `analytics_consent_update` | Analytics was affirmatively enabled |
+| `weather_permission_request` | Visitor explicitly selected Add local weather; no coordinates are attached |
+| `weather_enable`, `weather_refresh` | Weather availability and coarse condition, without coordinates or place names |
+| `weather_unavailable` | Permission, location, timeout, or forecast failure stage |
 
 Every custom interaction also receives the current `scene_id`, `scene_title`, `track_id`, `active_sound_count`, `video_id`, `playback_mode`, `quiet_view`, and `viewport_bucket` when available.
 
@@ -74,6 +78,8 @@ Create event-scoped custom dimensions for:
 - `mini_player_mode`
 - `metric_name`
 - `eligibility_reason`
+- `weather_condition`
+- `failure_stage`
 
 Create custom metrics for:
 
@@ -84,6 +90,7 @@ Create custom metrics for:
 - `milestone_seconds`
 - `volume_percent`
 - `metric_value`
+- `weather_temperature_c`
 
 Avoid registering duplicate definitions for parameters GA4 already provides, such as page title, page path, device category, city, country, session duration, and engagement time.
 

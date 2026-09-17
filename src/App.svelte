@@ -1,5 +1,6 @@
 <script>
   import { onDestroy, onMount, tick } from "svelte";
+  import AmbientStatus from "./components/AmbientStatus.svelte";
   import Background from "./components/Background.svelte";
   import AtmosphereIcon from "./components/AtmosphereIcon.svelte";
   import { destroyAnalytics, getAnalyticsStatus, initializeAnalytics, setAnalyticsConsent, trackEvent } from "./analytics";
@@ -611,6 +612,7 @@
       <img class="brand-icon" src={faviconHref} width="30" height="30" alt="" aria-hidden="true" decoding="async" />
       <span class="wordmark-copy"><span>ATMO</span><i></i><span>SPHERE</span></span>
     </a>
+    <AmbientStatus immersive={immersiveMode} />
     {#if !immersiveMode}
       <div class="topbar-actions">
       <div class="pip-control">
@@ -695,7 +697,7 @@
       <div>
         <p class="kicker">Privacy choice</p>
         <h2 id="analytics-consent-title">Help improve Atmosphere?</h2>
-        <p id="analytics-consent-copy">Share anonymous listening and feature-use data. No precise GPS, personal details, or advertising profiles.</p>
+        <p id="analytics-consent-copy">Share anonymous listening and feature-use data. Analytics never receives weather coordinates, personal details, or advertising profiles.</p>
       </div>
       <div class="analytics-consent-actions">
         <button class="analytics-allow" type="button" on:click={() => updateAnalyticsPreference("granted")}>Allow analytics</button>
@@ -801,9 +803,9 @@
                   </button>
                 </div>
                 <div class="privacy-summary">
-                  <strong>No GPS or personal details</strong>
-                  <p>Atmosphere never requests precise device location and does not send names, email addresses, typed content, or media URLs. GA4 can derive an approximate city or country from the connection before Google discards the IP address.</p>
-                  <span>Advertising storage, Google Signals, and ad personalization remain disabled.</span>
+                  <strong>Weather location stays separate</strong>
+                  <p>Analytics never requests GPS. If you choose Add local weather, your browser asks permission, Atmosphere rounds the coordinates to roughly one kilometre, and sends them only to Open-Meteo. Coordinates stay in memory, are never stored by Atmosphere, and are never attached to GA4 events.</p>
+                  <span>Open-Meteo may retain API logs for up to 90 days. Advertising storage, Google Signals, and ad personalization remain disabled.</span>
                 </div>
                 {#if !analyticsConfigured}
                   <div class="analytics-setup-note">
@@ -822,6 +824,7 @@
                   <span>Media attribution</span>
                   <a href={creditsHref} target="_blank" rel="noreferrer">Audio credits <b aria-hidden="true">↗</b></a>
                   <a href={videoCreditsHref} target="_blank" rel="noreferrer">Video credits <b aria-hidden="true">↗</b></a>
+                  <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Weather by Open-Meteo <b aria-hidden="true">↗</b></a>
                 </div>
               </div>
             {/if}
@@ -1053,7 +1056,7 @@
   .topbar > * { pointer-events: auto; }
 
   .topbar.immersive {
-    right: auto;
+    right: 0;
     padding: 22px clamp(18px, 3.5vw, 52px);
     border: 0;
     background: transparent;
@@ -2129,6 +2132,7 @@
 
   @media (max-width: 760px) {
     .topbar { padding: 18px 16px; }
+    .wordmark-copy { display: none; }
     .video-toggle span,
     .pip-toggle span,
     .settings-button span { display: none; }
