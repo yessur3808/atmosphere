@@ -2,6 +2,7 @@
   import { onDestroy, onMount, tick } from "svelte";
   import Background from "./components/Background.svelte";
   import AtmosphereIcon from "./components/AtmosphereIcon.svelte";
+  import { destroyAnalytics, getAnalyticsStatus, initializeAnalytics, setAnalyticsConsent, trackEvent } from "./analytics";
   import { createMiniPlayer } from "./miniPlayer";
   import { scenes } from "./sceneLibrary";
   import { siteUrl } from "./siteUrl.mjs";
@@ -37,12 +38,16 @@
   let linkedPlayback = true;
   let multiSoundEnabled = false;
   let immersiveMode = false;
+  let recipesOpen = true;
+  let analyticsConfigured = false;
+  let analyticsConsent = "unset";
 
   const preferencesStorageKey = "atmosphere-preferences-v1";
   const settingsTabs = [
     { id: "playback", title: "Playback" },
     { id: "display", title: "Display" },
     { id: "mini-player", title: "Mini player" },
+    { id: "privacy", title: "Privacy" },
     { id: "about", title: "About" },
   ];
   const recipeBlueprints = [
@@ -91,6 +96,31 @@
   $: if (miniPlayerController && miniPlayerSnapshot) {
     backgroundComponent?.setAutoPictureInPicture(isAudioPlaying && pipPreference === "automatic");
     miniPlayerController.sync(miniPlayerSnapshot);
+  }
+
+  function getAnalyticsContext() {
+    return {
+      sceneId: activeScene?.id,
+      sceneTitle: activeScene?.title,
+      trackId: selectedAudios.map((index) => activeScene?.audioTracks[index]?.id).filter(Boolean).join(","),
+      activeSoundCount: selectedAudios.length,
+      videoId: activeVideo?.id,
+      linkedPlayback,
+      immersiveMode,
+      isAudioPlaying,
+    };
+  }
+
+  function updateAnalyticsPreference(nextConsent) {
+    const status = setAnalyticsConsent(nextConsent);
+    analyticsConfigured = status.configured;
+    analyticsConsent = status.consent;
+  }
+
+  function handleAudioError(track) {
+    audioLoading = false;
+    audioError = `${track.title} is unavailable`;
+    trackEvent("audio_error", { failed_track_id: track.id, failed_track_title: track.title });
   }
 
   function ensureAudioGraph() {
@@ -180,7 +210,7 @@
     stopVisualizer();
   }
 
-  async function playSelectedTracks(indices = selectedAudios) {
+  async function playSelectedTracks(indices = selectedAudios, playbackSource = "interface") {
     const nextSelection = [...new Set(indices)].filter((index) => activeScene.audioTracks[index]);
     if (!nextSelection.length) return;
     selectedAudios = nextSelection;
@@ -212,6 +242,11 @@
       isAudioPlaying = true;
       audioLoading = false;
       startVisualizer();
+      trackEvent("playback_start", {
+        control_source: playbackSource,
+        video_linked: linkedPlayback,
+        selected_track_ids: selectedAudios.map((index) => activeScene.audioTracks[index]?.id).filter(Boolean).join(","),
+      });
       if (pipPreference === "ask") pipPromptVisible = true;
     } else {
       isAudioPlaying = false;
@@ -224,15 +259,19 @@
     if (isAudioPlaying) {
       pauseAllAudio();
       if (linkedPlayback) isVideoPlaying = false;
+      trackEvent("playback_pause", { control_source: "main_transport", video_linked: linkedPlayback });
       return;
     }
     if (linkedPlayback) isVideoPlaying = true;
-    await playSelectedTracks();
+    await playSelectedTracks(selectedAudios, "main_transport");
   }
 
-  async function setAudioPlaying(shouldPlay) {
-    if (shouldPlay && !isAudioPlaying) await playSelectedTracks();
-    else if (!shouldPlay && isAudioPlaying) pauseAllAudio();
+  async function setAudioPlaying(shouldPlay, source = "interface") {
+    if (shouldPlay && !isAudioPlaying) await playSelectedTracks(selectedAudios, source);
+    else if (!shouldPlay && isAudioPlaying) {
+      pauseAllAudio();
+      trackEvent("playback_pause", { control_source: source, video_linked: false });
+    }
   }
 
   async function setMiniPlayerPlayback(shouldPlay) {
@@ -242,11 +281,12 @@
     if (!shouldPlay) {
       pauseAllAudio();
       video?.pause();
+      trackEvent("playback_pause", { control_source: "mini_player", video_linked: true });
       return;
     }
 
     const videoPlayback = video?.play?.().catch(() => {});
-    await Promise.allSettled([setAudioPlaying(true), videoPlayback]);
+    await Promise.allSettled([setAudioPlaying(true, "mini_player"), videoPlayback]);
   }
 
   async function previousAudioTrack() {
@@ -261,6 +301,7 @@
 
   async function selectScene(index) {
     const continuePlaying = isAudioPlaying;
+    const previousScene = activeScene;
     pauseAllAudio();
     activeIndex = index;
     selectedAudio = 0;
@@ -268,9 +309,15 @@
     selectedVideo = 0;
     isVideoPlaying = true;
     audioError = "";
+    trackEvent("atmosphere_select", {
+      previous_scene_id: previousScene?.id,
+      selected_scene_id: scenes[index].id,
+      selected_scene_title: scenes[index].title,
+      continued_playback: continuePlaying,
+    });
     await tick();
     if (continuePlaying) {
-      await playSelectedTracks([0]);
+      await playSelectedTracks([0], "atmosphere_change");
     }
   }
 
@@ -291,8 +338,14 @@
     }
 
     if (continuePlaying) {
-      await playSelectedTracks();
+      await playSelectedTracks(selectedAudios, "audio_layer_select");
     }
+    trackEvent("audio_layer_select", {
+      selected_track_id: activeScene.audioTracks[index]?.id,
+      selected_track_title: activeScene.audioTracks[index]?.title,
+      layer_action: selectedAudios.includes(index) ? "selected" : "removed",
+      active_track_ids: selectedAudios.map((trackIndex) => activeScene.audioTracks[trackIndex]?.id).filter(Boolean).join(","),
+    });
   }
 
   async function applyRecipe(recipe) {
@@ -301,12 +354,21 @@
     selectedAudio = selectedAudios[0];
     isVideoPlaying = true;
     savePreferences();
-    await playSelectedTracks();
+    trackEvent("sound_recipe_apply", {
+      recipe_id: recipe.id,
+      recipe_title: recipe.title,
+      recipe_track_ids: selectedAudios.map((index) => activeScene.audioTracks[index]?.id).filter(Boolean).join(","),
+    });
+    await playSelectedTracks(selectedAudios, "sound_recipe");
   }
 
   function selectVideo(index) {
     selectedVideo = index;
     isVideoPlaying = true;
+    trackEvent("video_loop_select", {
+      selected_video_id: activeScene.videoLoops[index].id,
+      selected_video_title: activeScene.videoLoops[index].title,
+    });
   }
 
   function setMiniPlayerVolume(nextVolume) {
@@ -317,6 +379,13 @@
 
   function updateVolume(event) {
     setMiniPlayerVolume(event.currentTarget.value);
+  }
+
+  function commitVolume(event) {
+    trackEvent("volume_change", {
+      volume_percent: Math.round(Number(event.currentTarget.value) * 100),
+      control_source: "main_interface",
+    });
   }
 
   function savePreferences() {
@@ -335,21 +404,35 @@
       });
     }
     savePreferences();
+    trackEvent("multi_sound_preference", { enabled, active_sound_count: selectedAudios.length });
   }
 
   function setLinkedPlayback(enabled) {
     linkedPlayback = enabled;
     if (enabled && isAudioPlaying) isVideoPlaying = true;
     savePreferences();
+    trackEvent("linked_playback_preference", { enabled });
   }
 
   function openSettings(tab = "playback") {
     settingsTab = tab;
     settingsOpen = true;
+    trackEvent("settings_open", { settings_tab: tab });
   }
 
   function closeSettings() {
     settingsOpen = false;
+    trackEvent("settings_close", { settings_tab: settingsTab });
+  }
+
+  function selectSettingsTab(tab) {
+    settingsTab = tab;
+    trackEvent("settings_tab_view", { settings_tab: tab });
+  }
+
+  function toggleVideoPlayback() {
+    isVideoPlaying = !isVideoPlaying;
+    trackEvent(isVideoPlaying ? "video_play" : "video_pause", { control_source: "separate_video_control" });
   }
 
   function handleSettingsBackdrop(event) {
@@ -359,10 +442,18 @@
   function enterImmersiveMode() {
     settingsOpen = false;
     immersiveMode = true;
+    trackEvent("quiet_view_enter", { audio_playing: isAudioPlaying });
   }
 
   function exitImmersiveMode() {
     immersiveMode = false;
+    trackEvent("quiet_view_exit", { audio_playing: isAudioPlaying });
+  }
+
+  function toggleRecipes() {
+    recipesOpen = !recipesOpen;
+    localStorage.setItem("atmosphere-recipes-open", String(recipesOpen));
+    trackEvent(recipesOpen ? "sound_recipes_open" : "sound_recipes_close");
   }
 
   function handleKeydown(event) {
@@ -403,6 +494,7 @@
     pipPreference = nextPreference;
     pipPromptVisible = false;
     localStorage.setItem("atmosphere-pip-preference", nextPreference);
+    trackEvent("mini_player_preference", { mini_player_preference: nextPreference });
     if (nextPreference === "off") {
       backgroundComponent?.setAutoPictureInPicture(false);
       if (miniPlayerController?.isOpen()) await miniPlayerController.close();
@@ -443,6 +535,13 @@
     } catch (error) {
       localStorage.removeItem(preferencesStorageKey);
     }
+    const savedRecipesOpen = localStorage.getItem("atmosphere-recipes-open");
+    recipesOpen = savedRecipesOpen === null ? window.innerWidth > 760 : savedRecipesOpen === "true";
+    initializeAnalytics(getAnalyticsContext);
+    const analyticsStatus = getAnalyticsStatus();
+    analyticsConfigured = analyticsStatus.configured;
+    analyticsConsent = analyticsStatus.consent;
+    trackEvent("atmosphere_view", { view_source: "initial_load" });
     const savedPipPreference = localStorage.getItem("atmosphere-pip-preference");
     if (["automatic", "manual", "off"].includes(savedPipPreference)) {
       pipPreference = savedPipPreference;
@@ -462,6 +561,7 @@
         miniPlayerMode = mode;
         const label = mode === "document" ? "Picture-in-Picture" : mode === "native" ? "Video Picture-in-Picture" : mode === "inline" ? "Corner mini player" : "Mini player window";
         miniPlayerStatus = open ? `${label} opened` : "Mini player closed";
+        trackEvent(open ? "mini_player_open" : "mini_player_close", { mini_player_mode: mode || "unknown" });
       },
     });
     miniPlayerController.sync(getMiniPlayerState());
@@ -473,6 +573,7 @@
     masterGainNode?.disconnect();
     analyserNode?.disconnect();
     audioContext?.close();
+    destroyAnalytics();
     miniPlayerController?.destroy();
   });
 </script>
@@ -501,7 +602,7 @@
       on:play={syncAudioPlaybackState}
       on:pause={() => requestAnimationFrame(syncAudioPlaybackState)}
       on:canplay={() => (audioLoading = false)}
-      on:error={() => { audioLoading = false; audioError = `${track.title} is unavailable`; }}
+      on:error={() => handleAudioError(track)}
     ></audio>
   {/each}
 
@@ -536,7 +637,7 @@
           class="video-toggle glass-button"
           type="button"
           aria-label={isVideoPlaying ? "Pause background video" : "Play background video"}
-          on:click={() => (isVideoPlaying = !isVideoPlaying)}
+          on:click={toggleVideoPlayback}
         >
           {#if isVideoPlaying}
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 6.5v11M15.5 6.5v11" /></svg>
@@ -555,6 +656,15 @@
     {/if}
     <p class="sr-only" aria-live="polite">{miniPlayerStatus}</p>
   </header>
+
+  {#if !immersiveMode}
+    <button class="quiet-view-button" type="button" aria-label="Enter quiet view" title="Enter quiet view" on:click={enterImmersiveMode}>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 4H6a2 2 0 0 0-2 2v3M15 4h3a2 2 0 0 1 2 2v3M9 20H6a2 2 0 0 1-2-2v-3M15 20h3a2 2 0 0 0 2-2v-3" />
+        <path class="quiet-wave" d="M8.5 13.5v-3M12 15.5v-7M15.5 13.5v-3" />
+      </svg>
+    </button>
+  {/if}
 
   {#if pipPromptVisible && !immersiveMode}
     <section class="pip-consent" role="dialog" aria-labelledby="pip-consent-title" aria-describedby="pip-consent-copy">
@@ -577,6 +687,24 @@
     </section>
   {/if}
 
+  {#if analyticsConfigured && analyticsConsent === "unset" && !immersiveMode}
+    <section class="analytics-consent" role="dialog" aria-labelledby="analytics-consent-title" aria-describedby="analytics-consent-copy">
+      <span class="analytics-consent-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M5 18v-5M10 18V8M15 18v-3M20 18V5" /></svg>
+      </span>
+      <div>
+        <p class="kicker">Privacy choice</p>
+        <h2 id="analytics-consent-title">Help improve Atmosphere?</h2>
+        <p id="analytics-consent-copy">Share anonymous listening and feature-use data. No precise GPS, personal details, or advertising profiles.</p>
+      </div>
+      <div class="analytics-consent-actions">
+        <button class="analytics-allow" type="button" on:click={() => updateAnalyticsPreference("granted")}>Allow analytics</button>
+        <button type="button" on:click={() => updateAnalyticsPreference("denied")}>Not now</button>
+        <button type="button" on:click={() => openSettings("privacy")}>Details</button>
+      </div>
+    </section>
+  {/if}
+
   {#if settingsOpen && !immersiveMode}
     <div class="settings-backdrop" role="presentation" on:click={handleSettingsBackdrop} on:keydown={(event) => { if (event.key === "Escape") closeSettings(); }}>
       <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -593,7 +721,7 @@
         <div class="settings-layout">
           <nav class="settings-tabs" aria-label="Settings sections">
             {#each settingsTabs as tab}
-              <button class:active={settingsTab === tab.id} type="button" aria-current={settingsTab === tab.id ? "page" : undefined} on:click={() => (settingsTab = tab.id)}>
+              <button class:active={settingsTab === tab.id} type="button" aria-current={settingsTab === tab.id ? "page" : undefined} on:click={() => selectSettingsTab(tab.id)}>
                 <span>{tab.title}</span><i aria-hidden="true"></i>
               </button>
             {/each}
@@ -616,7 +744,7 @@
                 </button>
                 <label class="volume-row settings-volume">
                   <span>Master volume</span>
-                  <input type="range" min="0" max="1" step="0.01" value={volume} style={`--volume-percent: ${Math.round(volume * 100)}%`} aria-label="Master audio volume" aria-valuetext={`${Math.round(volume * 100)} percent`} on:input={updateVolume} />
+                  <input type="range" min="0" max="1" step="0.01" value={volume} style={`--volume-percent: ${Math.round(volume * 100)}%`} aria-label="Master audio volume" aria-valuetext={`${Math.round(volume * 100)} percent`} on:input={updateVolume} on:change={commitVolume} />
                   <output>{Math.round(volume * 100)}</output>
                 </label>
               </div>
@@ -630,8 +758,12 @@
                   <span class="preview-logo"><img src={faviconHref} alt="" /></span>
                   <div class="preview-visualizer">{#each visualLevels as level}<i style={`height: ${Math.max(4, level / 2)}px`}></i>{/each}</div>
                 </div>
-                <button class="settings-action" type="button" on:click={enterImmersiveMode}>Enter quiet view</button>
-                <p class="settings-hint">Only the corner logo and live center visualizer remain. Select the logo or press Escape to return.</p>
+                <div class="settings-note">
+                  <span class="settings-note-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M9 4H6a2 2 0 0 0-2 2v3M15 4h3a2 2 0 0 1 2 2v3M9 20H6a2 2 0 0 1-2-2v-3M15 20h3a2 2 0 0 0 2-2v-3" /><path d="M8.5 13.5v-3M12 15.5v-7M15.5 13.5v-3" /></svg>
+                  </span>
+                  <span><strong>Quiet view lives in the lower corner</strong><small>Use the focus icon anytime. Select the logo or press Escape to return.</small></span>
+                </div>
               </div>
             {:else if settingsTab === "mini-player"}
               <div class="settings-pane" aria-labelledby="mini-settings-heading">
@@ -648,6 +780,37 @@
                   {/each}
                 </div>
                 <button class="settings-action secondary" type="button" disabled={pipPreference === "off"} on:click={toggleMiniPlayer}>{miniPlayerOpen ? "Close mini player" : "Open mini player now"}</button>
+              </div>
+            {:else if settingsTab === "privacy"}
+              <div class="settings-pane" aria-labelledby="privacy-settings-heading">
+                <div class="settings-pane-heading privacy-heading">
+                  <div>
+                    <h3 id="privacy-settings-heading">Privacy & analytics</h3>
+                    <p>Control anonymous usage measurement for this browser.</p>
+                  </div>
+                  <span class:active={analyticsConfigured} class="analytics-status">{analyticsConfigured ? "GA4 ready" : "ID required"}</span>
+                </div>
+                <div class="preference-choice-list analytics-choices">
+                  <button class:active={analyticsConsent === "granted"} type="button" aria-pressed={analyticsConsent === "granted"} on:click={() => updateAnalyticsPreference("granted")}>
+                    <i aria-hidden="true"></i>
+                    <span><strong>Allow anonymous analytics</strong><small>Measure listening time, feature use, performance, approximate region, and engagement milestones.</small></span>
+                  </button>
+                  <button class:active={analyticsConsent === "denied"} type="button" aria-pressed={analyticsConsent === "denied"} on:click={() => updateAnalyticsPreference("denied")}>
+                    <i aria-hidden="true"></i>
+                    <span><strong>Do not measure my usage</strong><small>Analytics storage and all custom Atmosphere events stay disabled on this browser.</small></span>
+                  </button>
+                </div>
+                <div class="privacy-summary">
+                  <strong>No GPS or personal details</strong>
+                  <p>Atmosphere never requests precise device location and does not send names, email addresses, typed content, or media URLs. GA4 can derive an approximate city or country from the connection before Google discards the IP address.</p>
+                  <span>Advertising storage, Google Signals, and ad personalization remain disabled.</span>
+                </div>
+                {#if !analyticsConfigured}
+                  <div class="analytics-setup-note">
+                    <strong>Finish setup with one value</strong>
+                    <p>Create a GA4 web stream, then replace <code>G-XXXXXXXXXX</code> in the <code>google-analytics-id</code> meta tag. No application code needs to change.</p>
+                  </div>
+                {/if}
               </div>
             {:else}
               <div class="settings-pane" aria-labelledby="about-settings-heading">
@@ -678,7 +841,7 @@
       </div>
     </div>
   {:else}
-  <main>
+  <main class:recipes-visible={recipesOpen}>
     {#key activeScene.id}
       <section class="scene-hero">
         <div>
@@ -770,6 +933,7 @@
             aria-label="Audio volume"
             aria-valuetext={`${Math.round(volume * 100)} percent`}
             on:input={updateVolume}
+            on:change={commitVolume}
           />
           <output>{Math.round(volume * 100)}</output>
         </label>
@@ -821,32 +985,39 @@
         </div>
       </section>
 
-      <aside class="recommendation-panel liquid-panel" aria-labelledby="recommendation-heading">
-        <div class="section-heading recommendation-heading">
-          <div>
-            <p class="kicker">Sound recipes</p>
-            <h2 id="recommendation-heading">Recommended mixes</h2>
-          </div>
-          <span>{activeScene.title}</span>
-        </div>
-        <p class="recommendation-intro">Layer recordings from this atmosphere for a little more texture.</p>
-        <div class="recipe-list">
-          {#each soundRecipes as recipe}
-            <article class="recipe-card">
-              <p>For {recipe.title.toLowerCase()}, combine</p>
-              <h3>{recipe.tracks.map((track) => track.title).join(" + ")}</h3>
-              <span>{recipe.detail}</span>
-              <button type="button" on:click={() => applyRecipe(recipe)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 9 6-9 6V6Z" /></svg>
-                Try mix
-              </button>
-            </article>
-          {/each}
-        </div>
-        <p class="recipe-tip">Turn layering off in Settings to return to one sound at a time.</p>
-      </aside>
     </div>
   </main>
+
+  <aside class:closed={!recipesOpen} class="recipe-drawer" aria-labelledby="recommendation-heading">
+    <button class="recipe-drawer-handle" type="button" aria-expanded={recipesOpen} aria-controls="sound-recipe-panel" aria-label={recipesOpen ? "Hide sound recipes" : "Show sound recipes"} title={recipesOpen ? "Hide sound recipes" : "Show sound recipes"} on:click={toggleRecipes}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+      <i aria-hidden="true"></i>
+    </button>
+    <div id="sound-recipe-panel" class="recommendation-panel liquid-panel" aria-hidden={!recipesOpen} inert={!recipesOpen}>
+      <div class="section-heading recommendation-heading">
+        <div>
+          <p class="kicker">Sound recipes</p>
+          <h2 id="recommendation-heading">Recommended mixes</h2>
+        </div>
+        <span>{activeScene.title}</span>
+      </div>
+      <p class="recommendation-intro">Layer recordings from this atmosphere for a little more texture.</p>
+      <div class="recipe-list">
+        {#each soundRecipes as recipe}
+          <article class="recipe-card">
+            <p>For {recipe.title.toLowerCase()}, combine</p>
+            <h3>{recipe.tracks.map((track) => track.title).join(" + ")}</h3>
+            <span>{recipe.detail}</span>
+            <button type="button" on:click={() => applyRecipe(recipe)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 9 6-9 6V6Z" /></svg>
+              Try mix
+            </button>
+          </article>
+        {/each}
+      </div>
+      <p class="recipe-tip">Turn layering off in Settings to return to one sound at a time.</p>
+    </div>
+  </aside>
   {/if}
 </div>
 
@@ -959,6 +1130,36 @@
 
   .glass-button:hover { transform: translateY(-2px); color: #fff; background: rgba(255, 255, 255, 0.14); }
   .glass-button:active { transform: scale(0.96); }
+
+  .quiet-view-button {
+    position: fixed;
+    z-index: 24;
+    left: clamp(18px, 3.5vw, 52px);
+    bottom: 24px;
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    color: rgba(255, 255, 255, 0.78);
+    background:
+      radial-gradient(circle at 24% 10%, rgba(var(--accent-rgb), 0.14), transparent 54%),
+      rgba(18, 21, 23, 0.48);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11), 0 12px 34px rgba(0, 0, 0, 0.26), 0 0 28px rgba(var(--accent-rgb), 0.08);
+    backdrop-filter: blur(22px) saturate(145%);
+    -webkit-backdrop-filter: blur(22px) saturate(145%);
+    cursor: pointer;
+    animation: quiet-button-in 560ms 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1), color 200ms ease, border-color 200ms ease, background 240ms ease, box-shadow 240ms ease;
+  }
+
+  @keyframes quiet-button-in { from { opacity: 0; transform: translateY(12px) scale(0.9); } to { opacity: 1; transform: none; } }
+  .quiet-view-button:hover { transform: translateY(-3px) scale(1.035); color: #fff; border-color: rgba(var(--accent-rgb), 0.46); background: rgba(29, 33, 36, 0.62); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 16px 42px rgba(0, 0, 0, 0.3), 0 0 34px rgba(var(--accent-rgb), 0.14); }
+  .quiet-view-button:active { transform: scale(0.94); }
+  .quiet-view-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
+  .quiet-view-button .quiet-wave { stroke: var(--accent); filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), 0.5)); }
 
   .video-toggle svg,
   .pip-toggle svg,
@@ -1104,6 +1305,41 @@
   .pip-consent-actions button:hover { transform: translateY(-1px); color: #fff; border-color: rgba(var(--accent-rgb), 0.42); }
   .pip-consent-actions .pip-primary { color: #101214; border-color: transparent; background: rgba(var(--accent-rgb), 0.94); }
 
+  .analytics-consent {
+    position: fixed;
+    z-index: 44;
+    left: 50%;
+    bottom: 24px;
+    width: min(570px, calc(100vw - 32px));
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 26px;
+    color: #f7f7f4;
+    background: linear-gradient(145deg, rgba(29, 32, 35, 0.91), rgba(10, 12, 14, 0.84));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11), 0 28px 90px rgba(0, 0, 0, 0.46), 0 0 48px rgba(var(--accent-rgb), 0.08);
+    backdrop-filter: blur(28px) saturate(145%);
+    -webkit-backdrop-filter: blur(28px) saturate(145%);
+    transform: translateX(-50%);
+    animation: analytics-consent-in 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes analytics-consent-in {
+    from { opacity: 0; transform: translate(-50%, 18px) scale(0.97); filter: blur(8px); }
+    to { opacity: 1; transform: translateX(-50%); filter: none; }
+  }
+
+  .analytics-consent-icon { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid rgba(var(--accent-rgb), 0.34); border-radius: 15px; color: var(--accent); background: rgba(var(--accent-rgb), 0.11); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+  .analytics-consent-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+  .analytics-consent h2 { margin: 0; font-size: 1.12rem; font-weight: 520; letter-spacing: -0.03em; }
+  .analytics-consent #analytics-consent-copy { margin: 7px 0 0; color: rgba(255, 255, 255, 0.55); font-size: 0.73rem; line-height: 1.5; }
+  .analytics-consent-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 7px; }
+  .analytics-consent-actions button { min-height: 38px; padding: 9px 14px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px; color: rgba(255, 255, 255, 0.72); background: rgba(255, 255, 255, 0.06); cursor: pointer; transition: transform 180ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease; }
+  .analytics-consent-actions button:hover { transform: translateY(-1px); color: #fff; border-color: rgba(var(--accent-rgb), 0.4); }
+  .analytics-consent-actions .analytics-allow { color: #101214; border-color: transparent; background: rgba(var(--accent-rgb), 0.94); }
+
   .sr-only {
     position: absolute;
     width: 1px;
@@ -1122,6 +1358,7 @@
     width: min(1500px, 100%);
     margin: 0 auto;
     padding: 104px clamp(16px, 3.5vw, 52px) 42px;
+    transition: padding-right 520ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .scene-hero {
@@ -1184,7 +1421,7 @@
 
   .workspace {
     display: grid;
-    grid-template-columns: minmax(500px, 1.18fr) minmax(355px, 0.76fr) minmax(235px, 0.48fr);
+    grid-template-columns: minmax(430px, 1.18fr) minmax(320px, 0.76fr);
     align-items: start;
     gap: 18px;
   }
@@ -1350,7 +1587,6 @@
 
   .mixer-panel { animation: panel-rise 650ms 90ms cubic-bezier(0.16, 1, 0.3, 1) both; }
   .library-panel { animation: panel-rise 650ms cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .recommendation-panel { animation: panel-rise 650ms 150ms cubic-bezier(0.16, 1, 0.3, 1) both; }
   @keyframes panel-rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
 
   .mixer-heading { margin-bottom: 14px; }
@@ -1544,6 +1780,55 @@
   }
 
   .video-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; }
+
+  .recipe-drawer {
+    position: fixed;
+    z-index: 18;
+    top: 108px;
+    right: 18px;
+    width: clamp(278px, 21vw, 308px);
+    transform: translateX(0);
+    transition: transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .recipe-drawer.closed { transform: translateX(calc(100% + 18px)); }
+
+  .recipe-drawer-handle {
+    position: absolute;
+    z-index: 2;
+    top: 34px;
+    left: -46px;
+    width: 47px;
+    height: 62px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.17);
+    border-right-color: rgba(255, 255, 255, 0.07);
+    border-radius: 18px 0 0 18px;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(18, 21, 23, 0.58);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), -9px 12px 30px rgba(0, 0, 0, 0.2), 0 0 24px rgba(var(--accent-rgb), 0.07);
+    backdrop-filter: blur(22px) saturate(145%);
+    -webkit-backdrop-filter: blur(22px) saturate(145%);
+    cursor: pointer;
+    transition: color 200ms ease, background 200ms ease, border-color 200ms ease;
+  }
+
+  .recipe-drawer-handle:hover { color: #fff; border-color: rgba(var(--accent-rgb), 0.42); background: rgba(29, 33, 36, 0.7); }
+  .recipe-drawer-handle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .recipe-drawer.closed .recipe-drawer-handle svg { transform: rotate(180deg); }
+  .recipe-drawer-handle i { position: absolute; bottom: 9px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 9px rgba(var(--accent-rgb), 0.72); }
+
+  .recommendation-panel {
+    width: 100%;
+    max-height: calc(100svh - 132px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--accent-rgb), 0.34) transparent;
+  }
 
   .recommendation-heading { display: grid; gap: 8px; }
   .recommendation-heading > span { white-space: normal; line-height: 1.35; }
@@ -1746,11 +2031,15 @@
   .preview-visualizer,
   .immersive-bars { display: flex; align-items: center; justify-content: center; gap: 5px; }
   .preview-visualizer i { width: 3px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.22); }
+  .settings-note { display: flex; align-items: center; gap: 13px; padding: 14px 15px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 17px; background: rgba(18, 21, 23, 0.48); }
+  .settings-note-icon { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid rgba(var(--accent-rgb), 0.28); border-radius: 12px; color: var(--accent); background: rgba(var(--accent-rgb), 0.09); }
+  .settings-note-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
+  .settings-note > span:last-child { display: grid; gap: 4px; }
+  .settings-note strong { font-size: 0.75rem; font-weight: 560; }
+  .settings-note small { color: rgba(255, 255, 255, 0.42); font-size: 0.67rem; line-height: 1.45; }
   .settings-action { justify-self: start; min-width: 150px; margin-top: 3px; }
   .settings-action.secondary { color: rgba(255, 255, 255, 0.8); border-color: rgba(255, 255, 255, 0.13); background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07); }
   .settings-action:disabled { opacity: 0.36; cursor: not-allowed; transform: none; filter: none; }
-  .settings-hint { max-width: 500px; margin: 2px 0 0; color: rgba(255, 255, 255, 0.4); font-size: 0.68rem; line-height: 1.5; }
-
   .preference-choice-list { display: grid; gap: 8px; }
   .preference-choice-list button {
     min-height: 62px;
@@ -1774,6 +2063,20 @@
   .preference-choice-list button span { display: grid; gap: 4px; }
   .preference-choice-list strong { font-size: 0.76rem; font-weight: 570; }
   .preference-choice-list small { color: rgba(255, 255, 255, 0.42); font-size: 0.66rem; }
+
+  .privacy-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+  .analytics-status { flex: 0 0 auto; padding: 6px 9px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 999px; color: rgba(255, 255, 255, 0.44); background: rgba(255, 255, 255, 0.045); font-size: 0.61rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; }
+  .analytics-status.active { color: var(--accent); border-color: rgba(var(--accent-rgb), 0.28); background: rgba(var(--accent-rgb), 0.08); }
+  .analytics-choices button { min-height: 70px; }
+  .privacy-summary,
+  .analytics-setup-note { display: grid; gap: 7px; margin-top: 3px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 18px; background: rgba(18, 21, 23, 0.46); }
+  .privacy-summary strong,
+  .analytics-setup-note strong { font-size: 0.76rem; font-weight: 570; }
+  .privacy-summary p,
+  .analytics-setup-note p { margin: 0; color: rgba(255, 255, 255, 0.46); font-size: 0.69rem; line-height: 1.55; }
+  .privacy-summary > span { color: rgba(var(--accent-rgb), 0.78); font-size: 0.64rem; line-height: 1.45; }
+  .analytics-setup-note { border-color: rgba(var(--accent-rgb), 0.18); background: rgba(var(--accent-rgb), 0.055); }
+  .analytics-setup-note code { padding: 2px 5px; border-radius: 5px; color: rgba(255, 255, 255, 0.72); background: rgba(255, 255, 255, 0.07); font-size: 0.64rem; }
 
   .credits-card { display: grid; gap: 8px; padding: 18px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 20px; background: rgba(18, 21, 23, 0.48); }
   .credits-card > span { margin-bottom: 3px; color: rgba(255, 255, 255, 0.38); font-size: 0.63rem; font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase; }
@@ -1806,21 +2109,22 @@
   .immersive-bars { position: relative; height: 68px; }
   .immersive-bars i { width: 4px; min-height: 7px; border-radius: 999px; background: linear-gradient(to top, rgba(255, 255, 255, 0.48), var(--accent)); box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.2); transition: height 70ms linear, opacity 140ms ease; }
 
+  @media (min-width: 1200px) {
+    main.recipes-visible { padding-right: calc(clamp(16px, 3.5vw, 52px) + 308px); }
+  }
+
   @media (min-width: 1121px) {
     .library-panel {
       position: sticky;
       top: 80px;
       align-self: start;
     }
-    .recommendation-panel { position: sticky; top: 80px; align-self: start; }
   }
 
   @media (max-width: 1120px) {
     .workspace { grid-template-columns: 1fr; }
     .mixer-panel { order: -1; }
     .scene-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .recommendation-panel { order: 1; }
-    .recipe-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
   @media (max-width: 760px) {
@@ -1836,6 +2140,10 @@
     .pip-consent-actions { display: grid; grid-template-columns: 1fr 1fr; }
     .pip-consent-actions .pip-primary { grid-column: 1 / -1; }
     .pip-consent-actions button { width: 100%; }
+    .analytics-consent { bottom: 12px; width: calc(100vw - 24px); padding: 16px; border-radius: 23px; }
+    .analytics-consent-actions { display: grid; grid-template-columns: 1fr 1fr; }
+    .analytics-consent-actions .analytics-allow { grid-column: 1 / -1; }
+    .analytics-consent-actions button { width: 100%; }
     main { padding: 88px 12px 28px; }
     .scene-hero { min-height: 140px; display: block; margin: 0 8px 24px; }
     h1 { font-size: clamp(4rem, 21vw, 6.3rem); }
@@ -1865,9 +2173,11 @@
     .audio-button { width: 88px; height: 88px; }
     .audio-button-core { width: 64px; height: 64px; }
     .track-card:last-child:nth-child(odd) { grid-column: auto; }
-    .recipe-list { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(230px, 78vw); overflow-x: auto; padding: 2px 1px 8px; scroll-snap-type: x proximity; scrollbar-width: none; }
-    .recipe-list::-webkit-scrollbar { display: none; }
-    .recipe-card { scroll-snap-align: start; }
+    .quiet-view-button { left: 16px; bottom: 16px; width: 46px; height: 46px; border-radius: 15px; }
+    .recipe-drawer { top: 88px; right: 10px; width: min(82vw, 304px); }
+    .recipe-drawer.closed { transform: translateX(calc(100% + 10px)); }
+    .recipe-drawer-handle { top: 28px; left: -42px; width: 43px; height: 58px; }
+    .recommendation-panel { max-height: calc(100svh - 106px); }
     .settings-backdrop { align-items: end; padding: 0; }
     .settings-modal { width: 100%; max-height: calc(100svh - 18px); border-radius: 28px 28px 0 0; }
     .settings-header { padding: 21px 19px 17px; }
