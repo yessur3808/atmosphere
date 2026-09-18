@@ -14,7 +14,7 @@ assert.equal(config.app.windows[0].label, "main");
 assert.match(config.app.security.csp, /default-src 'self'/);
 assert.match(config.app.security.csp, /media-src/);
 
-for (const file of ["index.html", "global.css", "site.webmanifest", "build/bundle.js", "build/bundle.css"]) {
+for (const file of ["index.html", "global.css", "site.webmanifest", "legal.html", "privacy.html", "terms.html", "install.html", "security.html", "licenses.html", "accessibility.html", "build/bundle.js", "build/bundle.css"]) {
   await access(path.join(desktopRoot, file));
 }
 

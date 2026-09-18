@@ -28,4 +28,10 @@ npm run tauri build
 - native app icons and minimum window sizing
 - cross-platform GitHub Actions compile checks
 
-Code signing, notarization, native offline downloads, media-key integration, and release publishing require platform credentials or the next native implementation phase.
+## Installation and releases
+
+Tagged versions matching `desktop-v<version>` run the release workflow and publish Windows NSIS, macOS Apple Silicon and Intel DMG, Linux AppImage, and Debian packages to [GitHub Releases](https://github.com/yessur3808/atmosphere/releases). Each build includes SHA-256 checksums and a GitHub provenance attestation.
+
+Preview packages are not yet signed with commercial Apple or Windows certificates. macOS builds use an ad-hoc signature. Read [INSTALL.md](INSTALL.md) before distributing or installing a preview.
+
+Code-signing certificates, Apple notarization, native offline downloads, media-key integration, and automatic updates remain future native implementation phases.

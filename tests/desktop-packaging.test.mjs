@@ -15,7 +15,10 @@ test("Tauri desktop shell is configured as a thin native package", async () => {
 
   assert.equal(config.build.frontendDist, "../desktop-dist");
   assert.equal(config.identifier, "com.atmosphere.desktop");
+  assert.equal(config.bundle.licenseFile, "../TERMS.md");
+  assert.equal(config.bundle.windows.allowDowngrades, false);
   assert.equal(packageJson.scripts.tauri, "tauri");
+  assert.equal(packageJson.scripts["release:verify"], "node scripts/verify-release-version.mjs");
   assert.match(cargoText, /features = \["tray-icon"\]/);
   assert.match(cargoText, /tauri-plugin-single-instance/);
 });

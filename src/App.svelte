@@ -103,6 +103,12 @@
   const faviconHref = siteUrl("favicon-v2.png");
   const creditsHref = siteUrl("audio-credits.html");
   const videoCreditsHref = siteUrl("video-credits.html");
+  const installHref = siteUrl("install.html");
+  const privacyHref = siteUrl("privacy.html");
+  const termsHref = siteUrl("terms.html");
+  const securityHref = siteUrl("security.html");
+  const licensesHref = siteUrl("licenses.html");
+  const accessibilityHref = siteUrl("accessibility.html");
 
   $: activeScene = scenes[activeIndex];
   $: activeTrack = activeScene.audioTracks[selectedAudio];
@@ -1385,6 +1391,7 @@
                   <p>Analytics never requests GPS. If you choose Add local weather, your browser asks permission, Atmosphere rounds the coordinates to roughly one kilometre, and sends them only to Open-Meteo. Coordinates stay in memory, are never stored by Atmosphere, and are never attached to GA4 events.</p>
                   <span>Open-Meteo may retain API logs for up to 90 days. Advertising storage, Google Signals, and ad personalization remain disabled.</span>
                 </div>
+                <a class="settings-action secondary" href={privacyHref} target="_blank" rel="noreferrer">Read the full privacy policy</a>
                 {#if !analyticsConfigured}
                   <div class="analytics-setup-note">
                     <strong>Finish setup with one value</strong>
@@ -1399,7 +1406,16 @@
                   <p>Slow video and carefully matched field recordings for focus, rest, and calm.</p>
                 </div>
                 <div class="credits-card">
-                  <span>Media attribution</span>
+                  <span>Desktop &amp; policies</span>
+                  <a href={installHref} target="_blank" rel="noreferrer">Download desktop app <b aria-hidden="true">↗</b></a>
+                  <a href={privacyHref} target="_blank" rel="noreferrer">Privacy policy <b aria-hidden="true">↗</b></a>
+                  <a href={termsHref} target="_blank" rel="noreferrer">Terms of use <b aria-hidden="true">↗</b></a>
+                  <a href={securityHref} target="_blank" rel="noreferrer">Security <b aria-hidden="true">↗</b></a>
+                  <a href={accessibilityHref} target="_blank" rel="noreferrer">Accessibility <b aria-hidden="true">↗</b></a>
+                  <a href={licensesHref} target="_blank" rel="noreferrer">Licenses &amp; third-party notices <b aria-hidden="true">↗</b></a>
+                </div>
+                <div class="credits-card">
+                  <span>Media &amp; data attribution</span>
                   <a href={creditsHref} target="_blank" rel="noreferrer">Audio credits <b aria-hidden="true">↗</b></a>
                   <a href={videoCreditsHref} target="_blank" rel="noreferrer">Video credits <b aria-hidden="true">↗</b></a>
                   <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Weather by Open-Meteo <b aria-hidden="true">↗</b></a>

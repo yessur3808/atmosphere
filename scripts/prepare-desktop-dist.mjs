@@ -16,6 +16,14 @@ const shellFiles = [
   "audio-credits.html",
   "video-credits.html",
   "mini-player.html",
+  "legal.css",
+  "legal.html",
+  "privacy.html",
+  "terms.html",
+  "install.html",
+  "security.html",
+  "licenses.html",
+  "accessibility.html",
 ];
 
 await rm(outputRoot, { recursive: true, force: true });

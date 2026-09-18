@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Download Atmosphere desktop</title>
+  <meta name="description" content="Install Atmosphere for Windows, macOS, or Linux and verify the official desktop download."><link rel="canonical" href="https://yessur3808.github.io/atmosphere/install.html"><link rel="icon" href="favicon-v2.png"><link rel="stylesheet" href="legal.css">
+</head><body><div class="legal-shell">
+  <nav class="legal-nav" aria-label="Legal navigation"><a class="brand" href="./"><img src="favicon-v2.png" alt=""><span>Atmosphere</span></a><div class="nav-links"><a href="install.html" aria-current="page">Download</a><a href="privacy.html">Privacy</a><a href="legal.html">Legal</a></div></nav>
+  <header class="legal-hero"><p class="eyebrow">Tauri 2 desktop preview</p><h1>Bring the room<br>to your desktop.</h1><p class="lede">Official installers for Windows, macOS, and Linux are built from tagged source by GitHub Actions.</p><span class="effective">Version 1.0.0 preview</span></header>
+  <main class="legal-card"><h2>Choose your platform</h2><div class="download-grid">
+    <div class="download-card"><b>Windows</b><span>x64 NSIS installer · Windows 10 or newer</span><a href="https://github.com/yessur3808/atmosphere/releases/latest">Get Windows installer</a></div>
+    <div class="download-card"><b>macOS</b><span>Apple Silicon and Intel disk images</span><a href="https://github.com/yessur3808/atmosphere/releases/latest">Get macOS installer</a></div>
+    <div class="download-card"><b>Linux</b><span>x64 AppImage and Debian package</span><a href="https://github.com/yessur3808/atmosphere/releases/latest">Get Linux installer</a></div>
+  </div><div class="callout"><strong>Preview signing notice</strong>These builds are not yet backed by commercial Apple or Windows certificates. macOS Gatekeeper or Windows SmartScreen may warn about an unknown developer. Continue only after confirming the file came from the official release page and verifying it below.</div>
+    <h2>Windows installation</h2><p>Download the `.exe` NSIS installer, open it, and follow the setup prompts. A SmartScreen message is expected for an unsigned preview. Do not bypass a warning for a file from another website.</p>
+    <h2>macOS installation</h2><p>Choose `aarch64` for M1 or newer Macs and `x86_64` for Intel Macs. Open the `.dmg` and drag Atmosphere to Applications. The ad-hoc signed, non-notarized preview may require <b>System Settings → Privacy &amp; Security → Open Anyway</b> after the first attempt.</p>
+    <h2>Linux installation</h2><p>Use `.deb` on Debian or Ubuntu, or `.AppImage` on other common x64 distributions. WebKitGTK-compatible system libraries are required.</p><pre><code>chmod +x Atmosphere*.AppImage
+./Atmosphere*.AppImage</code></pre>
+    <h2>Verify the installer</h2><p>Download the matching `checksums-*.txt` from the release and compare its SHA-256 digest.</p><pre><code># macOS or Linux
+shasum -a 256 Atmosphere_*
+
+# Windows PowerShell
+Get-FileHash .\Atmosphere_* -Algorithm SHA256</code></pre><p>GitHub build provenance can also be checked with:</p><pre><code>gh attestation verify ./Atmosphere_* --repo yessur3808/atmosphere</code></pre>
+    <h2>Prefer the browser?</h2><p><a href="./">Open Atmosphere on the web</a>; no installation is required. The current desktop preview uses the same interface and streams its media library from the public HTTPS deployment.</p>
+  </main><footer class="legal-footer"><span>Official downloads only from GitHub Releases</span><div><a href="https://github.com/yessur3808/atmosphere/releases">All releases</a><a href="security.html">Security</a><a href="legal.html">Legal</a></div></footer>
+</div></body></html>

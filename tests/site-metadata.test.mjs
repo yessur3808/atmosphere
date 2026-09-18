@@ -13,6 +13,11 @@ test("SEO metadata targets the public HTTPS deployment", async () => {
     read("public/audio-credits.html"),
     read("public/robots.txt"),
     read("public/sitemap.xml"),
+    read("public/privacy.html"),
+    read("public/terms.html"),
+    read("public/install.html"),
+    read("public/security.html"),
+    read("public/licenses.html"),
   ]);
   const combined = files.join("\n");
 
@@ -21,6 +26,9 @@ test("SEO metadata targets the public HTTPS deployment", async () => {
   assert.match(files[0], /110 immersive ambient tracks/);
   assert.match(files[0], /88 cinematic video loops/);
   assert.match(files[0], /22 atmospheres/);
+  for (const route of ["install.html", "legal.html", "privacy.html", "terms.html", "security.html", "licenses.html", "accessibility.html"]) {
+    assert.match(files[3], new RegExp(route.replace(".", "\\.")), `sitemap is missing ${route}`);
+  }
 });
 
 test("manifest and static entry points use project-relative paths", async () => {

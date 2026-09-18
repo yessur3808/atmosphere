@@ -1,0 +1,105 @@
+name: Desktop release
+
+on:
+  push:
+    tags:
+      - "desktop-v*"
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  publish:
+    name: Package ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            label: macos-arm64
+            target: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin --bundles dmg
+          - platform: macos-latest
+            label: macos-x64
+            target: x86_64-apple-darwin
+            args: --target x86_64-apple-darwin --bundles dmg
+          - platform: ubuntu-22.04
+            label: linux-x64
+            target: x86_64-unknown-linux-gnu
+            args: --bundles appimage,deb
+          - platform: windows-latest
+            label: windows-x64
+            target: x86_64-pc-windows-msvc
+            args: --bundles nsis
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 60
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux WebView dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Validate release tag and application version
+        run: node scripts/verify-release-version.mjs
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+
+      - name: Verify source and desktop shell
+        run: npm run check:desktop
+
+      - name: Build and publish installers
+        id: tauri
+        uses: tauri-apps/tauri-action@v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_SIGNING_IDENTITY: ${{ matrix.platform == 'macos-latest' && '-' || '' }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Atmosphere v__VERSION__
+          releaseBody: |
+            Desktop preview for Windows, macOS, and Linux.
+
+            Read the installation and unsigned-build notice before downloading:
+            https://yessur3808.github.io/atmosphere/install.html
+          releaseDraft: false
+          prerelease: true
+          generateReleaseNotes: true
+          uploadUpdaterJson: false
+          retryAttempts: 2
+          args: ${{ matrix.args }}
+          releaseAssetNamePattern: Atmosphere_[version]_[platform]_[arch][setup].[ext]
+
+      - name: Write SHA-256 checksums
+        run: node scripts/write-release-checksums.mjs checksums-${{ matrix.label }}.txt
+
+      - name: Upload checksum file
+        run: gh release upload "${{ github.ref_name }}" "checksums-${{ matrix.label }}.txt" --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attest installer provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            src-tauri/target/**/release/bundle/**/*
+            checksums-${{ matrix.label }}.txt

@@ -1,107 +1,70 @@
-### **Note:** This repo is no longer maintained. Consider using `npm init vite` and selecting the `svelte` option or — if you want a full-fledged app framework — use [SvelteKit](https://kit.svelte.dev), the official application framework for Svelte.
+# Atmosphere
 
----
+Atmosphere is an ambient sound and cinematic video player for focus, reading, relaxation, and sleep. The same Svelte interface runs on the web and inside a Tauri 2 desktop shell for Windows, macOS, and Linux.
 
-# svelte app
+## Use Atmosphere
 
-This is a project template for [Svelte](https://svelte.dev) apps. It lives at https://github.com/sveltejs/template.
+- [Launch the web app](https://yessur3808.github.io/atmosphere/)
+- [Download the latest desktop release](https://github.com/yessur3808/atmosphere/releases/latest)
+- [Desktop installation guide](https://yessur3808.github.io/atmosphere/install.html)
+- [Report a problem](https://github.com/yessur3808/atmosphere/issues)
 
-To create a new project based on this template using [degit](https://github.com/Rich-Harris/degit):
+Desktop installers are generated from tagged commits by GitHub Actions. Read [INSTALL.md](INSTALL.md) before installing an unsigned preview build.
 
-```bash
-npx degit sveltejs/template svelte-app
-cd svelte-app
-```
+## Features
 
-*Note that you will need to have [Node.js](https://nodejs.org) installed.*
+- 22 audited atmosphere themes with five audio choices and four video loops each
+- Layered sound mixing with independent volumes, smooth crossfades, Smart Mix, saved mixes, favorites, shareable mixes, and resume history
+- Linked or separate audio/video playback, audio-only data saver mode, quiet view, and a mini player
+- Optional local weather and consent-gated Google Analytics
+- Responsive glass interface for desktop, tablet, and mobile
+- Native Tauri tray controls and single-instance behavior
 
+## Local web development
 
-## Get started
+Requirements: Node.js 22 or later and npm.
 
-Install the dependencies...
-
-```bash
-cd svelte-app
-npm install
-```
-
-...then start [Rollup](https://rollupjs.org):
-
-```bash
+```sh
+npm ci
 npm run dev
 ```
 
-Navigate to [localhost:8080](http://localhost:8080). You should see your app running. Edit a component file in `src`, save it, and reload the page to see your changes.
+The production server listens on all interfaces when started with an explicit port:
 
-By default, the server will only respond to requests from localhost. To allow connections from other computers, edit the `sirv` commands in package.json to include the option `--host 0.0.0.0`.
-
-If you're using [Visual Studio Code](https://code.visualstudio.com/) we recommend installing the official extension [Svelte for VS Code](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode). If you are using other editors you may need to install a plugin in order to get syntax highlighting and intellisense.
-
-## Building and running in production mode
-
-To create an optimised version of the app:
-
-```bash
+```sh
 npm run build
+npm start -- --port 4173
 ```
 
-You can run the newly built app with `npm run start`. This uses [sirv](https://github.com/lukeed/sirv), which is included in your package.json's `dependencies` so that the app will work when you deploy to platforms like [Heroku](https://heroku.com).
+## Desktop development
 
+Install the platform prerequisites listed by Tauri, then run:
 
-## Single-page app mode
-
-By default, sirv will only respond to requests that match files in `public`. This is to maximise compatibility with static fileservers, allowing you to deploy your app anywhere.
-
-If you're building a single-page app (SPA) with multiple routes, sirv needs to be able to respond to requests for *any* path. You can make it so by editing the `"start"` command in package.json:
-
-```js
-"start": "sirv public --single"
+```sh
+npm ci
+npm run tauri dev
 ```
 
-## Using TypeScript
+See [DESKTOP.md](DESKTOP.md) for the native architecture and [INSTALL.md](INSTALL.md) for packaged-app instructions.
 
-This template comes with a script to set up a TypeScript development environment, you can run it immediately after cloning the template with:
+## Quality and security
 
-```bash
-node scripts/setupTypeScript.js
+```sh
+npm run check
+npm run check:desktop
 ```
 
-Or remove the script via:
+The repository also runs CodeQL, dependency review, npm and Rust vulnerability audits, Dependabot updates, cross-platform native builds, release checksums, and GitHub artifact attestations. See [SECURITY.md](SECURITY.md) for reporting and supported versions.
 
-```bash
-rm scripts/setupTypeScript.js
-```
+## Policies and licensing
 
-If you want to use `baseUrl` or `path` aliases within your `tsconfig`, you need to set up `@rollup/plugin-alias` to tell Rollup to resolve the aliases. For more info, see [this StackOverflow question](https://stackoverflow.com/questions/63427935/setup-tsconfig-path-in-svelte).
+- [Privacy policy](PRIVACY.md)
+- [Terms of use](TERMS.md)
+- [Security policy](SECURITY.md)
+- [Accessibility statement](ACCESSIBILITY.md)
+- [Software license](LICENSE)
+- [Third-party notices](THIRD_PARTY_NOTICES.md)
+- [Audio credits](https://yessur3808.github.io/atmosphere/audio-credits.html)
+- [Video credits](https://yessur3808.github.io/atmosphere/video-credits.html)
 
-## Deploying to the web
-
-### With [Vercel](https://vercel.com)
-
-Install `vercel` if you haven't already:
-
-```bash
-npm install -g vercel
-```
-
-Then, from within your project folder:
-
-```bash
-cd public
-vercel deploy --name my-project
-```
-
-### With [surge](https://surge.sh/)
-
-Install `surge` if you haven't already:
-
-```bash
-npm install -g surge
-```
-
-Then, from within your project folder:
-
-```bash
-npm run build
-surge public my-project.surge.sh
-```
+Atmosphere's original source code and brand assets are source-available and all rights reserved unless a file says otherwise. Third-party software and media remain under their respective licenses.

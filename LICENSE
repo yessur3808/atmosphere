@@ -1,0 +1,31 @@
+Atmosphere Source Code License
+Copyright (c) 2026 Atmosphere contributors. All rights reserved.
+
+The source code, original visual design, original icons, name, and brand assets in
+this repository are made publicly viewable for transparency and collaboration.
+Except where another license is stated in a file or required by an applicable
+third-party license, no permission is granted to copy, modify, distribute,
+sublicense, sell, or use them to provide a competing product or service without
+prior written permission from the copyright holder.
+
+You may download and run unmodified official builds of Atmosphere for personal,
+non-commercial use, subject to the Terms of Use. You may inspect the source,
+create private local changes for evaluation, and submit changes to the project.
+Submitting a contribution grants the project maintainers a perpetual,
+worldwide, royalty-free license to use, modify, distribute, sublicense, and
+relicense that contribution as part of Atmosphere.
+
+This license does not apply to third-party software, audio, video, photographs,
+weather data, or other materials identified in THIRD_PARTY_NOTICES.md, the audio
+credits, the video credits, or their source files. Those materials remain under
+their own licenses. Nothing here limits rights granted directly by those
+third-party licenses.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, TITLE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW,
+THE COPYRIGHT HOLDERS ARE NOT LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
+ARISING FROM THE SOFTWARE OR ITS USE.
+
+The Atmosphere name and logo are not licensed for use in a way that suggests
+endorsement, sponsorship, or an official build.

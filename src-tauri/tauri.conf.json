@@ -34,6 +34,10 @@
     "active": true,
     "targets": "all",
     "category": "Music",
+    "publisher": "Atmosphere contributors",
+    "copyright": "Copyright © 2026 Atmosphere contributors",
+    "homepage": "https://yessur3808.github.io/atmosphere/",
+    "licenseFile": "../TERMS.md",
     "shortDescription": "Immersive ambient soundscapes for focus, rest, and sleep.",
     "longDescription": "Mix high-quality ambient recordings with cinematic atmosphere loops for focus, reading, relaxation, and sleep.",
     "icon": [
@@ -42,6 +46,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "allowDowngrades": false
+    }
   }
 }

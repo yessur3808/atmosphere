@@ -5,6 +5,9 @@ description = "Atmosphere ambient sound and cinematic focus player"
 authors = ["Atmosphere"]
 edition = "2021"
 rust-version = "1.77.2"
+license-file = "../LICENSE"
+homepage = "https://yessur3808.github.io/atmosphere/"
+repository = "https://github.com/yessur3808/atmosphere"
 
 [lib]
 name = "atmosphere_desktop_lib"

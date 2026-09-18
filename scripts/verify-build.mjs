@@ -12,6 +12,14 @@ const requiredFiles = [
   "site.webmanifest",
   "robots.txt",
   "sitemap.xml",
+  "legal.css",
+  "legal.html",
+  "privacy.html",
+  "terms.html",
+  "install.html",
+  "security.html",
+  "licenses.html",
+  "accessibility.html",
   "build/bundle.js",
   "build/bundle.css",
 ];
@@ -46,4 +54,3 @@ console.log(JSON.stringify({
   requiredFiles: requiredFiles.length,
   bundleBytes: bundleSize,
 }, null, 2));
-
