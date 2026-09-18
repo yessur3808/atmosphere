@@ -92,6 +92,7 @@ pre code { padding: 0; background: none; }
 .download-card b { font-size: 1rem; }
 .download-card span { color: var(--faint); font-size: 0.73rem; }
 .download-card a { justify-self: start; padding: 8px 11px; border-radius: 11px; color: #07100d; background: var(--accent); font-size: 0.72rem; font-weight: 680; text-decoration: none; }
+.download-links { display: flex; flex-wrap: wrap; gap: 7px; }
 
 .legal-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 15px; margin-top: 30px; padding: 18px 4px; color: var(--faint); font-size: 0.68rem; }
 .legal-footer div { display: flex; flex-wrap: wrap; gap: 14px; }

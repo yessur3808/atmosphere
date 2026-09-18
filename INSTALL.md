@@ -2,7 +2,15 @@
 
 Official desktop releases are published at:
 
-<https://github.com/yessur3808/atmosphere/releases/latest>
+<https://github.com/yessur3808/atmosphere/releases/tag/desktop-v1.0.0>
+
+Direct downloads:
+
+- [Windows x64 NSIS installer](https://github.com/yessur3808/atmosphere/releases/download/desktop-v1.0.0/Atmosphere_1.0.0_x64-setup.exe)
+- [macOS Apple Silicon DMG](https://github.com/yessur3808/atmosphere/releases/download/desktop-v1.0.0/Atmosphere_1.0.0_aarch64.dmg)
+- [macOS Intel DMG](https://github.com/yessur3808/atmosphere/releases/download/desktop-v1.0.0/Atmosphere_1.0.0_x64.dmg)
+- [Linux x64 AppImage](https://github.com/yessur3808/atmosphere/releases/download/desktop-v1.0.0/Atmosphere_1.0.0_amd64.AppImage)
+- [Debian/Ubuntu x64 package](https://github.com/yessur3808/atmosphere/releases/download/desktop-v1.0.0/Atmosphere_1.0.0_amd64.deb)
 
 Atmosphere currently publishes preview installers built by GitHub Actions. They are not yet backed by commercial Apple or Windows code-signing certificates. Operating systems can therefore display an unidentified-developer or SmartScreen warning. Do not bypass a warning for a file obtained anywhere other than the official release page.
 

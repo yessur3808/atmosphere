@@ -14,6 +14,8 @@ test("release and legal documents are present and complete", async () => {
   assert.doesNotMatch(combined, /TODO|TBD|G-XXXXXXXXXX|example\.com/i);
   assert.match(combined, /yessur3808\/atmosphere/);
   assert.match(combined, /18 September 2026/);
+  assert.doesNotMatch(combined, /releases\/latest/);
+  assert.match(await readFile(path.join(projectRoot, "public/install.html"), "utf8"), /Atmosphere_1\.0\.0_x64-setup\.exe/);
 });
 
 test("desktop release workflow packages every supported platform securely", async () => {

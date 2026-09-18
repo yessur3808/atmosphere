@@ -5,7 +5,7 @@ Atmosphere is an ambient sound and cinematic video player for focus, reading, re
 ## Use Atmosphere
 
 - [Launch the web app](https://yessur3808.github.io/atmosphere/)
-- [Download the latest desktop release](https://github.com/yessur3808/atmosphere/releases/latest)
+- [Download Atmosphere desktop v1.0.0](https://github.com/yessur3808/atmosphere/releases/tag/desktop-v1.0.0)
 - [Desktop installation guide](https://yessur3808.github.io/atmosphere/install.html)
 - [Report a problem](https://github.com/yessur3808/atmosphere/issues)
 
