@@ -224,7 +224,7 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
 
   function attachVideoListeners() {
     const video = getState().video;
-    if (!video || video === attachedVideo) return;
+    if (video === attachedVideo) return;
     if (attachedVideo) {
       attachedVideo.removeEventListener("enterpictureinpicture", handleNativeEnter);
       attachedVideo.removeEventListener("leavepictureinpicture", handleNativeLeave);
@@ -233,6 +233,7 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
       attachedVideo.removeEventListener("play", handleNativePlay);
     }
     attachedVideo = video;
+    if (!attachedVideo) return;
     attachedVideo.addEventListener("enterpictureinpicture", handleNativeEnter);
     attachedVideo.addEventListener("leavepictureinpicture", handleNativeLeave);
     attachedVideo.addEventListener("webkitpresentationmodechanged", handleWebkitMode);
@@ -295,7 +296,8 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
     floatingDocument.querySelector(".mini-close").addEventListener("click", close);
     floatingDocument.querySelector(".play").addEventListener("click", () => {
       const state = getState();
-      setPlaybackPlaying(!(state.isAudioPlaying && state.isVideoPlaying));
+      const isPlaying = state.isAudioPlaying && (state.dataSaverMode || state.isVideoPlaying);
+      setPlaybackPlaying(!isPlaying);
     });
     floatingDocument.querySelector(".previous").addEventListener("click", previousTrack);
     floatingDocument.querySelector(".next").addEventListener("click", nextTrack);
@@ -320,7 +322,13 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
   }
 
   function syncVideo(state) {
-    if (!miniVideo || !state.video) return;
+    if (!miniVideo) return;
+    if (!state.video || state.dataSaverMode) {
+      miniVideo.pause();
+      miniVideo.removeAttribute("src");
+      miniVideo.load();
+      return;
+    }
     const source = state.video.currentSrc || state.video.src;
     if (source && miniVideo.src !== source) {
       miniVideo.src = source;
@@ -364,9 +372,10 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
     floatingDocument.querySelector(".mini-volume").textContent = `${volumePercent}%`;
 
     const playButton = floatingDocument.querySelector(".play");
-    const isPlaybackPlaying = state.isAudioPlaying && state.isVideoPlaying;
+    const isPlaybackPlaying = state.isAudioPlaying && (state.dataSaverMode || state.isVideoPlaying);
     playButton.textContent = isPlaybackPlaying ? "Ⅱ" : "▶";
-    playButton.setAttribute("aria-label", isPlaybackPlaying ? "Pause audio and video" : "Play audio and video");
+    const mediaLabel = state.dataSaverMode ? "audio" : "audio and video";
+    playButton.setAttribute("aria-label", `${isPlaybackPlaying ? "Pause" : "Play"} ${mediaLabel}`);
 
     floatingDocument.querySelectorAll(".mini-visualizer i").forEach((bar, index) => {
       bar.style.height = `${Math.max(4, Math.min(28, state.visualLevels[index] || 4))}px`;

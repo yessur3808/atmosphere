@@ -1,5 +1,5 @@
 <script>
-  import { createEventDispatcher, onDestroy, onMount } from "svelte";
+  import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
   import { siteUrl } from "../siteUrl.mjs";
 
   export let background = "";
@@ -11,10 +11,17 @@
   export let scale = 1.025;
   export let position = "50% 50%";
   export let viewKey = "";
+  export let disabled = false;
 
   const dispatch = createEventDispatcher();
-  let videoElement;
+  const slots = [0, 1];
+  let videoElements = [];
+  let slotSources = ["", ""];
+  let slotVisible = [false, false];
+  let activeSlot = 0;
+  let pendingSlot = 0;
   let activeSource = "";
+  let desiredSource = "";
   let activeView = "";
   let useAdaptive = false;
   let forceAdaptive = false;
@@ -22,14 +29,16 @@
   let loading = true;
   let failed = false;
   let connection;
+  let transitionTimer;
 
   export function getVideoElement() {
-    return videoElement;
+    return disabled ? undefined : videoElements[activeSlot];
   }
 
   export function setAutoPictureInPicture(enabled) {
+    const videoElement = getVideoElement();
     if (videoElement && "autoPictureInPicture" in videoElement) {
-      videoElement.autoPictureInPicture = Boolean(enabled);
+      videoElement.autoPictureInPicture = Boolean(enabled && !disabled);
     }
   }
 
@@ -51,37 +60,92 @@
     window.addEventListener("resize", updateMediaPreference, { passive: true });
   });
 
-  $: selectedBackground = mediaReady ? (useAdaptive && adaptiveBackground ? adaptiveBackground : background) : "";
+  $: selectedBackground = mediaReady && !disabled ? (useAdaptive && adaptiveBackground ? adaptiveBackground : background) : "";
   $: nextSource = resolveVideoSource(selectedBackground);
   $: posterSource = poster ? siteUrl(`assets/videos/${poster}`) : "";
-  $: if (videoElement && nextSource && nextSource !== activeSource) {
-    activeSource = nextSource;
-    activeView = "";
+  $: requestSource(nextSource);
+  $: syncPlayback(paused, disabled, playbackRate, activeSlot);
+  $: if (!disabled && viewKey && activeView !== viewKey && videoElements[activeSlot]?.readyState >= 1) {
+    applyView(videoElements[activeSlot]);
+  }
+
+  async function requestSource(source) {
+    if (!mediaReady) return;
+    if (!source) {
+      if (!desiredSource && !slotSources.some(Boolean)) return;
+      desiredSource = "";
+      activeSource = "";
+      activeView = "";
+      loading = false;
+      failed = false;
+      slotVisible = [false, false];
+      slotSources = ["", ""];
+      videoElements.filter(Boolean).forEach((element) => element.pause());
+      await tick();
+      videoElements.filter(Boolean).forEach((element) => {
+        element.removeAttribute("src");
+        element.load();
+      });
+      return;
+    }
+    if (source === desiredSource && (source === activeSource || slotSources[pendingSlot] === source)) return;
+
+    desiredSource = source;
     loading = true;
     failed = false;
-    videoElement.src = nextSource;
-    videoElement.load();
+    activeView = "";
+    pendingSlot = activeSource ? 1 - activeSlot : activeSlot;
+    const nextSources = [...slotSources];
+    nextSources[pendingSlot] = source;
+    slotSources = nextSources;
+    const nextVisibility = [...slotVisible];
+    nextVisibility[pendingSlot] = false;
+    slotVisible = nextVisibility;
+    await tick();
+    const incomingVideo = videoElements[pendingSlot];
+    if (!incomingVideo || slotSources[pendingSlot] !== desiredSource) return;
+    incomingVideo.playbackRate = playbackRate;
+    incomingVideo.load();
   }
 
-  $: if (videoElement) videoElement.playbackRate = playbackRate;
-
-  $: if (videoElement && viewKey && activeView !== viewKey && videoElement.readyState >= 1) {
-    applyView();
+  function syncPlayback(shouldPause, audioOnly, rate) {
+    videoElements.filter(Boolean).forEach((element, slot) => {
+      element.playbackRate = rate;
+      if (audioOnly || shouldPause || slot !== activeSlot) element.pause();
+      else if (slotVisible[slot]) element.play().catch(() => {});
+    });
   }
 
-  $: if (videoElement && activeSource) {
-    if (paused) videoElement.pause();
-    else videoElement.play().catch(() => {});
-  }
-
-  function handleLoadedMetadata() {
+  function handleLoadedMetadata(slot) {
+    const videoElement = videoElements[slot];
+    if (!videoElement) return;
     videoElement.playbackRate = playbackRate;
-    applyView();
-    dispatch("durationchange", videoElement.duration || 0);
-    if (!paused) videoElement.play().catch(() => {});
+    applyView(videoElement);
+    if (slotSources[slot] === desiredSource) dispatch("durationchange", videoElement.duration || 0);
   }
 
-  function applyView() {
+  function revealVideo(slot) {
+    const incomingVideo = videoElements[slot];
+    if (!incomingVideo || disabled || slotSources[slot] !== desiredSource) return;
+    const outgoingSlot = activeSlot;
+    const outgoingVideo = videoElements[outgoingSlot];
+    const nextVisibility = [...slotVisible];
+    nextVisibility[slot] = true;
+    if (slot !== outgoingSlot) nextVisibility[outgoingSlot] = false;
+    slotVisible = nextVisibility;
+    activeSlot = slot;
+    activeSource = desiredSource;
+    loading = false;
+    failed = false;
+    if (!paused) incomingVideo.play().catch(() => {});
+    window.clearTimeout(transitionTimer);
+    if (slot !== outgoingSlot) {
+      transitionTimer = window.setTimeout(() => outgoingVideo?.pause(), 900);
+    }
+  }
+
+  function applyView(videoElement) {
+    if (!videoElement) return;
     activeView = viewKey;
     if (Number.isFinite(videoElement.duration)) {
       videoElement.currentTime = Math.min(videoElement.duration * start, Math.max(0, videoElement.duration - 0.15));
@@ -89,7 +153,8 @@
     videoElement.playbackRate = playbackRate;
   }
 
-  function handleError() {
+  function handleError(slot) {
+    if (slotSources[slot] !== desiredSource) return;
     if (!useAdaptive && adaptiveBackground) {
       forceAdaptive = true;
       updateMediaPreference();
@@ -99,12 +164,13 @@
     failed = true;
   }
 
-  function handleTimeUpdate() {
-    dispatch("timechange", videoElement.currentTime || 0);
+  function handleTimeUpdate(slot) {
+    if (slot === activeSlot) dispatch("timechange", videoElements[slot]?.currentTime || 0);
   }
 
   onDestroy(() => {
-    if (videoElement) videoElement.pause();
+    window.clearTimeout(transitionTimer);
+    videoElements.filter(Boolean).forEach((element) => element.pause());
     connection?.removeEventListener?.("change", updateMediaPreference);
     window.removeEventListener("resize", updateMediaPreference);
   });
@@ -113,26 +179,31 @@
 <div
   class:loading
   class:failed
+  class:audio-only={disabled}
   class="backdrop"
   aria-hidden="true"
   style={`--video-scale: ${scale}; --video-position: ${position}; --poster: url('${posterSource}')`}
 >
   <div class="poster"></div>
-  <video
-    bind:this={videoElement}
-    autoplay
-    muted
-    loop
-    playsinline
-    preload="metadata"
-    poster={posterSource || undefined}
-    on:loadedmetadata={handleLoadedMetadata}
-    on:loadstart={() => (loading = true)}
-    on:waiting={() => (loading = true)}
-    on:playing={() => { loading = false; failed = false; }}
-    on:error={handleError}
-    on:timeupdate={handleTimeUpdate}
-  ></video>
+  {#each slots as slot}
+    <video
+      bind:this={videoElements[slot]}
+      class:visible={slotVisible[slot]}
+      src={slotSources[slot] || undefined}
+      muted
+      loop
+      playsinline
+      preload={slotSources[slot] ? "metadata" : "none"}
+      poster={posterSource || undefined}
+      on:loadedmetadata={() => handleLoadedMetadata(slot)}
+      on:canplay={() => revealVideo(slot)}
+      on:loadstart={() => { if (slotSources[slot] === desiredSource) loading = true; }}
+      on:waiting={() => { if (slot === activeSlot) loading = true; }}
+      on:playing={() => { if (slot === activeSlot) { loading = false; failed = false; } }}
+      on:error={() => handleError(slot)}
+      on:timeupdate={() => handleTimeUpdate(slot)}
+    ></video>
+  {/each}
   <div class="wash"></div>
   <div class="grain"></div>
 </div>
@@ -161,9 +232,11 @@
     object-position: var(--video-position);
     transform: scale(var(--video-scale));
     filter: saturate(0.78) contrast(1.08) brightness(0.75);
-    opacity: 1;
-    transition: opacity 520ms ease, transform 1.1s cubic-bezier(0.2, 0.75, 0.2, 1), object-position 1.1s cubic-bezier(0.2, 0.75, 0.2, 1);
+    opacity: 0;
+    transition: opacity 820ms cubic-bezier(0.22, 1, 0.36, 1), transform 1.1s cubic-bezier(0.2, 0.75, 0.2, 1), object-position 1.1s cubic-bezier(0.2, 0.75, 0.2, 1);
   }
+
+  video.visible { opacity: 1; }
 
   .poster {
     background-color: #101213;
@@ -174,8 +247,19 @@
     filter: saturate(0.74) contrast(1.08) brightness(0.68);
   }
 
-  .loading video,
   .failed video { opacity: 0; }
+
+  .audio-only video { display: none; }
+
+  .audio-only .poster {
+    filter: saturate(0.6) contrast(1.05) brightness(0.5) blur(0.2px);
+    animation: poster-breathe 18s ease-in-out infinite alternate;
+  }
+
+  @keyframes poster-breathe {
+    from { transform: scale(var(--video-scale)); }
+    to { transform: scale(calc(var(--video-scale) + 0.018)); }
+  }
 
   .failed .poster {
     filter: saturate(0.56) contrast(1.04) brightness(0.54);

@@ -45,9 +45,15 @@ GA4 automatically provides acquisition, device, approximate region, `first_visit
 | `playback_start`, `playback_pause` | Playback source and unified/separate behavior |
 | `video_play`, `video_pause` | Independent video control usage |
 | `volume_change` | Committed master-volume level, not every slider movement |
+| `layer_volume_change` | Committed volume for an individual active sound layer |
 | `multi_sound_preference` | Multi-layer preference usage |
+| `smart_mix_preference` | Slowly evolving layer-volume preference usage |
+| `data_saver_preference` | Audio-only mode adoption |
 | `linked_playback_preference` | Unified versus separate transport preference |
 | `sound_recipe_apply` | Recipe name and chosen layer combination |
+| `mix_save`, `mix_load`, `mix_favorite`, `mix_delete`, `mix_share` | Local mix-library and privacy-safe share-link adoption |
+| `recent_session_record`, `history_resume`, `recent_sessions_clear` | Recent-play and session-resume usefulness |
+| `scene_search`, `scene_filter`, `scene_favorite` | Library discovery and scene favorites |
 | `sound_recipes_open`, `sound_recipes_close` | Fixed recipe drawer engagement |
 | `quiet_view_enter`, `quiet_view_exit` | Distraction-free view adoption |
 | `settings_open`, `settings_close`, `settings_tab_view` | Preference discovery and configuration |

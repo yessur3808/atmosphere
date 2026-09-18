@@ -4,6 +4,14 @@
   import Background from "./components/Background.svelte";
   import AtmosphereIcon from "./components/AtmosphereIcon.svelte";
   import { destroyAnalytics, getAnalyticsStatus, initializeAnalytics, setAnalyticsConsent, trackEvent } from "./analytics";
+  import {
+    decodeMixSnapshot,
+    encodeMixSnapshot,
+    filterSceneLibrary,
+    normalizeMixSnapshot,
+    sortSavedMixes,
+    upsertRecentMix,
+  } from "./mixState.mjs";
   import { createMiniPlayer } from "./miniPlayer";
   import { scenes } from "./sceneLibrary";
   import { siteUrl } from "./siteUrl.mjs";
@@ -22,7 +30,9 @@
   let audioError = "";
   let audioContext;
   let mediaSources = [];
+  let layerGainNodes = [];
   let masterGainNode;
+  let limiterNode;
   let analyserNode;
   let analyserData;
   let analyserFrame;
@@ -42,10 +52,35 @@
   let recipesOpen = true;
   let analyticsConfigured = false;
   let analyticsConsent = "unset";
+  let layerVolumes = {};
+  let smartMixMultipliers = {};
+  let smartMixEnabled = false;
+  let smartMixTimer;
+  let dataSaverMode = false;
+  let savedMixes = [];
+  let recentMixes = [];
+  let favoriteSceneIds = [];
+  let libraryQuery = "";
+  let libraryCategory = "all";
+  let saveMixOpen = false;
+  let saveMixName = "";
+  let toastMessage = "";
+  let toastTimer;
+  let persistenceTimer;
+  let hydrated = false;
 
-  const preferencesStorageKey = "atmosphere-preferences-v1";
+  const preferencesStorageKey = "atmosphere-preferences-v2";
+  const legacyPreferencesStorageKey = "atmosphere-preferences-v1";
+  const savedMixesStorageKey = "atmosphere-saved-mixes-v1";
+  const recentMixesStorageKey = "atmosphere-recent-mixes-v1";
+  const favoriteScenesStorageKey = "atmosphere-favorite-scenes-v1";
+  const resumeStorageKey = "atmosphere-resume-v1";
+  const audioCrossfadeMilliseconds = 760;
+  const smartMixIntervalMilliseconds = 12000;
+  const nativeVolumeFrames = new WeakMap();
   const settingsTabs = [
     { id: "playback", title: "Playback" },
+    { id: "mixes", title: "My mixes" },
     { id: "display", title: "Display" },
     { id: "mini-player", title: "Mini player" },
     { id: "privacy", title: "Privacy" },
@@ -77,6 +112,10 @@
     ...recipe,
     tracks: recipe.indices.map((index) => activeScene.audioTracks[index]).filter(Boolean),
   }));
+  $: sceneCategories = ["all", "favorites", ...new Set(scenes.map((scene) => scene.category))];
+  $: filteredScenes = filterSceneLibrary(scenes, libraryQuery, libraryCategory, favoriteSceneIds);
+  $: currentSceneFavorite = favoriteSceneIds.includes(activeScene.id);
+  $: transportMediaLabel = dataSaverMode || !linkedPlayback ? "audio" : "audio and video";
   $: miniPlayerSnapshot = {
     sceneTitle: activeScene.title,
     category: activeScene.category,
@@ -91,11 +130,12 @@
     videoPosition: activeVideo.position,
     videoScale: activeVideo.scale,
     poster: siteUrl(`assets/videos/${activeVideo.poster}`),
-    video: backgroundComponent?.getVideoElement(),
+    video: dataSaverMode ? undefined : backgroundComponent?.getVideoElement(),
     pipPreference,
+    dataSaverMode,
   };
   $: if (miniPlayerController && miniPlayerSnapshot) {
-    backgroundComponent?.setAutoPictureInPicture(isAudioPlaying && pipPreference === "automatic");
+    backgroundComponent?.setAutoPictureInPicture(!dataSaverMode && isAudioPlaying && pipPreference === "automatic");
     miniPlayerController.sync(miniPlayerSnapshot);
   }
 
@@ -124,6 +164,44 @@
     trackEvent("audio_error", { failed_track_id: track.id, failed_track_title: track.title });
   }
 
+  function wait(milliseconds) {
+    return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+  }
+
+  function getTrackId(index, scene = activeScene) {
+    return scene?.audioTracks[index]?.id;
+  }
+
+  function getLayerVolume(index, scene = activeScene) {
+    const trackId = getTrackId(index, scene);
+    const savedVolume = trackId ? Number(layerVolumes[trackId]) : NaN;
+    return Number.isFinite(savedVolume) ? Math.max(0, Math.min(1, savedVolume)) : 1;
+  }
+
+  function getSmartMixMultiplier(index) {
+    const multiplier = Number(smartMixMultipliers[getTrackId(index)]);
+    return smartMixEnabled && Number.isFinite(multiplier) ? multiplier : 1;
+  }
+
+  function targetLayerGain(index) {
+    return selectedAudios.includes(index) ? getLayerVolume(index) * getSmartMixMultiplier(index) : 0;
+  }
+
+  function rampNativeVolume(element, target, duration = 180) {
+    if (!element) return;
+    cancelAnimationFrame(nativeVolumeFrames.get(element));
+    const startedAt = performance.now();
+    const initial = Number.isFinite(element.volume) ? element.volume : 0;
+    const clampedTarget = Math.max(0, Math.min(1, target));
+    const frame = (now) => {
+      const progress = duration ? Math.min(1, (now - startedAt) / duration) : 1;
+      const eased = 1 - Math.pow(1 - progress, 3);
+      element.volume = initial + (clampedTarget - initial) * eased;
+      if (progress < 1) nativeVolumeFrames.set(element, requestAnimationFrame(frame));
+    };
+    nativeVolumeFrames.set(element, requestAnimationFrame(frame));
+  }
+
   function ensureAudioGraph() {
     if (masterGainNode || graphUnavailable || !audioElements.length) return;
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -135,22 +213,35 @@
     try {
       audioContext = new AudioContext();
       masterGainNode = audioContext.createGain();
+      limiterNode = audioContext.createDynamicsCompressor();
+      limiterNode.threshold.value = -7;
+      limiterNode.knee.value = 7;
+      limiterNode.ratio.value = 14;
+      limiterNode.attack.value = 0.004;
+      limiterNode.release.value = 0.24;
       analyserNode = audioContext.createAnalyser();
       analyserNode.fftSize = 128;
       analyserNode.smoothingTimeConstant = 0.82;
       analyserData = new Uint8Array(analyserNode.frequencyBinCount);
-      mediaSources = audioElements.filter(Boolean).map((element) => {
+      layerGainNodes = [];
+      mediaSources = audioElements.filter(Boolean).map((element, index) => {
         const source = audioContext.createMediaElementSource(element);
-        source.connect(masterGainNode);
+        const layerGain = audioContext.createGain();
+        layerGain.gain.value = targetLayerGain(index);
+        source.connect(layerGain);
+        layerGain.connect(masterGainNode);
+        layerGainNodes[index] = layerGain;
         element.volume = 1;
         return source;
       });
-      masterGainNode.connect(analyserNode);
+      masterGainNode.connect(limiterNode);
+      limiterNode.connect(analyserNode);
       analyserNode.connect(audioContext.destination);
       masterGainNode.gain.value = volume;
     } catch (error) {
       graphUnavailable = true;
       masterGainNode = undefined;
+      limiterNode = undefined;
       analyserNode = undefined;
     }
   }
@@ -162,15 +253,40 @@
     }
   }
 
-  function applyVolume() {
+  function applyVolume(duration = 120) {
     if (!audioElements.length) return;
     if (masterGainNode && audioContext) {
       audioElements.filter(Boolean).forEach((element) => (element.volume = 1));
       masterGainNode.gain.cancelScheduledValues(audioContext.currentTime);
-      masterGainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.015);
+      masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, audioContext.currentTime);
+      masterGainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + duration / 1000);
+      layerGainNodes.forEach((gainNode, index) => {
+        if (!gainNode) return;
+        gainNode.gain.cancelScheduledValues(audioContext.currentTime);
+        gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(targetLayerGain(index), audioContext.currentTime + duration / 1000);
+      });
     } else {
-      audioElements.filter(Boolean).forEach((element) => (element.volume = volume));
+      audioElements.filter(Boolean).forEach((element, index) => {
+        const target = volume * targetLayerGain(index);
+        rampNativeVolume(element, target, duration);
+      });
     }
+  }
+
+  async function fadeMasterTo(target, duration = audioCrossfadeMilliseconds) {
+    const clampedTarget = Math.max(0, Math.min(1, target));
+    if (masterGainNode && audioContext) {
+      masterGainNode.gain.cancelScheduledValues(audioContext.currentTime);
+      masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, audioContext.currentTime);
+      masterGainNode.gain.linearRampToValueAtTime(clampedTarget, audioContext.currentTime + duration / 1000);
+    } else {
+      audioElements.filter(Boolean).forEach((element, index) => {
+        const layerTarget = clampedTarget ? clampedTarget * targetLayerGain(index) : 0;
+        rampNativeVolume(element, layerTarget, duration);
+      });
+    }
+    await wait(duration);
   }
 
   function drawVisualizer() {
@@ -209,28 +325,46 @@
     audioElements.filter(Boolean).forEach((element) => element.pause());
     isAudioPlaying = false;
     stopVisualizer();
+    refreshSmartMixSchedule();
+  }
+
+  async function fadeAndPauseAllAudio(duration = 260) {
+    if (!isAudioPlaying) return pauseAllAudio();
+    await fadeMasterTo(0, duration);
+    pauseAllAudio();
   }
 
   async function playSelectedTracks(indices = selectedAudios, playbackSource = "interface") {
     const nextSelection = [...new Set(indices)].filter((index) => activeScene.audioTracks[index]);
     if (!nextSelection.length) return;
+    const previousPlaying = audioElements.map((element) => Boolean(element && !element.paused));
     selectedAudios = nextSelection;
+    selectedAudio = nextSelection.includes(selectedAudio) ? selectedAudio : nextSelection[0];
+    nextSelection.forEach((index) => {
+      const trackId = getTrackId(index);
+      if (trackId && !Number.isFinite(Number(layerVolumes[trackId]))) {
+        layerVolumes = { ...layerVolumes, [trackId]: nextSelection.length > 1 ? 0.72 : 1 };
+      }
+    });
     audioLoading = true;
     audioError = "";
     await tick();
     await resumeAudioGraph();
-    applyVolume();
 
     const attempts = audioElements.map(async (element, index) => {
       if (!element) return false;
       if (!nextSelection.includes(index)) {
-        element.pause();
         return false;
       }
       const track = activeScene.audioTracks[index];
       if (!element.currentSrc.endsWith(track.src)) {
         element.src = track.src;
         element.load();
+      }
+      if (!previousPlaying[index] && !masterGainNode) element.volume = 0;
+      if (!previousPlaying[index] && layerGainNodes[index] && audioContext) {
+        layerGainNodes[index].gain.cancelScheduledValues(audioContext.currentTime);
+        layerGainNodes[index].gain.setValueAtTime(0, audioContext.currentTime);
       }
       await element.play();
       return true;
@@ -239,10 +373,19 @@
     const results = await Promise.allSettled(attempts);
     const started = results.some((result) => result.status === "fulfilled" && result.value);
     if (started) {
+      applyVolume(audioCrossfadeMilliseconds);
+      window.setTimeout(() => {
+        audioElements.forEach((element, index) => {
+          if (element && !nextSelection.includes(index)) element.pause();
+        });
+      }, audioCrossfadeMilliseconds + 40);
       audioStarted = true;
       isAudioPlaying = true;
       audioLoading = false;
       startVisualizer();
+      recordRecentSession(playbackSource);
+      queuePersistSession();
+      refreshSmartMixSchedule();
       trackEvent("playback_start", {
         control_source: playbackSource,
         video_linked: linkedPlayback,
@@ -258,29 +401,29 @@
 
   async function togglePlayback() {
     if (isAudioPlaying) {
-      pauseAllAudio();
+      await fadeAndPauseAllAudio();
       if (linkedPlayback) isVideoPlaying = false;
       trackEvent("playback_pause", { control_source: "main_transport", video_linked: linkedPlayback });
       return;
     }
-    if (linkedPlayback) isVideoPlaying = true;
+    if (linkedPlayback) isVideoPlaying = !dataSaverMode;
     await playSelectedTracks(selectedAudios, "main_transport");
   }
 
   async function setAudioPlaying(shouldPlay, source = "interface") {
     if (shouldPlay && !isAudioPlaying) await playSelectedTracks(selectedAudios, source);
     else if (!shouldPlay && isAudioPlaying) {
-      pauseAllAudio();
+      await fadeAndPauseAllAudio();
       trackEvent("playback_pause", { control_source: source, video_linked: false });
     }
   }
 
   async function setMiniPlayerPlayback(shouldPlay) {
-    const video = backgroundComponent?.getVideoElement();
-    isVideoPlaying = shouldPlay;
+    const video = dataSaverMode ? undefined : backgroundComponent?.getVideoElement();
+    isVideoPlaying = dataSaverMode ? false : shouldPlay;
 
     if (!shouldPlay) {
-      pauseAllAudio();
+      await fadeAndPauseAllAudio();
       video?.pause();
       trackEvent("playback_pause", { control_source: "mini_player", video_linked: true });
       return;
@@ -303,12 +446,17 @@
   async function selectScene(index) {
     const continuePlaying = isAudioPlaying;
     const previousScene = activeScene;
-    pauseAllAudio();
+    if (continuePlaying) await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2);
+    else pauseAllAudio();
     activeIndex = index;
     selectedAudio = 0;
     selectedAudios = [0];
     selectedVideo = 0;
-    isVideoPlaying = true;
+    isVideoPlaying = !dataSaverMode;
+    const firstTrackId = scenes[index].audioTracks[0]?.id;
+    if (firstTrackId && !Number.isFinite(Number(layerVolumes[firstTrackId]))) {
+      layerVolumes = { ...layerVolumes, [firstTrackId]: 1 };
+    }
     audioError = "";
     trackEvent("atmosphere_select", {
       previous_scene_id: previousScene?.id,
@@ -320,6 +468,7 @@
     if (continuePlaying) {
       await playSelectedTracks([0], "atmosphere_change");
     }
+    queuePersistSession();
   }
 
   async function selectTrack(index, replaceSelection = false) {
@@ -333,9 +482,17 @@
         selectedAudio = selectedAudios[0];
       } else if (!selectedAudios.includes(index)) {
         selectedAudios = [...selectedAudios, index];
+        const trackId = getTrackId(index);
+        if (trackId && !Number.isFinite(Number(layerVolumes[trackId]))) {
+          layerVolumes = { ...layerVolumes, [trackId]: 0.72 };
+        }
       }
     } else {
       selectedAudios = [index];
+      const trackId = getTrackId(index);
+      if (trackId && !Number.isFinite(Number(layerVolumes[trackId]))) {
+        layerVolumes = { ...layerVolumes, [trackId]: 1 };
+      }
     }
 
     if (continuePlaying) {
@@ -347,13 +504,20 @@
       layer_action: selectedAudios.includes(index) ? "selected" : "removed",
       active_track_ids: selectedAudios.map((trackIndex) => activeScene.audioTracks[trackIndex]?.id).filter(Boolean).join(","),
     });
+    queuePersistSession();
   }
 
   async function applyRecipe(recipe) {
     multiSoundEnabled = true;
     selectedAudios = recipe.indices.filter((index) => activeScene.audioTracks[index]);
     selectedAudio = selectedAudios[0];
-    isVideoPlaying = true;
+    selectedAudios.forEach((index, position) => {
+      const trackId = getTrackId(index);
+      if (trackId && !Number.isFinite(Number(layerVolumes[trackId]))) {
+        layerVolumes = { ...layerVolumes, [trackId]: position === 0 ? 0.74 : 0.62 };
+      }
+    });
+    isVideoPlaying = !dataSaverMode;
     savePreferences();
     trackEvent("sound_recipe_apply", {
       recipe_id: recipe.id,
@@ -365,17 +529,19 @@
 
   function selectVideo(index) {
     selectedVideo = index;
-    isVideoPlaying = true;
+    isVideoPlaying = !dataSaverMode;
     trackEvent("video_loop_select", {
       selected_video_id: activeScene.videoLoops[index].id,
       selected_video_title: activeScene.videoLoops[index].title,
     });
+    queuePersistSession();
   }
 
   function setMiniPlayerVolume(nextVolume) {
     volume = Math.max(0, Math.min(1, Number(nextVolume)));
     resumeAudioGraph();
     applyVolume();
+    queuePersistSession();
   }
 
   function updateVolume(event) {
@@ -389,8 +555,286 @@
     });
   }
 
+  function updateLayerVolume(index, event) {
+    const trackId = getTrackId(index);
+    if (!trackId) return;
+    layerVolumes = { ...layerVolumes, [trackId]: Math.max(0, Math.min(1, Number(event.currentTarget.value))) };
+    resumeAudioGraph();
+    applyVolume(90);
+    queuePersistSession();
+  }
+
+  function commitLayerVolume(index) {
+    trackEvent("layer_volume_change", {
+      selected_track_id: getTrackId(index),
+      layer_volume_percent: Math.round(getLayerVolume(index) * 100),
+    });
+  }
+
+  function updateSmartMixTargets() {
+    if (!smartMixEnabled || !isAudioPlaying) return;
+    const nextMultipliers = { ...smartMixMultipliers };
+    selectedAudios.forEach((index) => {
+      const trackId = getTrackId(index);
+      if (!trackId) return;
+      const minimum = selectedAudios.length > 1 ? 0.72 : 0.9;
+      nextMultipliers[trackId] = minimum + Math.random() * (1.04 - minimum);
+    });
+    smartMixMultipliers = nextMultipliers;
+    applyVolume(7600);
+  }
+
+  function refreshSmartMixSchedule() {
+    window.clearInterval(smartMixTimer);
+    smartMixTimer = undefined;
+    if (!smartMixEnabled || !isAudioPlaying) return;
+    smartMixTimer = window.setInterval(updateSmartMixTargets, smartMixIntervalMilliseconds);
+  }
+
+  function setSmartMixEnabled(enabled) {
+    smartMixEnabled = enabled;
+    if (enabled) {
+      updateSmartMixTargets();
+      showToast("Smart Mix is gently evolving each active layer");
+    } else {
+      smartMixMultipliers = {};
+      applyVolume(700);
+      showToast("Smart Mix is off");
+    }
+    refreshSmartMixSchedule();
+    savePreferences();
+    queuePersistSession();
+    trackEvent("smart_mix_preference", { enabled, active_sound_count: selectedAudios.length });
+  }
+
+  function setDataSaverMode(enabled) {
+    dataSaverMode = enabled;
+    isVideoPlaying = enabled ? false : true;
+    backgroundComponent?.setAutoPictureInPicture(!enabled && isAudioPlaying && pipPreference === "automatic");
+    savePreferences();
+    queuePersistSession();
+    miniPlayerController?.sync(getMiniPlayerState());
+    showToast(enabled ? "Audio-only mode on · video data paused" : "Video backgrounds restored");
+    trackEvent("data_saver_preference", { enabled });
+  }
+
+  function showToast(message) {
+    toastMessage = message;
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => (toastMessage = ""), 3600);
+  }
+
+  function createCurrentMixSnapshot(overrides = {}) {
+    return normalizeMixSnapshot({
+      sceneId: activeScene.id,
+      trackIds: selectedAudios.map((index) => getTrackId(index)).filter(Boolean),
+      layerVolumes,
+      videoId: activeVideo.id,
+      masterVolume: volume,
+      smartMixEnabled,
+      multiSoundEnabled,
+      linkedPlayback,
+      dataSaverMode,
+      ...overrides,
+    }, scenes);
+  }
+
+  function getMixScene(mix) {
+    return scenes.find((scene) => scene.id === mix.sceneId) || scenes[0];
+  }
+
+  function getMixTrackNames(mix) {
+    const scene = getMixScene(mix);
+    return mix.trackIds.map((trackId) => scene.audioTracks.find((track) => track.id === trackId)?.title).filter(Boolean);
+  }
+
+  function getMixDescription(mix) {
+    const names = getMixTrackNames(mix);
+    return `${getMixScene(mix).title} · ${names.join(" + ") || "Ambient mix"}`;
+  }
+
+  function persistSavedMixes() {
+    localStorage.setItem(savedMixesStorageKey, JSON.stringify(savedMixes));
+  }
+
+  function persistRecentMixes() {
+    localStorage.setItem(recentMixesStorageKey, JSON.stringify(recentMixes));
+  }
+
+  function queuePersistSession() {
+    if (!hydrated) return;
+    window.clearTimeout(persistenceTimer);
+    persistenceTimer = window.setTimeout(() => {
+      localStorage.setItem(resumeStorageKey, JSON.stringify(createCurrentMixSnapshot()));
+    }, 180);
+  }
+
+  function recordRecentSession(source = "interface") {
+    if (!hydrated) return;
+    recentMixes = upsertRecentMix(recentMixes, createCurrentMixSnapshot(), scenes);
+    persistRecentMixes();
+    trackEvent("recent_session_record", { history_source: source, recent_count: recentMixes.length });
+  }
+
+  function openSaveMix() {
+    saveMixName = `${activeScene.title} mix`;
+    saveMixOpen = true;
+  }
+
+  function closeSaveMix() {
+    saveMixOpen = false;
+    saveMixName = "";
+  }
+
+  function saveCurrentMix() {
+    const name = saveMixName.trim().slice(0, 64) || `${activeScene.title} mix`;
+    const id = globalThis.crypto?.randomUUID?.() || `mix-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const snapshot = createCurrentMixSnapshot({ id, name, savedAt: Date.now(), favorite: false });
+    savedMixes = sortSavedMixes([snapshot, ...savedMixes], scenes);
+    persistSavedMixes();
+    closeSaveMix();
+    showToast(`Saved “${name}”`);
+    trackEvent("mix_save", { saved_mix_count: savedMixes.length, active_sound_count: selectedAudios.length });
+  }
+
+  function toggleSavedMixFavorite(mixId) {
+    savedMixes = sortSavedMixes(savedMixes.map((mix) => mix.id === mixId ? { ...mix, favorite: !mix.favorite } : mix), scenes);
+    persistSavedMixes();
+    const updatedMix = savedMixes.find((mix) => mix.id === mixId);
+    showToast(updatedMix?.favorite ? "Added to favorite mixes" : "Removed from favorite mixes");
+    trackEvent("mix_favorite", { favorite: Boolean(updatedMix?.favorite), favorite_mix_count: savedMixes.filter((mix) => mix.favorite).length });
+  }
+
+  function deleteSavedMix(mixId) {
+    const deleted = savedMixes.find((mix) => mix.id === mixId);
+    savedMixes = savedMixes.filter((mix) => mix.id !== mixId);
+    persistSavedMixes();
+    showToast(deleted ? `Removed “${deleted.name}”` : "Mix removed");
+    trackEvent("mix_delete", { saved_mix_count: savedMixes.length });
+  }
+
+  function toggleCurrentSceneFavorite() {
+    const nextFavorite = !currentSceneFavorite;
+    favoriteSceneIds = currentSceneFavorite
+      ? favoriteSceneIds.filter((sceneId) => sceneId !== activeScene.id)
+      : [...favoriteSceneIds, activeScene.id];
+    localStorage.setItem(favoriteScenesStorageKey, JSON.stringify(favoriteSceneIds));
+    showToast(nextFavorite ? `${activeScene.title} added to favorites` : `${activeScene.title} removed from favorites`);
+    trackEvent("scene_favorite", { favorite: nextFavorite, favorite_scene_count: favoriteSceneIds.length });
+  }
+
+  async function applyMixSnapshot(value, source = "saved_mix") {
+    const snapshot = normalizeMixSnapshot(value, scenes);
+    if (!snapshot) {
+      showToast("This mix could not be loaded");
+      return;
+    }
+    const continuePlaying = isAudioPlaying;
+    if (continuePlaying) await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2);
+    else pauseAllAudio();
+
+    const sceneIndex = scenes.findIndex((scene) => scene.id === snapshot.sceneId);
+    activeIndex = Math.max(0, sceneIndex);
+    await tick();
+    selectedAudios = snapshot.trackIds
+      .map((trackId) => activeScene.audioTracks.findIndex((track) => track.id === trackId))
+      .filter((index) => index >= 0);
+    if (!selectedAudios.length) selectedAudios = [0];
+    selectedAudio = selectedAudios[0];
+    selectedVideo = Math.max(0, activeScene.videoLoops.findIndex((loop) => loop.id === snapshot.videoId));
+    layerVolumes = { ...layerVolumes, ...snapshot.layerVolumes };
+    volume = snapshot.masterVolume;
+    smartMixEnabled = snapshot.smartMixEnabled;
+    multiSoundEnabled = snapshot.multiSoundEnabled || selectedAudios.length > 1;
+    linkedPlayback = snapshot.linkedPlayback;
+    dataSaverMode = snapshot.dataSaverMode;
+    isVideoPlaying = !dataSaverMode;
+    smartMixMultipliers = {};
+    applyVolume(0);
+    savePreferences();
+    queuePersistSession();
+    refreshSmartMixSchedule();
+    if (continuePlaying) await playSelectedTracks(selectedAudios, source);
+    const sourceLabel = source === "shared_mix" ? "Shared mix" : source === "recent_mix" ? "Recent session" : source === "resume" ? "Last session" : "Saved mix";
+    showToast(`${sourceLabel} loaded · press play when ready`);
+    if (source === "resume") trackEvent("history_resume", { active_sound_count: selectedAudios.length });
+    trackEvent("mix_load", { mix_source: source, active_sound_count: selectedAudios.length });
+  }
+
+  async function shareMix(value = createCurrentMixSnapshot()) {
+    const snapshot = normalizeMixSnapshot(value, scenes);
+    const encoded = encodeMixSnapshot(snapshot, scenes);
+    if (!encoded) return;
+    const shareUrl = new URL(window.location.href);
+    shareUrl.search = "";
+    shareUrl.hash = "";
+    shareUrl.searchParams.set("mix", encoded);
+    const shareData = {
+      title: `${getMixScene(snapshot).title} · Atmosphere`,
+      text: `Listen to this ${getMixScene(snapshot).title.toLowerCase()} atmosphere mix.`,
+      url: shareUrl.toString(),
+    };
+    let sharedWithSystem = false;
+    if (navigator.share && window.matchMedia("(max-width: 900px)").matches) {
+      try {
+        await navigator.share(shareData);
+        sharedWithSystem = true;
+        showToast("Mix shared");
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+      }
+    }
+    if (!sharedWithSystem) {
+      try {
+        await navigator.clipboard.writeText(shareData.url);
+      } catch (error) {
+        const textArea = document.createElement("textarea");
+        textArea.value = shareData.url;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        textArea.remove();
+      }
+      showToast("Share link copied");
+    }
+    trackEvent("mix_share", { share_method: sharedWithSystem ? "system" : "clipboard", active_sound_count: selectedAudios.length });
+  }
+
+  function setLibraryCategory(category) {
+    libraryCategory = category;
+    trackEvent("scene_filter", {
+      scene_category_filter: category,
+      result_count: filterSceneLibrary(scenes, libraryQuery, category, favoriteSceneIds).length,
+    });
+  }
+
+  function commitLibrarySearch() {
+    trackEvent("scene_search", { search_length: libraryQuery.trim().length, result_count: filteredScenes.length });
+  }
+
+  function formatCategory(category) {
+    if (category === "all") return "All";
+    if (category === "favorites") return "Favorites";
+    return category;
+  }
+
+  function clearRecentMixes() {
+    recentMixes = [];
+    persistRecentMixes();
+    showToast("Recent sessions cleared");
+    trackEvent("recent_sessions_clear");
+  }
+
   function savePreferences() {
-    localStorage.setItem(preferencesStorageKey, JSON.stringify({ linkedPlayback, multiSoundEnabled }));
+    localStorage.setItem(preferencesStorageKey, JSON.stringify({
+      linkedPlayback,
+      multiSoundEnabled,
+      smartMixEnabled,
+      dataSaverMode,
+      volume,
+    }));
   }
 
   async function setMultiSoundEnabled(enabled) {
@@ -405,13 +849,16 @@
       });
     }
     savePreferences();
+    queuePersistSession();
+    refreshSmartMixSchedule();
     trackEvent("multi_sound_preference", { enabled, active_sound_count: selectedAudios.length });
   }
 
   function setLinkedPlayback(enabled) {
     linkedPlayback = enabled;
-    if (enabled && isAudioPlaying) isVideoPlaying = true;
+    if (enabled && isAudioPlaying) isVideoPlaying = !dataSaverMode;
     savePreferences();
+    queuePersistSession();
     trackEvent("linked_playback_preference", { enabled });
   }
 
@@ -432,6 +879,10 @@
   }
 
   function toggleVideoPlayback() {
+    if (dataSaverMode) {
+      showToast("Turn off Audio only to restore video");
+      return;
+    }
     isVideoPlaying = !isVideoPlaying;
     trackEvent(isVideoPlaying ? "video_play" : "video_pause", { control_source: "separate_video_control" });
   }
@@ -459,7 +910,8 @@
 
   function handleKeydown(event) {
     if (event.key !== "Escape") return;
-    if (settingsOpen) closeSettings();
+    if (saveMixOpen) closeSaveMix();
+    else if (settingsOpen) closeSettings();
     else if (immersiveMode) exitImmersiveMode();
   }
 
@@ -472,7 +924,7 @@
   function getMiniPlayerState() {
     return {
       ...miniPlayerSnapshot,
-      video: backgroundComponent?.getVideoElement(),
+      video: dataSaverMode ? undefined : backgroundComponent?.getVideoElement(),
     };
   }
 
@@ -528,14 +980,35 @@
     }
   }
 
-  onMount(() => {
+  function readStoredJson(key, fallback) {
     try {
-      const savedPreferences = JSON.parse(localStorage.getItem(preferencesStorageKey) || "{}");
-      if (typeof savedPreferences.linkedPlayback === "boolean") linkedPlayback = savedPreferences.linkedPlayback;
-      if (typeof savedPreferences.multiSoundEnabled === "boolean") multiSoundEnabled = savedPreferences.multiSoundEnabled;
+      const storedValue = localStorage.getItem(key);
+      return storedValue ? JSON.parse(storedValue) : fallback;
     } catch (error) {
-      localStorage.removeItem(preferencesStorageKey);
+      localStorage.removeItem(key);
+      return fallback;
     }
+  }
+
+  onMount(() => {
+    const savedPreferences = readStoredJson(
+      preferencesStorageKey,
+      readStoredJson(legacyPreferencesStorageKey, {}),
+    );
+    if (typeof savedPreferences.linkedPlayback === "boolean") linkedPlayback = savedPreferences.linkedPlayback;
+    if (typeof savedPreferences.multiSoundEnabled === "boolean") multiSoundEnabled = savedPreferences.multiSoundEnabled;
+    if (typeof savedPreferences.smartMixEnabled === "boolean") smartMixEnabled = savedPreferences.smartMixEnabled;
+    if (typeof savedPreferences.dataSaverMode === "boolean") dataSaverMode = savedPreferences.dataSaverMode;
+    if (Number.isFinite(Number(savedPreferences.volume))) volume = Math.max(0, Math.min(1, Number(savedPreferences.volume)));
+    savedMixes = sortSavedMixes(readStoredJson(savedMixesStorageKey, []), scenes);
+    recentMixes = readStoredJson(recentMixesStorageKey, [])
+      .map((mix) => normalizeMixSnapshot(mix, scenes))
+      .filter(Boolean)
+      .slice(0, 6);
+    favoriteSceneIds = readStoredJson(favoriteScenesStorageKey, [])
+      .filter((sceneId) => scenes.some((scene) => scene.id === sceneId));
+    const firstTrackId = getTrackId(0);
+    if (firstTrackId) layerVolumes = { [firstTrackId]: 1 };
     const savedRecipesOpen = localStorage.getItem("atmosphere-recipes-open");
     recipesOpen = savedRecipesOpen === null ? window.innerWidth > 760 : savedRecipesOpen === "true";
     initializeAnalytics(getAnalyticsContext);
@@ -566,12 +1039,30 @@
       },
     });
     miniPlayerController.sync(getMiniPlayerState());
+    hydrated = true;
+
+    const sharedMix = decodeMixSnapshot(new URL(window.location.href).searchParams.get("mix"), scenes);
+    const resumeMix = normalizeMixSnapshot(readStoredJson(resumeStorageKey, null), scenes);
+    if (sharedMix) {
+      applyMixSnapshot(sharedMix, "shared_mix");
+    } else if (resumeMix) {
+      applyMixSnapshot(resumeMix, "resume");
+    } else {
+      dataSaverMode = Boolean(savedPreferences.dataSaverMode);
+      isVideoPlaying = !dataSaverMode;
+      queuePersistSession();
+    }
   });
 
   onDestroy(() => {
     cancelAnimationFrame(analyserFrame);
+    window.clearInterval(smartMixTimer);
+    window.clearTimeout(toastTimer);
+    window.clearTimeout(persistenceTimer);
     mediaSources.forEach((source) => source.disconnect());
+    layerGainNodes.forEach((gainNode) => gainNode?.disconnect());
     masterGainNode?.disconnect();
+    limiterNode?.disconnect();
     analyserNode?.disconnect();
     audioContext?.close();
     destroyAnalytics();
@@ -593,6 +1084,7 @@
     scale={activeVideo.scale}
     position={activeVideo.position}
     viewKey={activeVideo.id}
+    disabled={dataSaverMode}
   />
   {#each activeScene.audioTracks as track, index (index)}
     <audio
@@ -634,7 +1126,7 @@
           <span>{pipPreference === "off" ? "Mini off" : miniPlayerOpen ? "Close mini" : "Open mini"}</span>
         </button>
       </div>
-      {#if !linkedPlayback}
+      {#if !linkedPlayback && !dataSaverMode}
         <button
           class="video-toggle glass-button"
           type="button"
@@ -707,6 +1199,33 @@
     </section>
   {/if}
 
+  {#if toastMessage}
+    <div class="app-toast" role="status" aria-live="polite">
+      <span aria-hidden="true"></span>
+      {toastMessage}
+    </div>
+  {/if}
+
+  {#if saveMixOpen && !immersiveMode}
+    <div class="save-mix-backdrop" role="presentation" on:click={(event) => { if (event.target === event.currentTarget) closeSaveMix(); }}>
+      <form class="save-mix-dialog" aria-labelledby="save-mix-title" on:submit|preventDefault={saveCurrentMix}>
+        <div>
+          <p class="kicker">Personal library</p>
+          <h2 id="save-mix-title">Save this mix</h2>
+          <p>{getMixDescription(createCurrentMixSnapshot())}</p>
+        </div>
+        <label>
+          <span>Mix name</span>
+          <input bind:value={saveMixName} maxlength="64" autocomplete="off" placeholder="My atmosphere" />
+        </label>
+        <div class="save-mix-actions">
+          <button type="button" on:click={closeSaveMix}>Cancel</button>
+          <button class="primary" type="submit">Save mix</button>
+        </div>
+      </form>
+    </div>
+  {/if}
+
   {#if settingsOpen && !immersiveMode}
     <div class="settings-backdrop" role="presentation" on:click={handleSettingsBackdrop} on:keydown={(event) => { if (event.key === "Escape") closeSettings(); }}>
       <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -744,11 +1263,56 @@
                   <span><strong>Layer multiple sounds</strong><small>Select more than one audio card or start a recommended mix.</small></span>
                   <i class:active={multiSoundEnabled} class="preference-switch" aria-hidden="true"><b></b></i>
                 </button>
+                <button class="preference-row" type="button" aria-pressed={smartMixEnabled} on:click={() => setSmartMixEnabled(!smartMixEnabled)}>
+                  <span><strong>Smart Mix</strong><small>Let active layers slowly rise and settle so the soundscape feels less repetitive.</small></span>
+                  <i class:active={smartMixEnabled} class="preference-switch" aria-hidden="true"><b></b></i>
+                </button>
                 <label class="volume-row settings-volume">
                   <span>Master volume</span>
                   <input type="range" min="0" max="1" step="0.01" value={volume} style={`--volume-percent: ${Math.round(volume * 100)}%`} aria-label="Master audio volume" aria-valuetext={`${Math.round(volume * 100)} percent`} on:input={updateVolume} on:change={commitVolume} />
                   <output>{Math.round(volume * 100)}</output>
                 </label>
+                <div class="settings-note compact-note">
+                  <span class="settings-note-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 12h4l2.2-5 3.5 10 2.2-5H20" /></svg>
+                  </span>
+                  <span><strong>Smooth transitions are always on</strong><small>Sounds and videos crossfade when you change a track, mix, or atmosphere.</small></span>
+                </div>
+              </div>
+            {:else if settingsTab === "mixes"}
+              <div class="settings-pane" aria-labelledby="mixes-settings-heading">
+                <div class="settings-pane-heading">
+                  <h3 id="mixes-settings-heading">My mixes</h3>
+                  <p>Saved mixes stay in this browser. Share links contain only playback choices—never your custom mix name.</p>
+                </div>
+                {#if savedMixes.length}
+                  <div class="settings-mix-list">
+                    {#each savedMixes as mix (mix.id)}
+                      <article class="settings-mix-card">
+                        <button class="settings-mix-load" type="button" on:click={() => { applyMixSnapshot(mix); closeSettings(); }}>
+                          <span><strong>{mix.name || getMixScene(mix).title}</strong><small>{getMixDescription(mix)}</small></span>
+                        </button>
+                        <div>
+                          <button class:active={mix.favorite} type="button" aria-label={mix.favorite ? "Remove from favorite mixes" : "Add to favorite mixes"} title={mix.favorite ? "Unfavorite" : "Favorite"} on:click={() => toggleSavedMixFavorite(mix.id)}>★</button>
+                          <button type="button" aria-label={`Share ${mix.name || "mix"}`} title="Share mix" on:click={() => shareMix(mix)}>↗</button>
+                          <button type="button" aria-label={`Delete ${mix.name || "mix"}`} title="Delete mix" on:click={() => deleteSavedMix(mix.id)}>×</button>
+                        </div>
+                      </article>
+                    {/each}
+                  </div>
+                {:else}
+                  <div class="empty-library-state"><strong>No saved mixes yet</strong><span>Use Save mix beside the main player after arranging your layers.</span></div>
+                {/if}
+                {#if recentMixes.length}
+                  <div class="recent-settings-heading"><strong>Recently played</strong><button type="button" on:click={clearRecentMixes}>Clear</button></div>
+                  <div class="recent-settings-list">
+                    {#each recentMixes as mix}
+                      <button type="button" on:click={() => { applyMixSnapshot(mix, "recent_mix"); closeSettings(); }}>
+                        <strong>{getMixScene(mix).title}</strong><span>{getMixTrackNames(mix).join(" + ")}</span>
+                      </button>
+                    {/each}
+                  </div>
+                {/if}
               </div>
             {:else if settingsTab === "display"}
               <div class="settings-pane" aria-labelledby="display-settings-heading">
@@ -766,6 +1330,10 @@
                   </span>
                   <span><strong>Quiet view lives in the lower corner</strong><small>Use the focus icon anytime. Select the logo or press Escape to return.</small></span>
                 </div>
+                <button class="preference-row" type="button" aria-pressed={dataSaverMode} on:click={() => setDataSaverMode(!dataSaverMode)}>
+                  <span><strong>Audio only / Data Saver</strong><small>Stop all video downloads and use the atmosphere poster with subtle motion.</small></span>
+                  <i class:active={dataSaverMode} class="preference-switch" aria-hidden="true"><b></b></i>
+                </button>
               </div>
             {:else if settingsTab === "mini-player"}
               <div class="settings-pane" aria-labelledby="mini-settings-heading">
@@ -849,7 +1417,12 @@
       <section class="scene-hero">
         <div>
           <p class="eyebrow">{activeScene.category} · Scene {String(activeIndex + 1).padStart(2, "0")}</p>
-          <h1>{activeScene.title}</h1>
+          <div class="hero-title-row">
+            <h1>{activeScene.title}</h1>
+            <button class:active={currentSceneFavorite} class="scene-favorite-button" type="button" aria-pressed={currentSceneFavorite} aria-label={currentSceneFavorite ? `Remove ${activeScene.title} from favorites` : `Add ${activeScene.title} to favorites`} title={currentSceneFavorite ? "Remove favorite" : "Favorite atmosphere"} on:click={toggleCurrentSceneFavorite}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.45 6.02.88-4.36 4.25 1.03 6-5.39-2.83-5.39 2.83 1.03-6-4.36-4.25 6.02-.88L12 3Z" /></svg>
+            </button>
+          </div>
         </div>
         <p>{activeScene.description}</p>
       </section>
@@ -862,27 +1435,86 @@
             <p class="kicker">Library</p>
             <h2 id="atmosphere-heading">Choose an atmosphere</h2>
           </div>
-          <span>{scenes.length} scenes</span>
+          <span>{filteredScenes.length} of {scenes.length}</span>
         </div>
 
+        <div class="library-search-row">
+          <label class="scene-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.7" cy="10.7" r="6.4" /><path d="m15.4 15.4 4.1 4.1" /></svg>
+            <span class="sr-only">Search atmospheres and sounds</span>
+            <input bind:value={libraryQuery} type="search" placeholder="Search scenes or sounds" on:change={commitLibrarySearch} />
+          </label>
+          {#if libraryQuery}
+            <button class="clear-search" type="button" aria-label="Clear atmosphere search" on:click={() => (libraryQuery = "")}>×</button>
+          {/if}
+        </div>
+
+        <div class="category-filters" aria-label="Filter atmospheres">
+          {#each sceneCategories as category}
+            <button class:active={libraryCategory === category} type="button" aria-pressed={libraryCategory === category} on:click={() => setLibraryCategory(category)}>
+              {#if category === "favorites"}<span aria-hidden="true">★</span>{/if}{formatCategory(category)}
+            </button>
+          {/each}
+        </div>
+
+        {#if savedMixes.length || recentMixes.length}
+          <div class="personal-library">
+            {#if savedMixes.length}
+              <section aria-labelledby="saved-mixes-heading">
+                <div class="personal-heading"><h3 id="saved-mixes-heading">Saved mixes</h3><button type="button" on:click={() => openSettings("mixes")}>Manage</button></div>
+                <div class="personal-card-row">
+                  {#each savedMixes.slice(0, 5) as mix (mix.id)}
+                    <article class="personal-mix-card">
+                      <button class="personal-mix-load" type="button" on:click={() => applyMixSnapshot(mix)}>
+                        <strong>{mix.name || getMixScene(mix).title}</strong>
+                        <span>{getMixDescription(mix)}</span>
+                      </button>
+                      <div>
+                        <button class:active={mix.favorite} type="button" aria-label={mix.favorite ? "Remove favorite mix" : "Favorite mix"} on:click={() => toggleSavedMixFavorite(mix.id)}>★</button>
+                        <button type="button" aria-label={`Share ${mix.name || "mix"}`} on:click={() => shareMix(mix)}>↗</button>
+                      </div>
+                    </article>
+                  {/each}
+                </div>
+              </section>
+            {/if}
+            {#if recentMixes.length}
+              <section aria-labelledby="recent-mixes-heading">
+                <div class="personal-heading"><h3 id="recent-mixes-heading">Recently played</h3><button type="button" on:click={clearRecentMixes}>Clear</button></div>
+                <div class="recent-card-row">
+                  {#each recentMixes.slice(0, 5) as mix}
+                    <button type="button" on:click={() => applyMixSnapshot(mix, "recent_mix")}>
+                      <strong>{getMixScene(mix).title}</strong><span>{getMixTrackNames(mix).join(" + ")}</span>
+                    </button>
+                  {/each}
+                </div>
+              </section>
+            {/if}
+          </div>
+        {/if}
+
+        {#if filteredScenes.length}
         <div class="scene-grid">
-          {#each scenes as scene, index (scene.id)}
+          {#each filteredScenes as scene (scene.id)}
             <button
               type="button"
               class="scene-card"
-              class:active={index === activeIndex}
-              aria-current={index === activeIndex ? "true" : undefined}
-              on:click={() => selectScene(index)}
+              class:active={scenes.indexOf(scene) === activeIndex}
+              aria-current={scenes.indexOf(scene) === activeIndex ? "true" : undefined}
+              on:click={() => selectScene(scenes.indexOf(scene))}
             >
-              <AtmosphereIcon scene={scene.id} active={index === activeIndex} />
+              <AtmosphereIcon scene={scene.id} active={scenes.indexOf(scene) === activeIndex} />
               <span class="scene-card-copy">
                 <strong>{scene.title}</strong>
                 <small>{scene.category}</small>
               </span>
-              <span class="scene-state" aria-hidden="true"></span>
+              <span class:favorite={favoriteSceneIds.includes(scene.id)} class="scene-state" aria-hidden="true">{favoriteSceneIds.includes(scene.id) ? "★" : ""}</span>
             </button>
           {/each}
         </div>
+        {:else}
+          <div class="empty-library-state scene-empty"><strong>No atmosphere matches that search</strong><span>Try a broader sound, mood, or category.</span><button type="button" on:click={() => { libraryQuery = ""; libraryCategory = "all"; }}>Show everything</button></div>
+        {/if}
       </section>
 
       <section class="mixer-panel liquid-panel" aria-labelledby="mixer-heading">
@@ -899,8 +1531,8 @@
             class="audio-button"
             class:playing={isAudioPlaying}
             type="button"
-            aria-label={isAudioPlaying ? linkedPlayback ? "Pause audio and video" : "Pause audio" : linkedPlayback ? "Play audio and video" : "Play audio"}
-            title={linkedPlayback ? "Controls sound and video together" : "Controls sound only"}
+            aria-label={`${isAudioPlaying ? "Pause" : "Play"} ${transportMediaLabel}`}
+            title={dataSaverMode ? "Audio-only mode is active" : linkedPlayback ? "Controls sound and video together" : "Controls sound only"}
             on:click={togglePlayback}
           >
             <span class="audio-button-core">
@@ -941,6 +1573,25 @@
           <output>{Math.round(volume * 100)}</output>
         </label>
 
+        <div class="mix-action-row" aria-label="Mix actions">
+          <button type="button" on:click={openSaveMix}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h12l2 2V20H5V4.5Z" /><path d="M8 4.5v5h8v-5M8.5 20v-6h7v6" /></svg>
+            <span>Save mix</span>
+          </button>
+          <button type="button" on:click={() => shareMix()}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.4" /><circle cx="6" cy="12" r="2.4" /><circle cx="18" cy="19" r="2.4" /><path d="m8.1 10.8 7.8-4.6M8.1 13.2l7.8 4.6" /></svg>
+            <span>Share</span>
+          </button>
+          <button class:active={smartMixEnabled} type="button" aria-pressed={smartMixEnabled} on:click={() => setSmartMixEnabled(!smartMixEnabled)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13.2 2.8-7 10h5l-.7 8.4 7.3-11h-5l.4-7.4Z" /></svg>
+            <span>Smart Mix</span>
+          </button>
+          <button class:active={dataSaverMode} type="button" aria-pressed={dataSaverMode} on:click={() => setDataSaverMode(!dataSaverMode)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5c4.8-4 11.2-4 16 0M7 12c3.1-2.4 6.9-2.4 10 0M10 15.5c1.3-.9 2.7-.9 4 0" /><path d="m4 4 16 16" /></svg>
+            <span>Audio only</span>
+          </button>
+        </div>
+
         <div class="option-section">
           <div class="option-heading">
             <h3>Audio layers</h3>
@@ -949,16 +1600,36 @@
           {#key activeScene.id}
             <div class="track-grid option-grid-enter">
               {#each activeScene.audioTracks as track, index (track.id)}
-                <button
-                  type="button"
-                  class="track-card"
-                  class:active={selectedAudios.includes(index)}
-                  aria-pressed={selectedAudios.includes(index)}
-                  on:click={() => selectTrack(index)}
-                >
-                  <span class="track-number">0{index + 1}</span>
-                  <span><strong>{track.title}</strong><small>{track.note}</small></span>
-                </button>
+                <article class:active={selectedAudios.includes(index)} class="track-item">
+                  <button
+                    type="button"
+                    class="track-card"
+                    class:active={selectedAudios.includes(index)}
+                    aria-pressed={selectedAudios.includes(index)}
+                    on:click={() => selectTrack(index)}
+                  >
+                    <span class="track-number">0{index + 1}</span>
+                    <span><strong>{track.title}</strong><small>{track.note}</small></span>
+                  </button>
+                  {#if selectedAudios.includes(index)}
+                    <label class="layer-volume">
+                      <span>Layer</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={layerVolumes[track.id] ?? 1}
+                        style={`--volume-percent: ${Math.round((layerVolumes[track.id] ?? 1) * 100)}%`}
+                        aria-label={`${track.title} layer volume`}
+                        aria-valuetext={`${Math.round((layerVolumes[track.id] ?? 1) * 100)} percent`}
+                        on:input={(event) => updateLayerVolume(index, event)}
+                        on:change={() => commitLayerVolume(index)}
+                      />
+                      <output>{Math.round((layerVolumes[track.id] ?? 1) * 100)}</output>
+                    </label>
+                  {/if}
+                </article>
               {/each}
             </div>
           {/key}
@@ -967,8 +1638,9 @@
         <div class="option-section video-section">
           <div class="option-heading">
             <h3>Video loops</h3>
-            <span>4 views</span>
+            <span>{dataSaverMode ? "Audio only" : `${activeScene.videoLoops.length} views`}</span>
           </div>
+          {#if dataSaverMode}<p class="data-saver-note">Video downloads are paused. Choose a view now and it will appear when Audio only is turned off.</p>{/if}
           {#key activeScene.id}
             <div class="video-grid option-grid-enter">
               {#each activeScene.videoLoops as loop, index (loop.id)}
@@ -1681,7 +2353,8 @@
     font-size: 0.74rem;
   }
 
-  .volume-row input {
+  .volume-row input,
+  .layer-volume input {
     appearance: none;
     -webkit-appearance: none;
     width: 100%;
@@ -1696,7 +2369,8 @@
     touch-action: pan-y;
   }
 
-  .volume-row input::-webkit-slider-runnable-track {
+  .volume-row input::-webkit-slider-runnable-track,
+  .layer-volume input::-webkit-slider-runnable-track {
     height: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 999px;
@@ -1705,7 +2379,8 @@
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.38), 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
-  .volume-row input::-webkit-slider-thumb {
+  .volume-row input::-webkit-slider-thumb,
+  .layer-volume input::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 20px;
     height: 20px;
@@ -1718,7 +2393,8 @@
     transition: transform 160ms ease, box-shadow 260ms ease;
   }
 
-  .volume-row input::-moz-range-track {
+  .volume-row input::-moz-range-track,
+  .layer-volume input::-moz-range-track {
     height: 6px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 999px;
@@ -1726,13 +2402,15 @@
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.38);
   }
 
-  .volume-row input::-moz-range-progress {
+  .volume-row input::-moz-range-progress,
+  .layer-volume input::-moz-range-progress {
     height: 8px;
     border-radius: 999px;
     background: rgba(var(--accent-rgb), 0.92);
   }
 
-  .volume-row input::-moz-range-thumb {
+  .volume-row input::-moz-range-thumb,
+  .layer-volume input::-moz-range-thumb {
     width: 20px;
     height: 20px;
     border: 1px solid rgba(255, 255, 255, 0.68);
@@ -1743,11 +2421,17 @@
   }
 
   .volume-row input:hover::-webkit-slider-thumb,
-  .volume-row input:focus-visible::-webkit-slider-thumb { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.18), 0 6px 18px rgba(0, 0, 0, 0.46), inset 0 1px 0 #fff; }
+  .volume-row input:focus-visible::-webkit-slider-thumb,
+  .layer-volume input:hover::-webkit-slider-thumb,
+  .layer-volume input:focus-visible::-webkit-slider-thumb { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.18), 0 6px 18px rgba(0, 0, 0, 0.46), inset 0 1px 0 #fff; }
   .volume-row input:hover::-moz-range-thumb,
-  .volume-row input:focus-visible::-moz-range-thumb { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.18), 0 6px 18px rgba(0, 0, 0, 0.46), inset 0 1px 0 #fff; }
-  .volume-row input:active::-webkit-slider-thumb { transform: scale(0.92); }
-  .volume-row input:active::-moz-range-thumb { transform: scale(0.92); }
+  .volume-row input:focus-visible::-moz-range-thumb,
+  .layer-volume input:hover::-moz-range-thumb,
+  .layer-volume input:focus-visible::-moz-range-thumb { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.18), 0 6px 18px rgba(0, 0, 0, 0.46), inset 0 1px 0 #fff; }
+  .volume-row input:active::-webkit-slider-thumb,
+  .layer-volume input:active::-webkit-slider-thumb { transform: scale(0.92); }
+  .volume-row input:active::-moz-range-thumb,
+  .layer-volume input:active::-moz-range-thumb { transform: scale(0.92); }
   .volume-row output { color: rgba(255, 255, 255, 0.88); font-variant-numeric: tabular-nums; text-align: right; }
 
   .option-section { margin-top: 24px; }
@@ -1768,7 +2452,7 @@
     border-radius: 16px;
   }
 
-  .track-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .track-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
   .video-section { padding-top: 21px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
 
@@ -2087,6 +2771,184 @@
   .credits-card a:hover { color: #fff; transform: translateX(2px); border-color: rgba(var(--accent-rgb), 0.3); }
   .credits-card b { color: var(--accent); font-weight: 450; }
 
+  .hero-title-row {
+    display: flex;
+    align-items: flex-end;
+    gap: clamp(14px, 2vw, 24px);
+  }
+
+  .scene-favorite-button {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    margin-bottom: 2px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 16px;
+    color: rgba(255, 255, 255, 0.58);
+    background: rgba(15, 18, 20, 0.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 28px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(18px);
+    cursor: pointer;
+    transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), color 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+
+  .scene-favorite-button:hover { transform: translateY(-2px); color: #fff; border-color: rgba(var(--accent-rgb), 0.46); }
+  .scene-favorite-button.active { color: #151719; border-color: transparent; background: rgba(var(--accent-rgb), 0.92); }
+  .scene-favorite-button svg { width: 21px; height: 21px; fill: transparent; stroke: currentColor; stroke-width: 1.55; stroke-linejoin: round; }
+  .scene-favorite-button.active svg { fill: currentColor; }
+
+  .library-search-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: -4px 0 10px;
+  }
+
+  .scene-search {
+    min-width: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 10px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 15px;
+    background: rgba(15, 18, 20, 0.56);
+    transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  }
+
+  .scene-search:focus-within { border-color: rgba(var(--accent-rgb), 0.42); background: rgba(23, 26, 28, 0.72); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.07); }
+  .scene-search svg { width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: rgba(255, 255, 255, 0.46); stroke-width: 1.7; stroke-linecap: round; }
+  .scene-search input { width: 100%; min-width: 0; padding: 11px 0; border: 0; outline: 0; color: #fff; background: transparent; font: inherit; font-size: 0.75rem; }
+  .scene-search input::placeholder { color: rgba(255, 255, 255, 0.34); }
+  .scene-search input::-webkit-search-cancel-button { display: none; }
+  .clear-search { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; color: rgba(255, 255, 255, 0.62); background: rgba(15, 18, 20, 0.58); cursor: pointer; font-size: 1.1rem; }
+
+  .category-filters {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    padding: 1px 1px 5px;
+    scrollbar-width: none;
+  }
+  .category-filters::-webkit-scrollbar { display: none; }
+  .category-filters button {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    padding: 7px 11px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.48);
+    background: rgba(17, 20, 22, 0.5);
+    cursor: pointer;
+    font-size: 0.64rem;
+    transition: color 180ms ease, border-color 180ms ease, background 180ms ease, transform 180ms ease;
+  }
+  .category-filters button:hover { transform: translateY(-1px); color: #fff; }
+  .category-filters button.active { color: #111315; border-color: transparent; background: rgba(var(--accent-rgb), 0.9); }
+
+  .personal-library {
+    display: grid;
+    gap: 16px;
+    margin: 3px 0 18px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 21px;
+    background: rgba(12, 15, 17, 0.3);
+  }
+  .personal-library section { min-width: 0; }
+  .personal-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 2px 8px; }
+  .personal-heading h3 { margin: 0; color: rgba(255, 255, 255, 0.68); font-size: 0.68rem; font-weight: 620; letter-spacing: 0.05em; text-transform: uppercase; }
+  .personal-heading button,
+  .recent-settings-heading button { padding: 0; border: 0; color: rgba(var(--accent-rgb), 0.82); background: transparent; cursor: pointer; font-size: 0.63rem; }
+  .personal-card-row,
+  .recent-card-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 0.76fr); gap: 7px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: thin; scrollbar-color: rgba(var(--accent-rgb), 0.24) transparent; }
+  .personal-mix-card { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px; padding: 6px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 15px; background: rgba(22, 25, 27, 0.66); }
+  .personal-mix-load { min-width: 0; display: grid; gap: 4px; padding: 7px; border: 0; color: rgba(255, 255, 255, 0.78); background: transparent; cursor: pointer; text-align: left; }
+  .personal-mix-load strong { overflow: hidden; font-size: 0.72rem; font-weight: 560; text-overflow: ellipsis; white-space: nowrap; }
+  .personal-mix-load span { overflow: hidden; color: rgba(255, 255, 255, 0.38); font-size: 0.58rem; text-overflow: ellipsis; white-space: nowrap; }
+  .personal-mix-card > div { display: grid; gap: 3px; }
+  .personal-mix-card > div button { width: 27px; height: 27px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 9px; color: rgba(255, 255, 255, 0.38); background: transparent; cursor: pointer; }
+  .personal-mix-card > div button:hover,
+  .personal-mix-card > div button.active { color: var(--accent); background: rgba(var(--accent-rgb), 0.09); }
+  .recent-card-row button { min-width: 0; display: grid; gap: 4px; padding: 11px 12px; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 14px; color: rgba(255, 255, 255, 0.68); background: rgba(22, 25, 27, 0.58); cursor: pointer; text-align: left; }
+  .recent-card-row strong { font-size: 0.7rem; font-weight: 550; }
+  .recent-card-row span { overflow: hidden; color: rgba(255, 255, 255, 0.35); font-size: 0.57rem; text-overflow: ellipsis; white-space: nowrap; }
+
+  .scene-state.favorite { width: auto; height: auto; color: rgba(17, 19, 21, 0.56); background: transparent; font-size: 0.72rem; box-shadow: none; }
+  .scene-card:not(.active) .scene-state.favorite { color: var(--accent); }
+
+  .mix-action-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+  .mix-action-row button { min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 8px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 14px; color: rgba(255, 255, 255, 0.54); background: rgba(19, 22, 24, 0.62); cursor: pointer; font-size: 0.62rem; transition: transform 200ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease; }
+  .mix-action-row button:hover { transform: translateY(-1px); color: #fff; border-color: rgba(var(--accent-rgb), 0.34); }
+  .mix-action-row button.active { color: #151719; border-color: transparent; background: rgba(var(--accent-rgb), 0.88); }
+  .mix-action-row svg { width: 14px; height: 14px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
+
+  .track-item { min-width: 0; overflow: hidden; display: grid; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 17px; background: rgba(22, 25, 27, 0.74); transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease; }
+  .track-item.active { border-color: rgba(var(--accent-rgb), 0.42); background: rgba(19, 23, 25, 0.88); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 0 24px rgba(var(--accent-rgb), 0.055); }
+  .track-item .track-card { width: 100%; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .track-item .track-card.active { color: rgba(255, 255, 255, 0.9); border-color: transparent; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.13), transparent 74%); box-shadow: none; }
+  .track-item.active .track-number { color: rgba(var(--accent-rgb), 0.82); }
+  .track-item .track-card.active small { color: rgba(255, 255, 255, 0.43); }
+  .layer-volume { display: grid; grid-template-columns: auto minmax(0, 1fr) 28px; align-items: center; gap: 9px; margin: 0 10px 10px; padding: 7px 9px; border-top: 1px solid rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.4); font-size: 0.58rem; }
+  .layer-volume input { height: 24px; }
+  .layer-volume input::-webkit-slider-runnable-track { height: 5px; }
+  .layer-volume input::-webkit-slider-thumb { width: 16px; height: 16px; margin-top: -6px; }
+  .layer-volume input::-moz-range-track,
+  .layer-volume input::-moz-range-progress { height: 5px; }
+  .layer-volume input::-moz-range-thumb { width: 16px; height: 16px; }
+  .layer-volume output { color: rgba(255, 255, 255, 0.72); font-variant-numeric: tabular-nums; text-align: right; }
+
+  .data-saver-note { margin: -3px 2px 10px; color: rgba(var(--accent-rgb), 0.75); font-size: 0.64rem; line-height: 1.45; }
+  .compact-note { margin-top: 2px; }
+
+  .empty-library-state { display: grid; justify-items: center; gap: 6px; padding: 24px 18px; border: 1px dashed rgba(255, 255, 255, 0.12); border-radius: 19px; color: rgba(255, 255, 255, 0.68); text-align: center; }
+  .empty-library-state strong { font-size: 0.8rem; font-weight: 560; }
+  .empty-library-state span { color: rgba(255, 255, 255, 0.4); font-size: 0.67rem; line-height: 1.45; }
+  .empty-library-state button { margin-top: 5px; padding: 8px 12px; border: 1px solid rgba(var(--accent-rgb), 0.28); border-radius: 999px; color: var(--accent); background: rgba(var(--accent-rgb), 0.07); cursor: pointer; font-size: 0.65rem; }
+  .scene-empty { margin-top: 8px; }
+
+  .settings-mix-list { display: grid; gap: 7px; }
+  .settings-mix-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 17px; background: rgba(18, 21, 23, 0.48); }
+  .settings-mix-load { min-width: 0; padding: 8px 9px; border: 0; color: rgba(255, 255, 255, 0.78); background: transparent; cursor: pointer; text-align: left; }
+  .settings-mix-load span { min-width: 0; display: grid; gap: 4px; }
+  .settings-mix-load strong { overflow: hidden; font-size: 0.76rem; font-weight: 560; text-overflow: ellipsis; white-space: nowrap; }
+  .settings-mix-load small { overflow: hidden; color: rgba(255, 255, 255, 0.38); font-size: 0.62rem; text-overflow: ellipsis; white-space: nowrap; }
+  .settings-mix-card > div { display: flex; gap: 4px; }
+  .settings-mix-card > div button { width: 33px; height: 33px; display: grid; place-items: center; padding: 0; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 11px; color: rgba(255, 255, 255, 0.42); background: rgba(255, 255, 255, 0.035); cursor: pointer; }
+  .settings-mix-card > div button:hover,
+  .settings-mix-card > div button.active { color: var(--accent); border-color: rgba(var(--accent-rgb), 0.28); background: rgba(var(--accent-rgb), 0.08); }
+  .recent-settings-heading { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 0 2px; }
+  .recent-settings-heading strong { color: rgba(255, 255, 255, 0.55); font-size: 0.67rem; font-weight: 620; letter-spacing: 0.06em; text-transform: uppercase; }
+  .recent-settings-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .recent-settings-list button { min-width: 0; display: grid; gap: 4px; padding: 11px 12px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; color: rgba(255, 255, 255, 0.68); background: rgba(18, 21, 23, 0.42); cursor: pointer; text-align: left; }
+  .recent-settings-list strong { font-size: 0.72rem; font-weight: 550; }
+  .recent-settings-list span { overflow: hidden; color: rgba(255, 255, 255, 0.36); font-size: 0.59rem; text-overflow: ellipsis; white-space: nowrap; }
+
+  .app-toast { position: fixed; z-index: 120; left: 50%; bottom: 25px; min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 11px 16px; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 999px; color: rgba(255, 255, 255, 0.86); background: rgba(17, 20, 22, 0.84); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 18px 50px rgba(0, 0, 0, 0.35); backdrop-filter: blur(22px) saturate(145%); transform: translateX(-50%); font-size: 0.7rem; animation: toast-in 340ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .app-toast span { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.68); }
+  @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px) scale(0.96); } to { opacity: 1; transform: translateX(-50%); } }
+
+  .save-mix-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 22px; background: rgba(3, 5, 7, 0.44); backdrop-filter: blur(15px); animation: settings-backdrop-in 200ms ease both; }
+  .save-mix-dialog { width: min(430px, 100%); display: grid; gap: 18px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.17); border-radius: 27px; color: #f7f7f4; background: radial-gradient(circle at 10% 0%, rgba(var(--accent-rgb), 0.14), transparent 46%), rgba(18, 21, 23, 0.9); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 32px 100px rgba(0, 0, 0, 0.5); backdrop-filter: blur(30px) saturate(150%); animation: settings-modal-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .save-mix-dialog h2 { margin: 0; font-size: 1.55rem; font-weight: 470; letter-spacing: -0.04em; }
+  .save-mix-dialog > div > p:last-child { margin: 8px 0 0; color: rgba(255, 255, 255, 0.45); font-size: 0.69rem; line-height: 1.45; }
+  .save-mix-dialog label { display: grid; gap: 7px; color: rgba(255, 255, 255, 0.52); font-size: 0.66rem; }
+  .save-mix-dialog input { width: 100%; min-height: 48px; padding: 12px 14px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 15px; outline: 0; color: #fff; background: rgba(8, 11, 13, 0.48); font: inherit; }
+  .save-mix-dialog input:focus { border-color: rgba(var(--accent-rgb), 0.5); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.08); }
+  .save-mix-actions { display: flex; justify-content: flex-end; gap: 7px; }
+  .save-mix-actions button { min-height: 40px; padding: 9px 15px; border: 1px solid rgba(255, 255, 255, 0.11); border-radius: 999px; color: rgba(255, 255, 255, 0.67); background: rgba(255, 255, 255, 0.05); cursor: pointer; }
+  .save-mix-actions button.primary { color: #121416; border-color: transparent; background: rgba(var(--accent-rgb), 0.94); font-weight: 620; }
+
   .immersive-visualizer {
     position: fixed;
     z-index: 4;
@@ -2121,6 +2983,10 @@
       position: sticky;
       top: 80px;
       align-self: start;
+      max-height: calc(100svh - 98px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(var(--accent-rgb), 0.3) transparent;
     }
   }
 
@@ -2151,6 +3017,8 @@
     main { padding: 88px 12px 28px; }
     .scene-hero { min-height: 140px; display: block; margin: 0 8px 24px; }
     h1 { font-size: clamp(4rem, 21vw, 6.3rem); }
+    .hero-title-row { align-items: center; }
+    .scene-favorite-button { width: 43px; height: 43px; margin: 7px 0 0; border-radius: 14px; }
     .scene-hero > p { width: min(100%, 420px); margin-top: 22px; font-size: 0.9rem; }
     .liquid-panel { border-radius: 26px; }
     .library-panel, .mixer-panel { padding: 18px; }
@@ -2170,6 +3038,9 @@
     }
     .scene-grid::-webkit-scrollbar { display: none; }
     .track-grid, .video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mix-action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .personal-library { padding: 13px; }
+    .personal-card-row, .recent-card-row { grid-auto-columns: minmax(168px, 72vw); }
     .scene-card { min-height: 78px; padding: 11px; gap: 9px; }
     .scene-card { min-height: 0; scroll-snap-align: start; }
     .scene-card small { display: none; }
@@ -2191,6 +3062,7 @@
     .settings-tabs button { min-height: 40px; padding: 9px 12px; }
     .settings-tabs button:hover { transform: none; }
     .settings-content { overflow: visible; padding: 20px 17px 28px; }
+    .recent-settings-list { grid-template-columns: 1fr; }
     .preference-row { min-height: 74px; gap: 14px; padding: 14px; }
     .quiet-view-preview { min-height: 160px; }
     .immersive-visualizer { width: 142px; }
@@ -2205,7 +3077,9 @@
     .scene-hero { min-height: 106px; }
     .scene-grid { gap: 6px; }
     .track-grid { grid-template-columns: 1fr; }
-    .track-card:last-child:nth-child(odd) { grid-column: auto; }
+    .track-item:last-child:nth-child(odd) { grid-column: auto; }
+    .mix-action-row button { justify-content: flex-start; padding-inline: 12px; }
+    .app-toast { bottom: 14px; width: max-content; max-width: calc(100vw - 28px); justify-content: center; text-align: center; }
     .video-card strong { font-size: 0.72rem; }
   }
 
