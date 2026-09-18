@@ -1,7 +1,7 @@
 import tabsData from "./tabsData.json";
 import audioSources from "../audio-sources.json";
 import videoSources from "./videoLoops.resolved.json";
-import { siteUrl } from "./siteUrl.mjs";
+import { mediaUrl } from "./siteUrl.mjs";
 
 const meta = {
   tab_rain: ["Rain", "Weather", "Soft rain settling against the window.", "#83b7d2", "131, 183, 210"],
@@ -60,14 +60,14 @@ export const scenes = tabsData.map((scene) => {
     audioTracks: audioSources[scene.id].map((track, index) => ({
       ...track,
       id: `${scene.id}-audio-${index}`,
-      src: siteUrl(track.src || `assets/audio/${scene.id.replace(/^tab_/, "")}/${track.file}`),
+      src: mediaUrl(track.src || `assets/audio/${scene.id.replace(/^tab_/, "")}/${track.file}`),
     })),
     videoLoops: [
       {
         id: `${scene.id}-video-0`,
         title: originalSource?.title || "Original scene",
-        background: originalSource ? siteUrl(originalSource.high) : scene.background,
-        adaptiveBackground: originalSource ? siteUrl(originalSource.adaptive) : `adaptive/${mediaName}-720.mp4`,
+        background: originalSource ? mediaUrl(originalSource.high) : scene.background,
+        adaptiveBackground: originalSource ? mediaUrl(originalSource.adaptive) : `adaptive/${mediaName}-720.mp4`,
         poster: `posters/${mediaName}.jpg`,
         source: originalSource?.source,
         start: 0,
@@ -78,8 +78,8 @@ export const scenes = tabsData.map((scene) => {
       ...alternateLoops.map((loop, index) => ({
         id: `${scene.id}-video-${index + 1}`,
         title: loop.title,
-        background: siteUrl(loop.high),
-        adaptiveBackground: siteUrl(loop.adaptive),
+        background: mediaUrl(loop.high),
+        adaptiveBackground: mediaUrl(loop.adaptive),
         poster: `posters/${mediaName}.jpg`,
         source: loop.source,
         start: 0,

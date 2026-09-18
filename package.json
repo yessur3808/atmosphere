@@ -1,22 +1,27 @@
 {
-  "name": "svelte-app",
+  "name": "atmosphere",
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
   "scripts": {
     "build": "rollup -c",
+    "build:desktop": "npm run build && node scripts/prepare-desktop-dist.mjs",
     "check": "npm run lint && npm run test && npm run security:audit && npm run build && npm run verify:build",
+    "check:desktop": "npm run build:desktop && node scripts/verify-desktop.mjs",
     "dev": "rollup -c -w",
+    "dev:desktop": "rollup -c -w",
     "lint": "eslint . --ext .js,.mjs,.cjs,.svelte --max-warnings=0",
     "media:credits": "node scripts/rebuild-audio-credits.mjs",
     "media:refresh-audit": "node scripts/refresh-audited-media.mjs",
     "prepare:media": "bash scripts/prepare-media.sh",
     "security:audit": "npm audit --omit=dev --audit-level=high",
     "start": "node server.cjs",
+    "tauri": "tauri",
     "test": "node --test tests/*.test.mjs",
     "verify:build": "node scripts/verify-build.mjs"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.8.4",
     "@rollup/plugin-commonjs": "^24.0.0",
     "@rollup/plugin-json": "^6.0.1",
     "@rollup/plugin-node-resolve": "^15.0.0",
@@ -34,6 +39,7 @@
     "typescript": "^5.3.2"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
     "sirv": "^2.0.4",
     "sirv-cli": "^2.0.0"
   }

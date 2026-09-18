@@ -1,5 +1,8 @@
 /node_modules/
 /public/build/
+/desktop-dist/
+/src-tauri/target/
+/src-tauri/gen/
 /public/assets/audio/cat_window/01-sleepy-purr.mp3
 /public/assets/audio/leaves/01-canopy-rustle.mp3
 /public/assets/audio/library/01-turning-pages.mp3

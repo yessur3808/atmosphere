@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
-  import { siteUrl } from "../siteUrl.mjs";
+  import { mediaUrl } from "../siteUrl.mjs";
 
   export let background = "";
   export let adaptiveBackground = "";
@@ -49,7 +49,7 @@
 
   function resolveVideoSource(source) {
     if (/^https?:\/\//i.test(source || "")) return source;
-    return source ? siteUrl(`assets/videos/${source}`) : "";
+    return source ? mediaUrl(`assets/videos/${source}`) : "";
   }
 
   onMount(() => {
@@ -62,7 +62,7 @@
 
   $: selectedBackground = mediaReady && !disabled ? (useAdaptive && adaptiveBackground ? adaptiveBackground : background) : "";
   $: nextSource = resolveVideoSource(selectedBackground);
-  $: posterSource = poster ? siteUrl(`assets/videos/${poster}`) : "";
+  $: posterSource = poster ? mediaUrl(`assets/videos/${poster}`) : "";
   $: requestSource(nextSource);
   $: syncPlayback(paused, disabled, playbackRate, activeSlot);
   $: if (!disabled && viewKey && activeView !== viewKey && videoElements[activeSlot]?.readyState >= 1) {

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Atmosphere",
+  "version": "1.0.0",
+  "identifier": "com.atmosphere.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev:desktop",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build:desktop",
+    "frontendDist": "../desktop-dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Atmosphere",
+        "width": 1440,
+        "height": 920,
+        "minWidth": 860,
+        "minHeight": 620,
+        "center": true,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "backgroundColor": "#090b0d"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://api.open-meteo.com https://www.google-analytics.com https://region1.google-analytics.com https://yessur3808.github.io https://cdn.coverr.co; img-src 'self' asset: http://asset.localhost data: https://yessur3808.github.io; media-src 'self' asset: http://asset.localhost blob: https://yessur3808.github.io https://cdn.coverr.co; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Music",
+    "shortDescription": "Immersive ambient soundscapes for focus, rest, and sleep.",
+    "longDescription": "Mix high-quality ambient recordings with cinematic atmosphere loops for focus, reading, relaxation, and sleep.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

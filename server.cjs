@@ -1,7 +1,9 @@
 const http = require("node:http");
 const sirv = require("sirv");
 
-const port = Number(process.env.PORT || 4173);
+const portArgumentIndex = process.argv.indexOf("--port");
+const portArgument = portArgumentIndex >= 0 ? process.argv[portArgumentIndex + 1] : undefined;
+const port = Number(process.env.PORT || portArgument || 4173);
 const host = process.env.HOST || "0.0.0.0";
 
 const immutableAssets = sirv("public", {

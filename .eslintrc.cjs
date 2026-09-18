@@ -25,7 +25,7 @@ module.exports = {
       env: { browser: false, node: true },
     },
   ],
-  ignorePatterns: ["node_modules/", "public/build/"],
+  ignorePatterns: ["node_modules/", "public/build/", "desktop-dist/", "src-tauri/target/"],
   rules: {
     "no-unused-vars": ["error", { argsIgnorePattern: "^_", caughtErrors: "none" }],
   },

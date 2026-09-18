@@ -13,8 +13,9 @@
     upsertRecentMix,
   } from "./mixState.mjs";
   import { createMiniPlayer } from "./miniPlayer";
+  import { initializeDesktopRuntime } from "./desktopRuntime";
   import { scenes } from "./sceneLibrary";
-  import { siteUrl } from "./siteUrl.mjs";
+  import { mediaUrl, siteUrl } from "./siteUrl.mjs";
 
   let audioElements = [];
   let backgroundComponent;
@@ -68,6 +69,7 @@
   let toastTimer;
   let persistenceTimer;
   let hydrated = false;
+  let desktopRuntimeCleanup;
 
   const preferencesStorageKey = "atmosphere-preferences-v2";
   const legacyPreferencesStorageKey = "atmosphere-preferences-v1";
@@ -129,7 +131,7 @@
     visualLevels,
     videoPosition: activeVideo.position,
     videoScale: activeVideo.scale,
-    poster: siteUrl(`assets/videos/${activeVideo.poster}`),
+    poster: mediaUrl(`assets/videos/${activeVideo.poster}`),
     video: dataSaverMode ? undefined : backgroundComponent?.getVideoElement(),
     pipPreference,
     dataSaverMode,
@@ -399,15 +401,16 @@
     }
   }
 
-  async function togglePlayback() {
+  async function togglePlayback(source = "main_transport") {
+    const controlSource = typeof source === "string" ? source : "main_transport";
     if (isAudioPlaying) {
       await fadeAndPauseAllAudio();
       if (linkedPlayback) isVideoPlaying = false;
-      trackEvent("playback_pause", { control_source: "main_transport", video_linked: linkedPlayback });
+      trackEvent("playback_pause", { control_source: controlSource, video_linked: linkedPlayback });
       return;
     }
     if (linkedPlayback) isVideoPlaying = !dataSaverMode;
-    await playSelectedTracks(selectedAudios, "main_transport");
+    await playSelectedTracks(selectedAudios, controlSource);
   }
 
   async function setAudioPlaying(shouldPlay, source = "interface") {
@@ -1039,6 +1042,11 @@
       },
     });
     miniPlayerController.sync(getMiniPlayerState());
+    initializeDesktopRuntime({
+      togglePlayback: () => togglePlayback("desktop_tray"),
+    }).then((cleanup) => {
+      desktopRuntimeCleanup = cleanup;
+    });
     hydrated = true;
 
     const sharedMix = decodeMixSnapshot(new URL(window.location.href).searchParams.get("mix"), scenes);
@@ -1067,6 +1075,7 @@
     audioContext?.close();
     destroyAnalytics();
     miniPlayerController?.destroy();
+    desktopRuntimeCleanup?.();
   });
 </script>
 
@@ -1090,6 +1099,7 @@
     <audio
       bind:this={audioElements[index]}
       src={track.src}
+      crossorigin="anonymous"
       preload={selectedAudios.includes(index) ? "metadata" : "none"}
       loop
       on:play={syncAudioPlaybackState}

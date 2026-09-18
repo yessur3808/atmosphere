@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveSiteUrl } from "../src/siteUrl.mjs";
+import { desktopMediaRoot, resolveMediaUrl, resolveSiteUrl } from "../src/siteUrl.mjs";
 
 test("resolves local assets beneath a GitHub Pages project path", () => {
   assert.equal(
@@ -27,3 +27,13 @@ test("leaves CDN, data, and blob URLs unchanged", () => {
   }
 });
 
+test("desktop runtime streams relative media from the public HTTPS library", () => {
+  assert.equal(
+    resolveMediaUrl("assets/audio/rain/01-window-rain.mp3", "tauri://localhost/", true),
+    `${desktopMediaRoot}assets/audio/rain/01-window-rain.mp3`,
+  );
+  assert.equal(
+    resolveMediaUrl("https://cdn.coverr.co/example.mp4", "tauri://localhost/", true),
+    "https://cdn.coverr.co/example.mp4",
+  );
+});
