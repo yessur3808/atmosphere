@@ -2,18 +2,21 @@
 
 Atmosphere includes a consent-gated Google Analytics 4 integration in `src/analytics.js`. The Google tag is not requested and no Atmosphere events are sent until a visitor selects **Allow anonymous analytics**.
 
-## Activate GA4
+## Production GA4 stream
 
-1. In Google Analytics, create a GA4 property and a Web data stream for `https://yessur3808.github.io/atmosphere/`.
-2. Copy the stream Measurement ID, which has the form `G-ABC123DEF4`.
-3. In `public/index.html`, replace the one placeholder value:
+- Property: **Atmosphere**
+- Web stream: **Atmosphere Website**
+- Stream URL: `https://yessur3808.github.io/atmosphere/`
+- Measurement ID: `G-EMR3SRND40`
+- Enhanced measurement: enabled
 
-   ```html
-   <meta name="google-analytics-id" content="G-XXXXXXXXXX">
-   ```
+The production Measurement ID is configured once in `public/index.html`:
 
-4. Deploy the site. Open Settings → Privacy and confirm the status reads **GA4 ready**.
-5. Grant analytics on a test browser and use GA4 Realtime and DebugView to confirm `page_view`, `atmosphere_view`, and interaction events.
+```html
+<meta name="google-analytics-id" content="G-EMR3SRND40">
+```
+
+After a deployment, open Settings → Privacy and confirm the status reads **GA4 ready**. Grant analytics in a test browser and use GA4 Realtime and DebugView to confirm `page_view`, `atmosphere_view`, and interaction events.
 
 The ID is intentionally kept in one meta tag. A GA4 Measurement ID is public configuration, not a secret, and does not grant access to the Analytics property.
 

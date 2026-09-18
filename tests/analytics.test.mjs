@@ -38,7 +38,9 @@ test("the monetization measurement funnel is instrumented", () => {
   }
 });
 
-test("GA4 uses one clearly replaceable Measurement ID", () => {
-  assert.match(indexSource, /name="google-analytics-id" content="G-XXXXXXXXXX"/);
+test("GA4 uses one production Measurement ID", () => {
+  const measurementId = indexSource.match(/name="google-analytics-id" content="(G-[A-Z0-9]+)"/);
+  assert.ok(measurementId, "GA4 Measurement ID is missing or malformed");
+  assert.notEqual(measurementId[1], "G-XXXXXXXXXX", "GA4 Measurement ID is still a placeholder");
   assert.equal((indexSource.match(/google-analytics-id/g) || []).length, 1);
 });
