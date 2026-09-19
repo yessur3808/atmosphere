@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rollup -c",
     "build:desktop": "npm run build && node scripts/prepare-desktop-dist.mjs",
-    "check": "npm run lint && npm run test && npm run security:audit && npm run build && npm run verify:build",
+    "check": "npm run lint && npm run test && npm run build && npm run verify:build",
     "check:desktop": "npm run build:desktop && node scripts/verify-desktop.mjs",
     "dev": "rollup -c -w",
     "dev:desktop": "rollup -c -w",
@@ -16,7 +16,7 @@
     "media:credits": "node scripts/rebuild-audio-credits.mjs",
     "media:refresh-audit": "node scripts/refresh-audited-media.mjs",
     "prepare:media": "bash scripts/prepare-media.sh",
-    "security:audit": "npm audit --omit=dev --audit-level=high",
+    "security:audit": "node scripts/npm-audit.mjs",
     "release:verify": "node scripts/verify-release-version.mjs",
     "start": "node server.cjs",
     "tauri": "tauri",

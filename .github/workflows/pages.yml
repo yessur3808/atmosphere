@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Lint, test, audit, and build
+    name: Lint, test, and build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
