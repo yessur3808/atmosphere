@@ -78,8 +78,7 @@
   "tab_onsen": [
     { "title": "Thermal steam", "file": "onsen/thermal-steam.mp4", "source": "https://coverr.co/videos/steam-from-the-hot-springs-bliadwwrrw" },
     { "title": "Winter rotenburo", "file": "onsen/winter-rotenburo.mp4", "source": "https://commons.wikimedia.org/wiki/File:Onsen-rotenburo-winter2014.ogv", "high": "assets/videos/loops/onsen/winter-rotenburo.mp4", "adaptive": "assets/videos/adaptive/loops/onsen/winter-rotenburo.mp4" },
-    { "title": "Kusatsu yubatake", "file": "onsen/kusatsu-yubatake.mp4", "source": "https://commons.wikimedia.org/wiki/File:Kusatsu_gunma_yubatake_-_2020_3_1.webm", "high": "assets/videos/loops/onsen/kusatsu-yubatake.mp4", "adaptive": "assets/videos/adaptive/loops/onsen/kusatsu-yubatake.mp4" },
-    { "title": "Jigokudani spring", "file": "onsen/jigokudani-spring.mp4", "source": "https://commons.wikimedia.org/wiki/File:Jigokudani_Monkey_Park_-_hotsprings.ogv", "high": "assets/videos/loops/onsen/jigokudani-spring.mp4", "adaptive": "assets/videos/adaptive/loops/onsen/jigokudani-spring.mp4" }
+    { "title": "Kusatsu yubatake", "file": "onsen/kusatsu-yubatake.mp4", "source": "https://commons.wikimedia.org/wiki/File:Kusatsu_gunma_yubatake_-_2020_3_1.webm", "high": "assets/videos/loops/onsen/kusatsu-yubatake.mp4", "adaptive": "assets/videos/adaptive/loops/onsen/kusatsu-yubatake.mp4" }
   ],
   "tab_cat_window": [
     { "title": "Window hideaway", "file": "cat-window/window-hideaway.mp4", "source": "https://coverr.co/videos/a-red-cat-in-a-fabric-pet-house-jy8vnfaata" },
@@ -118,13 +117,6 @@
     { "title": "Daytime current", "file": "traffic/daytime-current.mp4", "source": "https://coverr.co/videos/traffic-in-the-city-nqfup6dv2i" }
   ],
   "tab_elevator_music": [
-    {
-      "title": "Atrium elevators",
-      "file": "elevator/atrium-elevators.mp4",
-      "source": "https://www.pexels.com/video/elevators-going-up-and-down-855191/",
-      "high": "assets/videos/loops/elevator/atrium-elevators.mp4",
-      "adaptive": "assets/videos/adaptive/loops/elevator/atrium-elevators.mp4"
-    },
     {
       "title": "Endless glass ride",
       "file": "elevator/endless-glass-ride.mp4",
@@ -191,7 +183,6 @@
     { "title": "Rainy downtown", "file": "night-drive/rainy-downtown.mp4", "source": "https://www.pexels.com/video/nighttime-rain-drive-through-city-streets-31940805/", "high": "assets/videos/loops/night-drive/rainy-downtown.mp4", "adaptive": "assets/videos/adaptive/loops/night-drive/rainy-downtown.mp4" },
     { "title": "City light trails", "file": "night-drive/city-light-trails.mp4", "source": "https://www.pexels.com/video/point-of-view-of-a-person-driving-a-car-at-night-3895030/", "high": "assets/videos/loops/night-drive/city-light-trails.mp4", "adaptive": "assets/videos/adaptive/loops/night-drive/city-light-trails.mp4" },
     { "title": "Dubai expressway", "file": "night-drive/dubai-expressway.mp4", "source": "https://www.pexels.com/video/video-of-dubai-traffic-at-night-5057525/", "high": "assets/videos/loops/night-drive/dubai-expressway.mp4", "adaptive": "assets/videos/adaptive/loops/night-drive/dubai-expressway.mp4" },
-    { "title": "Seoul after dark", "file": "night-drive/seoul-after-dark.mp4", "source": "https://www.pexels.com/video/vehicles-on-the-road-4191314/", "high": "assets/videos/loops/night-drive/seoul-after-dark.mp4", "adaptive": "assets/videos/adaptive/loops/night-drive/seoul-after-dark.mp4" },
     { "title": "Los Angeles freeway", "file": "night-drive/los-angeles-freeway.mp4", "source": "https://www.pexels.com/video/video-of-cars-on-the-road-5741833/", "high": "assets/videos/loops/night-drive/los-angeles-freeway.mp4", "adaptive": "assets/videos/adaptive/loops/night-drive/los-angeles-freeway.mp4" },
     { "title": "Shenzhen tunnel", "file": "night-drive/shenzhen-tunnel.mp4", "source": "https://www.pexels.com/video/driving-through-a-modern-tunnel-at-night-35987757/", "high": "assets/videos/loops/night-drive/shenzhen-tunnel.mp4", "adaptive": "assets/videos/adaptive/loops/night-drive/shenzhen-tunnel.mp4" },
     { "title": "Rural midnight road", "file": "night-drive/rural-midnight-road.mp4", "source": "https://www.pexels.com/video/driving-in-a-road-at-night-5542449/", "high": "assets/videos/loops/night-drive/rural-midnight-road.mp4", "adaptive": "assets/videos/adaptive/loops/night-drive/rural-midnight-road.mp4" },

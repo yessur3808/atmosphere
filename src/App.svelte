@@ -25,7 +25,7 @@
   let selectedVideo = 0;
   let audioStarted = false;
   let isAudioPlaying = false;
-  let isVideoPlaying = true;
+  let isVideoPlaying = false;
   let volume = 0.52;
   let audioLoading = false;
   let audioError = "";
@@ -45,6 +45,7 @@
   let miniPlayerStatus = "";
   let pipPreference = "ask";
   let pipPromptVisible = false;
+  let pipControlsAvailable = false;
   let settingsOpen = false;
   let settingsTab = "playback";
   let linkedPlayback = true;
@@ -108,6 +109,12 @@
     { id: "manual", title: "Manual only", detail: "Open only when you press the button" },
     { id: "off", title: "Off", detail: "Never open the mini player" },
   ];
+
+  function isAppleMobileDevice() {
+    const platform = navigator.userAgentData?.platform || navigator.platform || "";
+    const touchEnabledMac = platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    return /iPad|iPhone|iPod/i.test(navigator.userAgent) || touchEnabledMac;
+  }
   const homeHref = siteUrl("");
   const faviconHref = siteUrl("favicon-v2.png");
   const creditsHref = siteUrl("audio-credits.html");
@@ -137,6 +144,9 @@
   $: sceneCategories = ["all", "favorites", ...new Set(scenes.map((scene) => scene.category))];
   $: filteredScenes = filterSceneLibrary(scenes, libraryQuery, libraryCategory, favoriteSceneIds);
   $: currentSceneFavorite = favoriteSceneIds.includes(activeScene.id);
+  $: visibleSettingsTabs = pipControlsAvailable
+    ? settingsTabs
+    : settingsTabs.filter((tab) => tab.id !== "mini-player");
   $: transportMediaLabel = dataSaverMode || !linkedPlayback ? "audio" : "audio and video";
   $: miniPlayerSnapshot = {
     sceneTitle: activeScene.title,
@@ -340,12 +350,16 @@
     isAudioPlaying = playing;
     audioLoading = false;
     if (playing) startVisualizer();
-    else stopVisualizer();
+    else {
+      isVideoPlaying = false;
+      stopVisualizer();
+    }
   }
 
   function pauseAllAudio() {
     audioElements.filter(Boolean).forEach((element) => element.pause());
     isAudioPlaying = false;
+    isVideoPlaying = false;
     stopVisualizer();
     refreshSmartMixSchedule();
   }
@@ -403,6 +417,7 @@
       }, audioCrossfadeMilliseconds + 40);
       audioStarted = true;
       isAudioPlaying = true;
+      if (linkedPlayback) isVideoPlaying = !dataSaverMode;
       audioLoading = false;
       startVisualizer();
       recordRecentSession(playbackSource);
@@ -413,7 +428,7 @@
         video_linked: linkedPlayback,
         selected_track_ids: selectedAudios.map((index) => activeScene.audioTracks[index]?.id).filter(Boolean).join(","),
       });
-      if (pipPreference === "ask") pipPromptVisible = true;
+      if (pipControlsAvailable && pipPreference === "ask") pipPromptVisible = true;
     } else {
       isAudioPlaying = false;
       audioLoading = false;
@@ -425,7 +440,6 @@
     const controlSource = typeof source === "string" ? source : "main_transport";
     if (isAudioPlaying) {
       await fadeAndPauseAllAudio();
-      if (linkedPlayback) isVideoPlaying = false;
       trackEvent("playback_pause", { control_source: controlSource, video_linked: linkedPlayback });
       return;
     }
@@ -475,7 +489,7 @@
     selectedAudio = 0;
     selectedAudios = [0];
     selectedVideo = 0;
-    isVideoPlaying = !dataSaverMode;
+    isVideoPlaying = false;
     const firstTrackId = scenes[index].audioTracks[0]?.id;
     if (firstTrackId && !Number.isFinite(Number(layerVolumes[firstTrackId]))) {
       layerVolumes = { ...layerVolumes, [firstTrackId]: 1 };
@@ -544,7 +558,7 @@
         layerVolumes = { ...layerVolumes, [trackId]: Number.isFinite(recipeVolume) ? recipeVolume : position === 0 ? 0.74 : 0.62 };
       }
     });
-    isVideoPlaying = !dataSaverMode;
+    isVideoPlaying = false;
     savePreferences();
     trackEvent("sound_recipe_apply", {
       recipe_id: recipe.id,
@@ -556,7 +570,7 @@
 
   function selectVideo(index) {
     selectedVideo = index;
-    isVideoPlaying = !dataSaverMode;
+    isVideoPlaying = isAudioPlaying && !dataSaverMode;
     trackEvent("video_loop_select", {
       selected_video_id: activeScene.videoLoops[index].id,
       selected_video_title: activeScene.videoLoops[index].title,
@@ -636,7 +650,7 @@
 
   function setDataSaverMode(enabled) {
     dataSaverMode = enabled;
-    isVideoPlaying = enabled ? false : true;
+    isVideoPlaying = isAudioPlaying && !enabled;
     backgroundComponent?.setAutoPictureInPicture(!enabled && isAudioPlaying && pipPreference === "automatic");
     savePreferences();
     queuePersistSession();
@@ -775,7 +789,7 @@
     multiSoundEnabled = snapshot.multiSoundEnabled || selectedAudios.length > 1;
     linkedPlayback = snapshot.linkedPlayback;
     dataSaverMode = snapshot.dataSaverMode;
-    isVideoPlaying = !dataSaverMode;
+    isVideoPlaying = false;
     smartMixMultipliers = {};
     applyVolume(0);
     savePreferences();
@@ -910,6 +924,11 @@
       showToast("Turn off Audio only to restore video");
       return;
     }
+    if (!isAudioPlaying) {
+      isVideoPlaying = false;
+      showToast("Start the sound before playing background motion");
+      return;
+    }
     isVideoPlaying = !isVideoPlaying;
     trackEvent(isVideoPlaying ? "video_play" : "video_pause", { control_source: "separate_video_control" });
   }
@@ -931,7 +950,7 @@
 
   function toggleRecipes() {
     recipesOpen = !recipesOpen;
-    localStorage.setItem("atmosphere-recipes-open", String(recipesOpen));
+    localStorage.setItem("atmosphere-recipes-open-v2", String(recipesOpen));
     trackEvent(recipesOpen ? "sound_recipes_open" : "sound_recipes_close");
   }
 
@@ -1018,6 +1037,7 @@
   }
 
   onMount(() => {
+    pipControlsAvailable = !isAppleMobileDevice();
     const savedPreferences = readStoredJson(
       preferencesStorageKey,
       readStoredJson(legacyPreferencesStorageKey, {}),
@@ -1036,36 +1056,41 @@
       .filter((sceneId) => scenes.some((scene) => scene.id === sceneId));
     const firstTrackId = getTrackId(0);
     if (firstTrackId) layerVolumes = { [firstTrackId]: 1 };
-    const savedRecipesOpen = localStorage.getItem("atmosphere-recipes-open");
-    recipesOpen = savedRecipesOpen === null ? window.innerWidth > 760 : savedRecipesOpen === "true";
+    const savedRecipesOpen = localStorage.getItem("atmosphere-recipes-open-v2");
+    recipesOpen = savedRecipesOpen === "true";
     initializeAnalytics(getAnalyticsContext);
     const analyticsStatus = getAnalyticsStatus();
     analyticsConfigured = analyticsStatus.configured;
     analyticsConsent = analyticsStatus.consent;
     trackEvent("atmosphere_view", { view_source: "initial_load" });
-    const savedPipPreference = localStorage.getItem("atmosphere-pip-preference");
-    if (["automatic", "manual", "off"].includes(savedPipPreference)) {
-      pipPreference = savedPipPreference;
-      // Reloading destroys the browser activation that allowed the floating
-      // window. Automatic therefore needs one fresh, explicit re-arm click
-      // each browsing session.
-      if (savedPipPreference === "automatic") pipPromptVisible = true;
+    if (pipControlsAvailable) {
+      const savedPipPreference = localStorage.getItem("atmosphere-pip-preference");
+      if (["automatic", "manual", "off"].includes(savedPipPreference)) {
+        pipPreference = savedPipPreference;
+        // Reloading destroys the browser activation that allowed the floating
+        // window. Automatic therefore needs one fresh, explicit re-arm click
+        // each browsing session.
+        if (savedPipPreference === "automatic") pipPromptVisible = true;
+      }
+      miniPlayerController = createMiniPlayer({
+        getState: getMiniPlayerState,
+        setPlaybackPlaying: setMiniPlayerPlayback,
+        setVolume: setMiniPlayerVolume,
+        previousTrack: previousAudioTrack,
+        nextTrack: nextAudioTrack,
+        onStateChange: (open, mode) => {
+          miniPlayerOpen = open;
+          miniPlayerMode = mode;
+          const label = mode === "document" ? "Picture-in-Picture" : mode === "native" ? "Video Picture-in-Picture" : mode === "inline" ? "Corner mini player" : "Mini player window";
+          miniPlayerStatus = open ? `${label} opened` : "Mini player closed";
+          trackEvent(open ? "mini_player_open" : "mini_player_close", { mini_player_mode: mode || "unknown" });
+        },
+      });
+      miniPlayerController.sync(getMiniPlayerState());
+    } else {
+      pipPreference = "off";
+      pipPromptVisible = false;
     }
-    miniPlayerController = createMiniPlayer({
-      getState: getMiniPlayerState,
-      setPlaybackPlaying: setMiniPlayerPlayback,
-      setVolume: setMiniPlayerVolume,
-      previousTrack: previousAudioTrack,
-      nextTrack: nextAudioTrack,
-      onStateChange: (open, mode) => {
-        miniPlayerOpen = open;
-        miniPlayerMode = mode;
-        const label = mode === "document" ? "Picture-in-Picture" : mode === "native" ? "Video Picture-in-Picture" : mode === "inline" ? "Corner mini player" : "Mini player window";
-        miniPlayerStatus = open ? `${label} opened` : "Mini player closed";
-        trackEvent(open ? "mini_player_open" : "mini_player_close", { mini_player_mode: mode || "unknown" });
-      },
-    });
-    miniPlayerController.sync(getMiniPlayerState());
     initializeDesktopRuntime({
       togglePlayback: () => togglePlayback("desktop_tray"),
     }).then((cleanup) => {
@@ -1081,7 +1106,7 @@
       applyMixSnapshot(resumeMix, "resume");
     } else {
       dataSaverMode = Boolean(savedPreferences.dataSaverMode);
-      isVideoPlaying = !dataSaverMode;
+      isVideoPlaying = false;
       queuePersistSession();
     }
   });
@@ -1138,9 +1163,10 @@
       <img class="brand-icon" src={faviconHref} width="30" height="30" alt="" aria-hidden="true" decoding="async" />
       <span class="wordmark-copy"><span>ATMO</span><i></i><span>SPHERE</span></span>
     </a>
-    <AmbientStatus immersive={immersiveMode} />
+    <AmbientStatus immersive={immersiveMode} on:notice={(event) => showToast(event.detail)} />
     {#if !immersiveMode}
       <div class="topbar-actions">
+      {#if pipControlsAvailable}
       <div class="pip-control">
         <button
           class:pip-active={miniPlayerOpen}
@@ -1160,6 +1186,7 @@
           <span>{pipPreference === "off" ? "Mini off" : miniPlayerOpen ? "Close mini" : "Open mini"}</span>
         </button>
       </div>
+      {/if}
       {#if !linkedPlayback && !dataSaverMode}
         <button
           class="video-toggle glass-button"
@@ -1194,7 +1221,7 @@
     </button>
   {/if}
 
-  {#if pipPromptVisible && !immersiveMode}
+  {#if pipControlsAvailable && pipPromptVisible && !immersiveMode && (!analyticsConfigured || analyticsConsent !== "unset")}
     <section class="pip-consent" role="dialog" aria-labelledby="pip-consent-title" aria-describedby="pip-consent-copy">
       <button class="pip-consent-close" type="button" aria-label="Use manual mini player" on:click={dismissPipPrompt}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5 16.5 16.5M16.5 7.5 7.5 16.5" /></svg>
@@ -1275,7 +1302,7 @@
 
         <div class="settings-layout">
           <nav class="settings-tabs" aria-label="Settings sections">
-            {#each settingsTabs as tab}
+            {#each visibleSettingsTabs as tab}
               <button class:active={settingsTab === tab.id} type="button" aria-current={settingsTab === tab.id ? "page" : undefined} on:click={() => selectSettingsTab(tab.id)}>
                 <span>{tab.title}</span><i aria-hidden="true"></i>
               </button>
@@ -1290,7 +1317,7 @@
                   <p>Choose how the room moves and how many sounds it can hold.</p>
                 </div>
                 <button class="preference-row" type="button" aria-pressed={linkedPlayback} on:click={() => setLinkedPlayback(!linkedPlayback)}>
-                  <span><strong>Unified play and pause</strong><small>Control the video loop and every active sound with the main button.</small></span>
+                  <span><strong>Unified playback</strong><small>Play sound and motion together. Pausing sound always pauses the video.</small></span>
                   <i class:active={linkedPlayback} class="preference-switch" aria-hidden="true"><b></b></i>
                 </button>
                 <button class="preference-row" type="button" aria-pressed={multiSoundEnabled} on:click={() => setMultiSoundEnabled(!multiSoundEnabled)}>
@@ -1369,7 +1396,7 @@
                   <i class:active={dataSaverMode} class="preference-switch" aria-hidden="true"><b></b></i>
                 </button>
               </div>
-            {:else if settingsTab === "mini-player"}
+            {:else if settingsTab === "mini-player" && pipControlsAvailable}
               <div class="settings-pane" aria-labelledby="mini-settings-heading">
                 <div class="settings-pane-heading">
                   <h3 id="mini-settings-heading">Mini player</h3>
@@ -1460,7 +1487,7 @@
     {#key activeScene.id}
       <section class="scene-hero">
         <div>
-          <p class="eyebrow">{activeScene.category} · Scene {String(activeIndex + 1).padStart(2, "0")}</p>
+          <p class="eyebrow">{activeScene.category}</p>
           <div class="hero-title-row">
             <h1>{activeScene.title}</h1>
             <button class:active={currentSceneFavorite} class="scene-favorite-button" type="button" aria-pressed={currentSceneFavorite} aria-label={currentSceneFavorite ? `Remove ${activeScene.title} from favorites` : `Add ${activeScene.title} to favorites`} title={currentSceneFavorite ? "Remove favorite" : "Favorite atmosphere"} on:click={toggleCurrentSceneFavorite}>
@@ -1626,14 +1653,6 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.4" /><circle cx="6" cy="12" r="2.4" /><circle cx="18" cy="19" r="2.4" /><path d="m8.1 10.8 7.8-4.6M8.1 13.2l7.8 4.6" /></svg>
             <span>Share</span>
           </button>
-          <button class:active={smartMixEnabled} type="button" aria-pressed={smartMixEnabled} on:click={() => setSmartMixEnabled(!smartMixEnabled)}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13.2 2.8-7 10h5l-.7 8.4 7.3-11h-5l.4-7.4Z" /></svg>
-            <span>Smart Mix</span>
-          </button>
-          <button class:active={dataSaverMode} type="button" aria-pressed={dataSaverMode} on:click={() => setDataSaverMode(!dataSaverMode)}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5c4.8-4 11.2-4 16 0M7 12c3.1-2.4 6.9-2.4 10 0M10 15.5c1.3-.9 2.7-.9 4 0" /><path d="m4 4 16 16" /></svg>
-            <span>Audio only</span>
-          </button>
         </div>
 
         <div class="option-section">
@@ -1652,8 +1671,9 @@
                     aria-pressed={selectedAudios.includes(index)}
                     on:click={() => selectTrack(index)}
                   >
-                    <span class="track-number">0{index + 1}</span>
-                    <span><strong>{track.title}</strong><small>{track.note}</small></span>
+                    <svg class="option-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13v-2M8.5 16V8M12 18V6M15.5 15V9M19 13v-2" /></svg>
+                    <span class="option-copy"><strong>{track.title}</strong><small>{track.note}</small></span>
+                    <span class="selection-dot" aria-hidden="true"></span>
                   </button>
                   {#if selectedAudios.includes(index)}
                     <label class="layer-volume">
@@ -1695,8 +1715,9 @@
                   aria-pressed={selectedVideo === index}
                   on:click={() => selectVideo(index)}
                 >
-                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <svg class="option-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="3" /><path d="m9.5 9 5 3-5 3V9Z" /></svg>
                   <strong>{loop.title}</strong>
+                  <span class="selection-dot" aria-hidden="true"></span>
                 </button>
               {/each}
             </div>
@@ -1789,6 +1810,15 @@
     align-items: center;
     gap: 10px;
   }
+
+  .topbar-actions .glass-button {
+    width: 42px;
+    height: 42px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .topbar-actions .glass-button span { display: none; }
 
   .wordmark {
     display: inline-flex;
@@ -2257,27 +2287,15 @@
     border-radius: 19px;
   }
 
-  .scene-card.active,
-  .track-card.active,
-  .video-card.active {
+  .scene-card.active {
     color: #111315;
     border-color: rgba(var(--accent-rgb), 0.8);
     background: linear-gradient(145deg, rgba(248, 248, 244, 0.96), rgba(var(--accent-rgb), 0.82));
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16), 0 0 30px rgba(var(--accent-rgb), 0.13), inset 0 1px 0 white;
   }
 
-  .track-number,
-  .video-card > span {
-    color: rgba(255, 255, 255, 0.35);
-    font-size: 0.65rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .active .track-number,
-  .video-card.active > span { color: rgba(17, 19, 21, 0.42); }
-
   .scene-card-copy,
-  .track-card > span:last-child { display: grid; gap: 4px; min-width: 0; }
+  .option-copy { display: grid; gap: 4px; min-width: 0; }
   .scene-card strong,
   .track-card strong,
   .video-card strong { position: relative; font-size: 0.87rem; font-weight: 540; line-height: 1.18; }
@@ -2487,13 +2505,13 @@
   @keyframes options-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
   .track-card {
-    min-height: 62px;
+    min-height: 56px;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px;
-    padding: 11px;
-    border-radius: 16px;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 15px;
   }
 
   .track-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
@@ -2501,13 +2519,55 @@
   .video-section { padding-top: 21px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
 
   .video-card {
-    min-height: 58px;
+    min-height: 54px;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px;
-    padding: 11px;
-    border-radius: 15px;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(15, 18, 20, 0.42);
+  }
+
+  .track-card.active,
+  .video-card.active {
+    color: rgba(255, 255, 255, 0.94);
+    border-color: rgba(var(--accent-rgb), 0.42);
+    background: rgba(var(--accent-rgb), 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 0 22px rgba(var(--accent-rgb), 0.05);
+  }
+
+  .option-icon {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.38);
+    stroke-width: 1.45;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: color 200ms ease, stroke 200ms ease, transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .active > .option-icon {
+    stroke: var(--accent);
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.3));
+  }
+
+  .selection-dot {
+    width: 7px;
+    height: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 50%;
+    background: transparent;
+    transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  }
+
+  .active > .selection-dot {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.5);
   }
 
   .video-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; }
@@ -2931,17 +2991,15 @@
   .scene-state.favorite { width: auto; height: auto; color: rgba(17, 19, 21, 0.56); background: transparent; font-size: 0.72rem; box-shadow: none; }
   .scene-card:not(.active) .scene-state.favorite { color: var(--accent); }
 
-  .mix-action-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+  .mix-action-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
   .mix-action-row button { min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 8px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 14px; color: rgba(255, 255, 255, 0.54); background: rgba(19, 22, 24, 0.62); cursor: pointer; font-size: 0.62rem; transition: transform 200ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease; }
   .mix-action-row button:hover { transform: translateY(-1px); color: #fff; border-color: rgba(var(--accent-rgb), 0.34); }
-  .mix-action-row button.active { color: #151719; border-color: transparent; background: rgba(var(--accent-rgb), 0.88); }
   .mix-action-row svg { width: 14px; height: 14px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
 
-  .track-item { min-width: 0; overflow: hidden; display: grid; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 17px; background: rgba(22, 25, 27, 0.74); transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease; }
-  .track-item.active { border-color: rgba(var(--accent-rgb), 0.42); background: rgba(19, 23, 25, 0.88); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 0 24px rgba(var(--accent-rgb), 0.055); }
+  .track-item { min-width: 0; overflow: hidden; display: grid; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 15px; background: rgba(15, 18, 20, 0.42); transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease; }
+  .track-item.active { border-color: rgba(var(--accent-rgb), 0.4); background: rgba(var(--accent-rgb), 0.085); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 0 22px rgba(var(--accent-rgb), 0.045); }
   .track-item .track-card { width: 100%; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-  .track-item .track-card.active { color: rgba(255, 255, 255, 0.9); border-color: transparent; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.13), transparent 74%); box-shadow: none; }
-  .track-item.active .track-number { color: rgba(var(--accent-rgb), 0.82); }
+  .track-item .track-card.active { color: rgba(255, 255, 255, 0.92); border-color: transparent; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), transparent 74%); box-shadow: none; }
   .track-item .track-card.active small { color: rgba(255, 255, 255, 0.43); }
   .layer-volume { display: grid; grid-template-columns: auto minmax(0, 1fr) 28px; align-items: center; gap: 9px; margin: 0 10px 10px; padding: 7px 9px; border-top: 1px solid rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.4); font-size: 0.58rem; }
   .layer-volume input { height: 24px; }

@@ -41,6 +41,23 @@ test("video backgrounds use two media slots for a real opacity crossfade", () =>
   assert.match(backgroundSource, /video\.visible \{ opacity: 1; \}/);
 });
 
+test("audio pause always rests background motion while separate video pause remains available", () => {
+  assert.match(appSource, /function pauseAllAudio\(\)[\s\S]*?isAudioPlaying = false;\s*isVideoPlaying = false;/);
+  assert.match(appSource, /if \(!isAudioPlaying\)[\s\S]*?Start the sound before playing background motion/);
+});
+
+test("Apple mobile devices do not receive unsupported mini-player controls", () => {
+  assert.match(appSource, /function isAppleMobileDevice\(\)/);
+  assert.match(appSource, /settingsTabs\.filter\(\(tab\) => tab\.id !== "mini-player"\)/);
+  assert.match(appSource, /\{#if pipControlsAvailable\}[\s\S]*?class="pip-control"/);
+  assert.match(appSource, /pipPromptVisible && !immersiveMode && \(!analyticsConfigured \|\| analyticsConsent !== "unset"\)/);
+});
+
+test("high-density phones and tablets receive full-quality video unless the network is constrained", () => {
+  assert.match(backgroundSource, /useAdaptive = forceAdaptive \|\| constrainedNetwork;/);
+  assert.doesNotMatch(backgroundSource, /matchMedia\("\(max-width: 720px\)"\)/);
+});
+
 test("Smart Mix and library discovery controls are exposed in the interface", () => {
   assert.match(appSource, /smartMixIntervalMilliseconds/);
   assert.match(appSource, /updateSmartMixTargets/);

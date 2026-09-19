@@ -1,9 +1,11 @@
 <script>
-  import { onDestroy, onMount } from "svelte";
+  import { createEventDispatcher, onDestroy, onMount } from "svelte";
   import { trackEvent } from "../analytics";
   import { buildCurrentWeatherUrl, parseCurrentWeather, roundedWeatherCoordinates } from "../weather.mjs";
 
   export let immersive = false;
+
+  const dispatch = createEventDispatcher();
 
   const clockFormatter = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
   const fullDateFormatter = new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" });
@@ -41,14 +43,16 @@
       ? "Add local weather using this device's location"
       : weatherText;
 
-  function isLocationContextAvailable() {
+  function isLocationContextAvailable(notify = true) {
     const localHost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
     if (!window.isSecureContext && !localHost) {
       weatherState = "secure";
+      if (notify) dispatch("notice", "Local weather needs HTTPS. Open the secure GitHub Pages site to allow location.");
       return false;
     }
     if (!("geolocation" in navigator)) {
       weatherState = "unavailable";
+      if (notify) dispatch("notice", "Location services are unavailable in this browser.");
       return false;
     }
     return true;
@@ -82,6 +86,7 @@
     } catch (error) {
       if (!destroyed) {
         weatherState = "unavailable";
+        if (userInitiated) dispatch("notice", "Weather could not load. Check your connection and try again.");
         trackEvent("weather_unavailable", { failure_stage: error?.name === "AbortError" ? "timeout" : "forecast" });
       }
     } finally {
@@ -105,6 +110,9 @@
       },
       (error) => {
         weatherState = error.code === 1 ? "denied" : "unavailable";
+        dispatch("notice", error.code === 1
+          ? "Location is blocked. Allow it in this site's browser settings and try again."
+          : "Your location could not be found. Please try again.");
         trackEvent("weather_unavailable", { failure_stage: error.code === 1 ? "permission" : "location" });
       },
       { enableHighAccuracy: false, timeout: 9000, maximumAge: 30 * 60 * 1000 },
@@ -118,7 +126,7 @@
   }
 
   async function inspectLocationPermission() {
-    if (!isLocationContextAvailable() || !navigator.permissions?.query) return;
+    if (!isLocationContextAvailable(false) || !navigator.permissions?.query) return;
     try {
       permissionStatus = await navigator.permissions.query({ name: "geolocation" });
       permissionStatus.addEventListener?.("change", handlePermissionChange);
@@ -205,13 +213,53 @@
   }
 
   .ambient-status.immersive {
-    min-height: 50px;
-    border-color: rgba(255, 255, 255, 0.16);
-    background:
-      radial-gradient(circle at 18% 0%, rgba(var(--accent-rgb), 0.13), transparent 58%),
-      rgba(14, 17, 19, 0.3);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 14px 38px rgba(0, 0, 0, 0.24), 0 0 32px rgba(var(--accent-rgb), 0.07);
+    min-height: 84px;
+    gap: clamp(15px, 2vw, 28px);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.44);
     animation: status-settle 600ms 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .ambient-status.immersive .status-time {
+    min-width: 0;
+    font-size: clamp(2.5rem, 5.2vw, 4.8rem);
+    font-weight: 430;
+    letter-spacing: -0.065em;
+  }
+
+  .ambient-status.immersive .status-divider {
+    height: clamp(48px, 6vw, 72px);
+    opacity: 0.78;
+  }
+
+  .ambient-status.immersive .status-details {
+    min-width: clamp(160px, 18vw, 240px);
+    gap: 7px;
+  }
+
+  .ambient-status.immersive .status-date {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: clamp(0.75rem, 1.15vw, 1rem);
+    letter-spacing: 0.12em;
+  }
+
+  .ambient-status.immersive .weather-action {
+    gap: 9px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: clamp(0.84rem, 1.2vw, 1.05rem);
+  }
+
+  .ambient-status.immersive .weather-icon {
+    width: 20px;
+    height: 20px;
+    flex-basis: 20px;
+    stroke-width: 1.4;
   }
 
   @keyframes status-settle {
@@ -298,6 +346,14 @@
     .status-date { font-size: 0.5rem; letter-spacing: 0.075em; }
     .weather-action { font-size: 0.58rem; }
     .weather-icon { width: 12px; height: 12px; flex-basis: 12px; }
+    .ambient-status.immersive { min-height: 68px; gap: 12px; }
+    .ambient-status.immersive .status-time { font-size: clamp(2rem, 12vw, 3.25rem); }
+    .ambient-status.immersive .status-divider { height: 46px; }
+    .ambient-status.immersive .status-details { min-width: 132px; }
+    .ambient-status.immersive .date-full,
+    .ambient-status.immersive .weather-label-full { display: inline; }
+    .ambient-status.immersive .date-compact,
+    .ambient-status.immersive .weather-label-short { display: none; }
   }
 
   @media (max-width: 355px) {

@@ -79,7 +79,11 @@ test("every atmosphere exposes its intended distinct video collection and a loca
   for (const scene of tabs) {
     const loops = videoSources[scene.id];
     const renderedLoopCount = loops.length + (remoteFirstScenes.has(scene.id) ? 0 : 1);
-    const expectedLoopCount = scene.id === "tab_night_drive" ? 14 : 4;
+    const expectedLoopCount = scene.id === "tab_night_drive"
+      ? 13
+      : ["tab_onsen", "tab_elevator_music"].includes(scene.id)
+        ? 3
+        : 4;
     assert.equal(renderedLoopCount, expectedLoopCount, `${scene.id} should render ${expectedLoopCount} video loops`);
     loopCount += renderedLoopCount;
 
@@ -106,7 +110,7 @@ test("every atmosphere exposes its intended distinct video collection and a loca
     }
   }
 
-  assert.equal(loopCount, 126);
+  assert.equal(loopCount, 123);
 });
 
 test("audited atmosphere mappings reject known semantic mismatches", () => {
@@ -139,15 +143,10 @@ test("audited atmosphere mappings reject known semantic mismatches", () => {
   for (const loop of videoSources.tab_snow) {
     assert.match(loop.source, /snow/i);
   }
-  assert.equal(videoSources.tab_onsen.filter(({ source }) => source.includes("commons.wikimedia.org")).length, 3);
+  assert.equal(videoSources.tab_onsen.filter(({ source }) => source.includes("commons.wikimedia.org")).length, 2);
   assert.equal(videoSources.tab_cat_window.filter(({ source }) => source.includes("Cat_body_language")).length, 1);
-  assert.deepEqual(
-    videoSources.tab_elevator_music.slice(0, 2).map(({ source }) => source),
-    [
-      "https://www.pexels.com/video/elevators-going-up-and-down-855191/",
-      "https://www.pexels.com/video/a-person-riding-an-elevator-5080921/",
-    ],
-  );
+  assert.equal(videoSources.tab_elevator_music.length, 3);
+  assert.equal(videoSources.tab_elevator_music[0].source, "https://www.pexels.com/video/a-person-riding-an-elevator-5080921/");
   assert.deepEqual(
     audioSources.tab_elevator_music.slice(0, 5).map(({ sourceTitle }) => sourceTitle),
     [
@@ -167,12 +166,14 @@ test("audited atmosphere mappings reject known semantic mismatches", () => {
       "https://www.pexels.com/video/dynamic-cosmic-starfield-animation-37652488/",
     ],
   );
-  assert.equal(videoSources.tab_night_drive.length, 14);
+  assert.equal(videoSources.tab_night_drive.length, 13);
   assert.ok(videoSources.tab_night_drive.every(({ source }) => /driv|car|windshield|traffic|road|tunnel|highway/i.test(source)));
   assert.ok(videoSources.tab_night_drive.some(({ title }) => /Dubai/i.test(title)));
-  assert.ok(videoSources.tab_night_drive.some(({ title }) => /Seoul/i.test(title)));
+  assert.ok(videoSources.tab_night_drive.every(({ title }) => !/Seoul/i.test(title)));
   assert.ok(videoSources.tab_night_drive.some(({ title }) => /Los Angeles/i.test(title)));
   assert.ok(videoSources.tab_night_drive.some(({ title }) => /Shenzhen/i.test(title)));
+  assert.ok(videoSources.tab_onsen.every(({ title }) => !/Jigokudani/i.test(title)));
+  assert.ok(videoSources.tab_elevator_music.every(({ title }) => !/Atrium/i.test(title)));
   assert.ok(videoSources.tab_farm.every(({ source }) => /cow|farm|field/i.test(source)));
   assert.deepEqual(
     audioSources.tab_farm.slice(0, 4).map(({ sourceTitle }) => sourceTitle),

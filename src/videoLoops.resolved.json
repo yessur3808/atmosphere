@@ -372,13 +372,6 @@
       "source": "https://commons.wikimedia.org/wiki/File:Kusatsu_gunma_yubatake_-_2020_3_1.webm",
       "high": "assets/videos/loops/onsen/kusatsu-yubatake.mp4",
       "adaptive": "assets/videos/adaptive/loops/onsen/kusatsu-yubatake.mp4"
-    },
-    {
-      "title": "Jigokudani spring",
-      "file": "onsen/jigokudani-spring.mp4",
-      "source": "https://commons.wikimedia.org/wiki/File:Jigokudani_Monkey_Park_-_hotsprings.ogv",
-      "high": "assets/videos/loops/onsen/jigokudani-spring.mp4",
-      "adaptive": "assets/videos/adaptive/loops/onsen/jigokudani-spring.mp4"
     }
   ],
   "tab_cat_window": [
@@ -563,13 +556,6 @@
   ],
   "tab_elevator_music": [
     {
-      "title": "Atrium elevators",
-      "file": "elevator/atrium-elevators.mp4",
-      "source": "https://www.pexels.com/video/elevators-going-up-and-down-855191/",
-      "high": "assets/videos/loops/elevator/atrium-elevators.mp4",
-      "adaptive": "assets/videos/adaptive/loops/elevator/atrium-elevators.mp4"
-    },
-    {
       "title": "Endless glass ride",
       "file": "elevator/endless-glass-ride.mp4",
       "source": "https://www.pexels.com/video/a-person-riding-an-elevator-5080921/",
@@ -730,13 +716,6 @@
       "source": "https://www.pexels.com/video/video-of-dubai-traffic-at-night-5057525/",
       "high": "assets/videos/loops/night-drive/dubai-expressway.mp4",
       "adaptive": "assets/videos/adaptive/loops/night-drive/dubai-expressway.mp4"
-    },
-    {
-      "title": "Seoul after dark",
-      "file": "night-drive/seoul-after-dark.mp4",
-      "source": "https://www.pexels.com/video/vehicles-on-the-road-4191314/",
-      "high": "assets/videos/loops/night-drive/seoul-after-dark.mp4",
-      "adaptive": "assets/videos/adaptive/loops/night-drive/seoul-after-dark.mp4"
     },
     {
       "title": "Los Angeles freeway",

@@ -44,7 +44,10 @@
 
   function updateMediaPreference() {
     const constrainedNetwork = connection?.saveData || /(2g|3g)$/.test(connection?.effectiveType || "");
-    useAdaptive = forceAdaptive || constrainedNetwork || window.matchMedia("(max-width: 720px)").matches;
+    // Modern phones and tablets have high-density displays, so viewport width
+    // is not a useful quality signal. Prefer the 1080p source unless the user
+    // or browser has explicitly indicated a constrained connection.
+    useAdaptive = forceAdaptive || constrainedNetwork;
   }
 
   function resolveVideoSource(source) {
@@ -57,7 +60,6 @@
     updateMediaPreference();
     mediaReady = true;
     connection?.addEventListener?.("change", updateMediaPreference);
-    window.addEventListener("resize", updateMediaPreference, { passive: true });
   });
 
   $: selectedBackground = mediaReady && !disabled ? (useAdaptive && adaptiveBackground ? adaptiveBackground : background) : "";
@@ -172,7 +174,6 @@
     window.clearTimeout(transitionTimer);
     videoElements.filter(Boolean).forEach((element) => element.pause());
     connection?.removeEventListener?.("change", updateMediaPreference);
-    window.removeEventListener("resize", updateMediaPreference);
   });
 </script>
 
