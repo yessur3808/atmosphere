@@ -52,6 +52,9 @@
   let multiSoundEnabled = false;
   let immersiveMode = false;
   let recipesOpen = true;
+  let mixDrawerTab = "for-you";
+  let mixIntent = "all";
+  let mixEditorOpen = false;
   let analyticsConfigured = false;
   let analyticsConsent = "unset";
   let layerVolumes = {};
@@ -81,6 +84,7 @@
   const audioCrossfadeMilliseconds = 760;
   const smartMixIntervalMilliseconds = 12000;
   const nativeVolumeFrames = new WeakMap();
+  const mixIntents = ["all", "focus", "relax", "sleep", "nature"];
   const settingsTabs = [
     { id: "playback", title: "Playback" },
     { id: "mixes", title: "My mixes" },
@@ -90,18 +94,18 @@
     { id: "about", title: "About" },
   ];
   const recipeBlueprints = [
-    { id: "office-focus", title: "Office focus", detail: "A steady foundation with just enough natural detail to stay attentive.", indices: [0, 2] },
-    { id: "gentle-depth", title: "Gentle depth", detail: "A softer two-layer blend for reading, journaling, and unwinding.", indices: [1, 4] },
-    { id: "full-atmosphere", title: "Full atmosphere", detail: "A richer three-part soundscape that fills the room without feeling busy.", indices: [0, 2, 3] },
-    { id: "hotel-lobby", title: "Hotel lobby", detail: "Classic elevator jazz with a restrained layer of distant lobby conversation.", sceneId: "tab_elevator_music", indices: [0, 5], volumes: [0.78, 0.24] },
-    { id: "cozy-cabin", title: "Cozy cabin", detail: "A sheltered hearth while snow and winter air move outside.", sceneId: "tab_snow", indices: [0, 1, 5], volumes: [0.34, 0.28, 0.82] },
-    { id: "midnight-reading", title: "Midnight reading", detail: "Pages, a low fire, and rain against the library windows.", sceneId: "tab_library", indices: [0, 3, 5], volumes: [0.46, 0.62, 0.42] },
-    { id: "rainy-commute", title: "Rainy commute", detail: "A steady carriage rhythm carried through rain and passing roads.", sceneId: "tab_train", indices: [0, 5, 6], volumes: [0.72, 0.44, 0.22] },
-    { id: "deep-office-focus", title: "Deep office focus", detail: "Measured keys over brown noise and a distant office murmur.", sceneId: "tab_typing", indices: [0, 5, 6], volumes: [0.48, 0.68, 0.2] },
-    { id: "forest-stream", title: "Forest stream", detail: "Birds, moving canopy, and water heard deeper among the trees.", sceneId: "tab_forest", indices: [0, 1, 4], volumes: [0.38, 0.46, 0.66] },
-    { id: "storm-watching", title: "Storm watching", detail: "Distant thunder and layered rain from a safe place indoors.", sceneId: "tab_lightning", indices: [0, 1, 4], volumes: [0.58, 0.5, 0.32] },
-    { id: "spa-retreat", title: "Spa retreat", detail: "Thermal water, morning birds, and cool mountain air.", sceneId: "tab_onsen", indices: [0, 3, 4], volumes: [0.68, 0.34, 0.28] },
-    { id: "cat-nap", title: "Cat nap", detail: "A close purr beside window rain and a compact fireplace.", sceneId: "tab_cat_window", indices: [0, 1, 2], volumes: [0.78, 0.38, 0.3] },
+    { id: "office-focus", title: "Office focus", intent: "focus", detail: "A steady foundation with just enough natural detail to stay attentive.", indices: [0, 2] },
+    { id: "gentle-depth", title: "Gentle depth", intent: "relax", detail: "A softer two-layer blend for reading, journaling, and unwinding.", indices: [1, 4] },
+    { id: "full-atmosphere", title: "Full atmosphere", intent: "nature", detail: "A richer three-part soundscape that fills the room without feeling busy.", indices: [0, 2, 3] },
+    { id: "hotel-lobby", title: "Hotel lobby", intent: "focus", detail: "Classic elevator jazz with a restrained layer of distant lobby conversation.", sceneId: "tab_elevator_music", indices: [0, 5], volumes: [0.78, 0.24] },
+    { id: "cozy-cabin", title: "Cozy cabin", intent: "relax", detail: "A sheltered hearth while snow and winter air move outside.", sceneId: "tab_snow", indices: [0, 1, 5], volumes: [0.34, 0.28, 0.82] },
+    { id: "midnight-reading", title: "Midnight reading", intent: "focus", detail: "Pages, a low fire, and rain against the library windows.", sceneId: "tab_library", indices: [0, 3, 5], volumes: [0.46, 0.62, 0.42] },
+    { id: "rainy-commute", title: "Rainy commute", intent: "focus", detail: "A steady carriage rhythm carried through rain and passing roads.", sceneId: "tab_train", indices: [0, 5, 6], volumes: [0.72, 0.44, 0.22] },
+    { id: "deep-office-focus", title: "Deep office focus", intent: "focus", detail: "Measured keys over brown noise and a distant office murmur.", sceneId: "tab_typing", indices: [0, 5, 6], volumes: [0.48, 0.68, 0.2] },
+    { id: "forest-stream", title: "Forest stream", intent: "nature", detail: "Birds, moving canopy, and water heard deeper among the trees.", sceneId: "tab_forest", indices: [0, 1, 4], volumes: [0.38, 0.46, 0.66] },
+    { id: "storm-watching", title: "Storm watching", intent: "relax", detail: "Distant thunder and layered rain from a safe place indoors.", sceneId: "tab_lightning", indices: [0, 1, 4], volumes: [0.58, 0.5, 0.32] },
+    { id: "spa-retreat", title: "Spa retreat", intent: "relax", detail: "Thermal water, morning birds, and cool mountain air.", sceneId: "tab_onsen", indices: [0, 3, 4], volumes: [0.68, 0.34, 0.28] },
+    { id: "cat-nap", title: "Cat nap", intent: "sleep", detail: "A close purr beside window rain and a compact fireplace.", sceneId: "tab_cat_window", indices: [0, 1, 2], volumes: [0.78, 0.38, 0.3] },
   ];
 
   const pipPreferences = [
@@ -141,6 +145,7 @@
       tracks: recipe.indices.map((index) => recipeScene.audioTracks[index]).filter(Boolean),
     };
   });
+  $: visibleSoundRecipes = mixIntent === "all" ? soundRecipes : soundRecipes.filter((recipe) => recipe.intent === mixIntent);
   $: sceneCategories = ["all", "favorites", ...new Set(scenes.map((scene) => scene.category))];
   $: filteredScenes = filterSceneLibrary(scenes, libraryQuery, libraryCategory, favoriteSceneIds);
   $: currentSceneFavorite = favoriteSceneIds.includes(activeScene.id);
@@ -566,6 +571,21 @@
       recipe_track_ids: selectedAudios.map((index) => activeScene.audioTracks[index]?.id).filter(Boolean).join(","),
     });
     await playSelectedTracks(selectedAudios, "sound_recipe");
+    mixEditorOpen = false;
+    if (window.matchMedia("(max-width: 760px)").matches) toggleRecipes();
+  }
+
+  async function removeSelectedLayer(index) {
+    if (selectedAudios.length <= 1 || !selectedAudios.includes(index)) return;
+    const removedTrack = activeScene.audioTracks[index];
+    selectedAudios = selectedAudios.filter((trackIndex) => trackIndex !== index);
+    selectedAudio = selectedAudios[0];
+    if (isAudioPlaying) await playSelectedTracks(selectedAudios, "audio_layer_remove");
+    trackEvent("audio_layer_remove", {
+      removed_track_id: removedTrack?.id,
+      active_sound_count: selectedAudios.length,
+    });
+    queuePersistSession();
   }
 
   function selectVideo(index) {
@@ -798,6 +818,8 @@
     if (continuePlaying) await playSelectedTracks(selectedAudios, source);
     const sourceLabel = source === "shared_mix" ? "Shared mix" : source === "recent_mix" ? "Recent session" : source === "resume" ? "Last session" : "Saved mix";
     showToast(`${sourceLabel} loaded · press play when ready`);
+    mixEditorOpen = false;
+    if (recipesOpen && window.matchMedia("(max-width: 760px)").matches) toggleRecipes();
     if (source === "resume") trackEvent("history_resume", { active_sound_count: selectedAudios.length });
     trackEvent("mix_load", { mix_source: source, active_sound_count: selectedAudios.length });
   }
@@ -858,7 +880,7 @@
   function formatCategory(category) {
     if (category === "all") return "All";
     if (category === "favorites") return "Favorites";
-    return category;
+    return `${category.charAt(0).toUpperCase()}${category.slice(1)}`;
   }
 
   function clearRecentMixes() {
@@ -952,6 +974,16 @@
     recipesOpen = !recipesOpen;
     localStorage.setItem("atmosphere-recipes-open-v2", String(recipesOpen));
     trackEvent(recipesOpen ? "sound_recipes_open" : "sound_recipes_close");
+  }
+
+  function selectMixDrawerTab(tab) {
+    mixDrawerTab = tab;
+    trackEvent("mix_drawer_tab", { mix_drawer_tab: tab });
+  }
+
+  function selectMixIntent(intent) {
+    mixIntent = intent;
+    trackEvent("mix_intent_filter", { mix_intent: intent });
   }
 
   function handleKeydown(event) {
@@ -1483,7 +1515,7 @@
       </div>
     </div>
   {:else}
-  <main class:recipes-visible={recipesOpen}>
+  <main>
     {#key activeScene.id}
       <section class="scene-hero">
         <div>
@@ -1527,42 +1559,6 @@
             </button>
           {/each}
         </div>
-
-        {#if savedMixes.length || recentMixes.length}
-          <div class="personal-library">
-            {#if savedMixes.length}
-              <section aria-labelledby="saved-mixes-heading">
-                <div class="personal-heading"><h3 id="saved-mixes-heading">Saved mixes</h3><button type="button" on:click={() => openSettings("mixes")}>Manage</button></div>
-                <div class="personal-card-row">
-                  {#each savedMixes.slice(0, 5) as mix (mix.id)}
-                    <article class="personal-mix-card">
-                      <button class="personal-mix-load" type="button" on:click={() => applyMixSnapshot(mix)}>
-                        <strong>{mix.name || getMixScene(mix).title}</strong>
-                        <span>{getMixDescription(mix)}</span>
-                      </button>
-                      <div>
-                        <button class:active={mix.favorite} type="button" aria-label={mix.favorite ? "Remove favorite mix" : "Favorite mix"} on:click={() => toggleSavedMixFavorite(mix.id)}>★</button>
-                        <button type="button" aria-label={`Share ${mix.name || "mix"}`} on:click={() => shareMix(mix)}>↗</button>
-                      </div>
-                    </article>
-                  {/each}
-                </div>
-              </section>
-            {/if}
-            {#if recentMixes.length}
-              <section aria-labelledby="recent-mixes-heading">
-                <div class="personal-heading"><h3 id="recent-mixes-heading">Recently played</h3><button type="button" on:click={clearRecentMixes}>Clear</button></div>
-                <div class="recent-card-row">
-                  {#each recentMixes.slice(0, 5) as mix}
-                    <button type="button" on:click={() => applyMixSnapshot(mix, "recent_mix")}>
-                      <strong>{getMixScene(mix).title}</strong><span>{getMixTrackNames(mix).join(" + ")}</span>
-                    </button>
-                  {/each}
-                </div>
-              </section>
-            {/if}
-          </div>
-        {/if}
 
         {#if filteredScenes.length}
         <div class="scene-grid">
@@ -1655,49 +1651,80 @@
           </button>
         </div>
 
-        <div class="option-section">
-          <div class="option-heading">
-            <h3>Audio layers</h3>
-            <span>{multiSoundEnabled ? `${selectedAudios.length} active · layering on` : "Single sound"}</span>
-          </div>
-          {#key activeScene.id}
-            <div class="track-grid option-grid-enter">
-              {#each activeScene.audioTracks as track, index (track.id)}
-                <article class:active={selectedAudios.includes(index)} class="track-item">
-                  <button
-                    type="button"
-                    class="track-card"
-                    class:active={selectedAudios.includes(index)}
-                    aria-pressed={selectedAudios.includes(index)}
-                    on:click={() => selectTrack(index)}
-                  >
-                    <svg class="option-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13v-2M8.5 16V8M12 18V6M15.5 15V9M19 13v-2" /></svg>
-                    <span class="option-copy"><strong>{track.title}</strong><small>{track.note}</small></span>
-                    <span class="selection-dot" aria-hidden="true"></span>
-                  </button>
-                  {#if selectedAudios.includes(index)}
-                    <label class="layer-volume">
-                      <span>Layer</span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={layerVolumes[track.id] ?? 1}
-                        style={`--volume-percent: ${Math.round((layerVolumes[track.id] ?? 1) * 100)}%`}
-                        aria-label={`${track.title} layer volume`}
-                        aria-valuetext={`${Math.round((layerVolumes[track.id] ?? 1) * 100)} percent`}
-                        on:input={(event) => updateLayerVolume(index, event)}
-                        on:change={() => commitLayerVolume(index)}
-                      />
-                      <output>{Math.round((layerVolumes[track.id] ?? 1) * 100)}</output>
-                    </label>
-                  {/if}
-                </article>
-              {/each}
+        <section class="now-mixing-tray" aria-labelledby="now-mixing-heading">
+          <div class="now-mixing-heading">
+            <div>
+              <p class="kicker">Now mixing</p>
+              <h3 id="now-mixing-heading">{selectedAudios.length === 1 ? "One sound" : `${selectedAudios.length} sounds`}</h3>
             </div>
-          {/key}
-        </div>
+            <button class:active={mixEditorOpen} type="button" aria-expanded={mixEditorOpen} aria-controls="mix-editor" on:click={() => (mixEditorOpen = !mixEditorOpen)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" /></svg>
+              <span>{mixEditorOpen ? "Done" : "Fine tune"}</span>
+            </button>
+          </div>
+          <div class="layer-chip-row">
+            {#each selectedAudios as index (activeScene.audioTracks[index]?.id)}
+              <div class="layer-chip">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13v-2M8.5 16V8M12 18V6M15.5 15V9M19 13v-2" /></svg>
+                <span>{activeScene.audioTracks[index]?.title}</span>
+                <span class="layer-chip-level" aria-hidden="true"><i style={`width: ${Math.round(getLayerVolume(index) * 100)}%`}></i></span>
+                {#if selectedAudios.length > 1}
+                  <button type="button" aria-label={`Remove ${activeScene.audioTracks[index]?.title} from mix`} title="Remove layer" on:click={() => removeSelectedLayer(index)}>×</button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </section>
+
+        {#if mixEditorOpen}
+          <div id="mix-editor" class="option-section mix-editor option-grid-enter">
+            <div class="option-heading mix-editor-heading">
+              <div>
+                <h3>Fine tune</h3>
+                <span>Choose sounds and adjust each layer</span>
+              </div>
+              <button class:active={multiSoundEnabled} type="button" aria-pressed={multiSoundEnabled} on:click={() => setMultiSoundEnabled(!multiSoundEnabled)}>
+                {multiSoundEnabled ? "Layering on" : "Enable layering"}
+              </button>
+            </div>
+            {#key activeScene.id}
+              <div class="track-grid">
+                {#each activeScene.audioTracks as track, index (track.id)}
+                  <article class:active={selectedAudios.includes(index)} class="track-item">
+                    <button
+                      type="button"
+                      class="track-card"
+                      class:active={selectedAudios.includes(index)}
+                      aria-pressed={selectedAudios.includes(index)}
+                      on:click={() => selectTrack(index)}
+                    >
+                      <svg class="option-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13v-2M8.5 16V8M12 18V6M15.5 15V9M19 13v-2" /></svg>
+                      <span class="option-copy"><strong>{track.title}</strong><small>{track.note}</small></span>
+                      <span class="selection-dot" aria-hidden="true"></span>
+                    </button>
+                    {#if selectedAudios.includes(index)}
+                      <label class="layer-volume">
+                        <span class="sr-only">{track.title} layer</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={layerVolumes[track.id] ?? 1}
+                          style={`--volume-percent: ${Math.round((layerVolumes[track.id] ?? 1) * 100)}%`}
+                          aria-label={`${track.title} layer volume`}
+                          aria-valuetext={`${Math.round((layerVolumes[track.id] ?? 1) * 100)} percent`}
+                          on:input={(event) => updateLayerVolume(index, event)}
+                          on:change={() => commitLayerVolume(index)}
+                        />
+                      </label>
+                    {/if}
+                  </article>
+                {/each}
+              </div>
+            {/key}
+          </div>
+        {/if}
 
         <div class="option-section video-section">
           <div class="option-heading">
@@ -1729,33 +1756,92 @@
   </main>
 
   <aside class:closed={!recipesOpen} class="recipe-drawer" aria-labelledby="recommendation-heading">
-    <button class="recipe-drawer-handle" type="button" aria-expanded={recipesOpen} aria-controls="sound-recipe-panel" aria-label={recipesOpen ? "Hide sound recipes" : "Show sound recipes"} title={recipesOpen ? "Hide sound recipes" : "Show sound recipes"} on:click={toggleRecipes}>
+    <button class="recipe-drawer-handle" type="button" aria-expanded={recipesOpen} aria-controls="sound-recipe-panel" aria-label={recipesOpen ? "Hide mixes" : "Show mixes"} title={recipesOpen ? "Hide mixes" : "Show mixes"} on:click={toggleRecipes}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
-      <i aria-hidden="true"></i>
+      <span>Mixes</span>
     </button>
     <div id="sound-recipe-panel" class="recommendation-panel liquid-panel" aria-hidden={!recipesOpen} inert={!recipesOpen}>
-      <div class="section-heading recommendation-heading">
+      <div class="mix-drawer-heading">
         <div>
-          <p class="kicker">Sound recipes</p>
-          <h2 id="recommendation-heading">Recommended mixes</h2>
+          <p class="kicker">Mixes</p>
+          <h2 id="recommendation-heading">Find your atmosphere</h2>
         </div>
-        <span>{activeScene.title}</span>
+        <button type="button" aria-label="Close mixes" title="Close" on:click={toggleRecipes}>×</button>
       </div>
-      <p class="recommendation-intro">{activeScene.id === "tab_elevator_music" ? "Pair one lounge instrumental with subtle room tone." : "Layer recordings from this atmosphere for a little more texture."}</p>
-      <div class="recipe-list">
-        {#each soundRecipes as recipe}
-          <article class="recipe-card">
-            <p>For {recipe.title.toLowerCase()}, combine</p>
-            <h3>{recipe.tracks.map((track) => track.title).join(" + ")}</h3>
-            <span>{recipe.detail}</span>
-            <button type="button" on:click={() => applyRecipe(recipe)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 9 6-9 6V6Z" /></svg>
-              Try mix
-            </button>
-          </article>
-        {/each}
+
+      <div class="mix-drawer-tabs" role="tablist" aria-label="Mix collections">
+        <button class:active={mixDrawerTab === "for-you"} type="button" role="tab" aria-selected={mixDrawerTab === "for-you"} on:click={() => selectMixDrawerTab("for-you")}>For you</button>
+        <button class:active={mixDrawerTab === "saved"} type="button" role="tab" aria-selected={mixDrawerTab === "saved"} on:click={() => selectMixDrawerTab("saved")}>Saved{savedMixes.length ? ` ${savedMixes.length}` : ""}</button>
+        <button class:active={mixDrawerTab === "recent"} type="button" role="tab" aria-selected={mixDrawerTab === "recent"} on:click={() => selectMixDrawerTab("recent")}>Recent</button>
       </div>
-      <p class="recipe-tip">Turn layering off in Settings to return to one sound at a time.</p>
+
+      {#if mixDrawerTab === "for-you"}
+        <div class="mix-intent-filters" aria-label="Filter recommended mixes">
+          {#each mixIntents as intent}
+            <button class:active={mixIntent === intent} type="button" aria-pressed={mixIntent === intent} on:click={() => selectMixIntent(intent)}>{formatCategory(intent)}</button>
+          {/each}
+        </div>
+        <div class="recipe-list" role="tabpanel">
+          {#each visibleSoundRecipes as recipe}
+            <article class="recipe-card">
+              <div class="recipe-card-copy">
+                <div class="recipe-card-title">
+                  <div class="mix-stack" aria-hidden="true">
+                    {#each recipe.tracks.slice(0, 3) as track, index}
+                      <i style={`--stack-index: ${index}`}></i>
+                    {/each}
+                  </div>
+                  <div>
+                    <h3>{recipe.title}</h3>
+                    <p>{recipe.intent} · {scenes[recipe.sceneIndex]?.title}</p>
+                  </div>
+                </div>
+                <span>{recipe.detail}</span>
+                <div class="recipe-track-list" aria-label="Sounds in this mix">
+                  {#each recipe.tracks.slice(0, 3) as track}<i>{track.title}</i>{/each}
+                </div>
+              </div>
+              <button class="recipe-play" type="button" aria-label={`Play ${recipe.title} mix`} title={`Play ${recipe.title}`} on:click={() => applyRecipe(recipe)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 9 6-9 6V6Z" /></svg>
+              </button>
+            </article>
+          {/each}
+        </div>
+      {:else if mixDrawerTab === "saved"}
+        <div class="mix-personal-list" role="tabpanel">
+          {#if savedMixes.length}
+            {#each savedMixes as mix (mix.id)}
+              <article class="mix-library-card">
+                <button class="mix-library-load" type="button" on:click={() => applyMixSnapshot(mix)}>
+                  <span class="mix-library-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 6 9 6-9 6V6Z" /></svg></span>
+                  <span><strong>{mix.name || getMixScene(mix).title}</strong><small>{getMixDescription(mix)}</small></span>
+                </button>
+                <div class="mix-library-actions">
+                  <button class:active={mix.favorite} type="button" aria-label={mix.favorite ? "Remove favorite mix" : "Favorite mix"} title="Favorite" on:click={() => toggleSavedMixFavorite(mix.id)}>★</button>
+                  <button type="button" aria-label={`Share ${mix.name || "mix"}`} title="Share" on:click={() => shareMix(mix)}>↗</button>
+                </div>
+              </article>
+            {/each}
+            <button class="mix-manage-button" type="button" on:click={() => openSettings("mixes")}>Manage saved mixes</button>
+          {:else}
+            <div class="mix-empty-state"><strong>No saved mixes yet</strong><span>Build a soundscape, then use Save mix beside the player.</span></div>
+          {/if}
+        </div>
+      {:else}
+        <div class="mix-personal-list" role="tabpanel">
+          {#if recentMixes.length}
+            {#each recentMixes as mix}
+              <button class="mix-recent-card" type="button" on:click={() => applyMixSnapshot(mix, "recent_mix")}>
+                <span class="mix-library-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 6 9 6-9 6V6Z" /></svg></span>
+                <span><strong>{getMixScene(mix).title}</strong><small>{getMixTrackNames(mix).slice(0, 3).join(" · ")}</small></span>
+              </button>
+            {/each}
+            <button class="mix-manage-button" type="button" on:click={clearRecentMixes}>Clear recent mixes</button>
+          {:else}
+            <div class="mix-empty-state"><strong>Nothing played recently</strong><span>Your recent soundscapes will appear here.</span></div>
+          {/if}
+        </div>
+      {/if}
     </div>
   </aside>
   {/if}
@@ -2574,77 +2660,93 @@
 
   .recipe-drawer {
     position: fixed;
-    z-index: 18;
-    top: 108px;
-    right: 18px;
-    width: clamp(278px, 21vw, 308px);
+    z-index: 24;
+    top: 94px;
+    right: 16px;
+    width: min(340px, calc(100vw - 34px));
     transform: translateX(0);
-    transition: transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .recipe-drawer.closed { transform: translateX(calc(100% + 18px)); }
+  .recipe-drawer.closed { transform: translateX(calc(100% + 16px)); }
 
   .recipe-drawer-handle {
     position: absolute;
     z-index: 2;
-    top: 34px;
-    left: -46px;
-    width: 47px;
-    height: 62px;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    border: 1px solid rgba(255, 255, 255, 0.17);
+    top: 28px;
+    left: -84px;
+    width: 85px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 13px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-right-color: rgba(255, 255, 255, 0.07);
-    border-radius: 18px 0 0 18px;
+    border-radius: 16px 0 0 16px;
     color: rgba(255, 255, 255, 0.8);
-    background: rgba(18, 21, 23, 0.58);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), -9px 12px 30px rgba(0, 0, 0, 0.2), 0 0 24px rgba(var(--accent-rgb), 0.07);
-    backdrop-filter: blur(22px) saturate(145%);
-    -webkit-backdrop-filter: blur(22px) saturate(145%);
+    background: rgba(18, 21, 23, 0.72);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), -8px 12px 28px rgba(0, 0, 0, 0.2), 0 0 24px rgba(var(--accent-rgb), 0.06);
+    backdrop-filter: blur(26px) saturate(135%);
+    -webkit-backdrop-filter: blur(26px) saturate(135%);
     cursor: pointer;
-    transition: color 200ms ease, background 200ms ease, border-color 200ms ease;
+    font-size: 0.66rem;
+    font-weight: 620;
+    letter-spacing: 0.02em;
+    transition: color 200ms ease, background 200ms ease, border-color 200ms ease, transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .recipe-drawer-handle:hover { color: #fff; border-color: rgba(var(--accent-rgb), 0.42); background: rgba(29, 33, 36, 0.7); }
-  .recipe-drawer-handle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .recipe-drawer-handle:hover { color: #fff; border-color: rgba(var(--accent-rgb), 0.36); background: rgba(29, 33, 36, 0.8); }
+  .recipe-drawer-handle svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1); }
   .recipe-drawer.closed .recipe-drawer-handle svg { transform: rotate(180deg); }
-  .recipe-drawer-handle i { position: absolute; bottom: 9px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 9px rgba(var(--accent-rgb), 0.72); }
 
   .recommendation-panel {
     width: 100%;
-    max-height: calc(100svh - 132px);
+    max-height: calc(100svh - 112px);
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
+    padding: 20px;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(var(--accent-rgb), 0.11), transparent 38%),
+      linear-gradient(155deg, rgba(27, 31, 33, 0.86), rgba(11, 13, 15, 0.8));
     scrollbar-width: thin;
     scrollbar-color: rgba(var(--accent-rgb), 0.34) transparent;
   }
 
-  .recommendation-heading { display: grid; gap: 8px; }
-  .recommendation-heading > span { white-space: normal; line-height: 1.35; }
+  .mix-drawer-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 17px; }
+  .mix-drawer-heading h2 { margin: 4px 0 0; font-size: 1.35rem; font-weight: 470; letter-spacing: -0.04em; }
+  .mix-drawer-heading > button { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50%; color: rgba(255, 255, 255, 0.56); background: rgba(255, 255, 255, 0.04); cursor: pointer; font-size: 1rem; transition: color 180ms ease, background 180ms ease, transform 220ms ease; }
+  .mix-drawer-heading > button:hover { color: #fff; background: rgba(255, 255, 255, 0.09); transform: rotate(6deg); }
 
-  .recommendation-intro,
-  .recipe-tip {
-    margin: -7px 0 18px;
-    color: rgba(255, 255, 255, 0.48);
-    font-size: 0.72rem;
-    line-height: 1.55;
-  }
+  .mix-drawer-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 15px; background: rgba(7, 9, 11, 0.3); }
+  .mix-drawer-tabs button { min-height: 36px; padding: 7px 8px; border: 0; border-radius: 11px; color: rgba(255, 255, 255, 0.43); background: transparent; cursor: pointer; font-size: 0.63rem; transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease; }
+  .mix-drawer-tabs button:hover { color: rgba(255, 255, 255, 0.8); }
+  .mix-drawer-tabs button.active { color: #fff; background: rgba(255, 255, 255, 0.075); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07); }
 
-  .recipe-list { display: grid; gap: 9px; }
+  .mix-intent-filters { display: flex; gap: 5px; overflow-x: auto; margin: 13px 0 11px; padding-bottom: 2px; scrollbar-width: none; }
+  .mix-intent-filters::-webkit-scrollbar { display: none; }
+  .mix-intent-filters button { min-height: 29px; flex: 0 0 auto; padding: 6px 10px; border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 999px; color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.025); cursor: pointer; font-size: 0.58rem; }
+  .mix-intent-filters button.active { color: #111315; border-color: transparent; background: rgba(var(--accent-rgb), 0.92); }
+
+  .recipe-list,
+  .mix-personal-list { display: grid; gap: 7px; margin-top: 12px; }
 
   .recipe-card {
     position: relative;
     overflow: hidden;
     display: grid;
-    gap: 8px;
-    padding: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 19px;
-    background: rgba(21, 24, 26, 0.62);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
-    transition: border-color 240ms ease, background 240ms ease, transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 110px;
+    padding: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    border-radius: 18px;
+    background: rgba(15, 18, 20, 0.46);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition: border-color 220ms ease, background 220ms ease, transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .recipe-card::before {
@@ -2652,19 +2754,53 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: 0.46;
-    background: radial-gradient(circle at 0 0, rgba(var(--accent-rgb), 0.13), transparent 54%);
+    opacity: 0.38;
+    background: radial-gradient(circle at 0 0, rgba(var(--accent-rgb), 0.15), transparent 52%);
   }
 
-  .recipe-card:hover { transform: translateY(-2px); border-color: rgba(var(--accent-rgb), 0.3); background: rgba(28, 31, 33, 0.72); }
-  .recipe-card p,
+  .recipe-card:hover { transform: translateY(-1px); border-color: rgba(var(--accent-rgb), 0.27); background: rgba(23, 27, 29, 0.62); }
+  .recipe-card-copy { position: relative; min-width: 0; display: grid; gap: 8px; }
+  .recipe-card-title { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .recipe-card-title > div:last-child { min-width: 0; }
   .recipe-card h3,
-  .recipe-card > span { position: relative; margin: 0; }
-  .recipe-card p { color: rgba(var(--accent-rgb), 0.85); font-size: 0.62rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
-  .recipe-card h3 { color: rgba(255, 255, 255, 0.86); font-size: 0.8rem; font-weight: 560; line-height: 1.35; }
-  .recipe-card > span { min-height: 44px; color: rgba(255, 255, 255, 0.43); font-size: 0.67rem; line-height: 1.48; }
+  .recipe-card p,
+  .recipe-card-copy > span { margin: 0; }
+  .recipe-card h3 { overflow: hidden; color: rgba(255, 255, 255, 0.9); font-size: 0.77rem; font-weight: 580; text-overflow: ellipsis; white-space: nowrap; }
+  .recipe-card p { margin-top: 3px; color: rgba(var(--accent-rgb), 0.72); font-size: 0.54rem; font-weight: 630; letter-spacing: 0.07em; text-transform: uppercase; }
+  .recipe-card-copy > span { color: rgba(255, 255, 255, 0.39); font-size: 0.62rem; line-height: 1.42; }
+  .mix-stack { width: 34px; height: 28px; position: relative; flex: 0 0 34px; }
+  .mix-stack i { position: absolute; top: calc(var(--stack-index) * 3px); left: calc(var(--stack-index) * 8px); width: 22px; height: 22px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; background: rgba(var(--accent-rgb), 0.42); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25); }
+  .mix-stack i:nth-child(2) { opacity: 0.76; }
+  .mix-stack i:nth-child(3) { opacity: 0.56; }
+  .recipe-track-list { display: flex; gap: 4px; overflow: hidden; }
+  .recipe-track-list i { overflow: hidden; max-width: 92px; padding: 4px 7px; border-radius: 999px; color: rgba(255, 255, 255, 0.42); background: rgba(255, 255, 255, 0.045); font-size: 0.52rem; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
 
-  .recipe-card button,
+  .recipe-play { position: relative; width: 40px; height: 40px; display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 1px solid rgba(var(--accent-rgb), 0.36); border-radius: 50%; color: #111315; background: rgba(var(--accent-rgb), 0.92); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36), 0 7px 20px rgba(var(--accent-rgb), 0.09); cursor: pointer; transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), filter 180ms ease; }
+  .recipe-play:hover { transform: scale(1.06); filter: brightness(1.08); }
+  .recipe-play:active { transform: scale(0.94); }
+  .recipe-play svg { width: 14px; height: 14px; margin-left: 2px; fill: currentColor; stroke: none; }
+
+  .mix-library-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 6px; border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 16px; background: rgba(15, 18, 20, 0.46); }
+  .mix-library-load,
+  .mix-recent-card { min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px; border: 0; color: rgba(255, 255, 255, 0.78); background: transparent; cursor: pointer; text-align: left; }
+  .mix-recent-card { width: 100%; border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 16px; background: rgba(15, 18, 20, 0.46); }
+  .mix-library-load > span:last-child,
+  .mix-recent-card > span:last-child { min-width: 0; display: grid; gap: 4px; }
+  .mix-library-load strong,
+  .mix-recent-card strong { overflow: hidden; font-size: 0.7rem; font-weight: 570; text-overflow: ellipsis; white-space: nowrap; }
+  .mix-library-load small,
+  .mix-recent-card small { overflow: hidden; color: rgba(255, 255, 255, 0.36); font-size: 0.56rem; text-overflow: ellipsis; white-space: nowrap; }
+  .mix-library-icon { width: 32px; height: 32px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid rgba(var(--accent-rgb), 0.2); border-radius: 50%; color: var(--accent); background: rgba(var(--accent-rgb), 0.07); }
+  .mix-library-icon svg { width: 12px; height: 12px; margin-left: 1px; fill: currentColor; }
+  .mix-library-actions { display: flex; gap: 3px; }
+  .mix-library-actions button { width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 9px; color: rgba(255, 255, 255, 0.36); background: transparent; cursor: pointer; }
+  .mix-library-actions button:hover,
+  .mix-library-actions button.active { color: var(--accent); background: rgba(var(--accent-rgb), 0.08); }
+  .mix-manage-button { justify-self: center; margin-top: 6px; padding: 8px 11px; border: 0; color: rgba(var(--accent-rgb), 0.78); background: transparent; cursor: pointer; font-size: 0.6rem; }
+  .mix-empty-state { min-height: 180px; display: grid; align-content: center; justify-items: center; gap: 7px; padding: 24px; color: rgba(255, 255, 255, 0.66); text-align: center; }
+  .mix-empty-state strong { font-size: 0.8rem; font-weight: 560; }
+  .mix-empty-state span { max-width: 210px; color: rgba(255, 255, 255, 0.36); font-size: 0.64rem; line-height: 1.45; }
+
   .settings-action {
     position: relative;
     min-height: 38px;
@@ -2684,12 +2820,8 @@
     transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), filter 180ms ease, box-shadow 220ms ease;
   }
 
-  .recipe-card button:hover,
   .settings-action:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 9px 26px rgba(var(--accent-rgb), 0.16); }
-  .recipe-card button:active,
   .settings-action:active { transform: scale(0.97); }
-  .recipe-card button svg { width: 13px; height: 13px; fill: currentColor; stroke: none; }
-  .recipe-tip { margin: 15px 2px 0; }
 
   .settings-backdrop {
     position: fixed;
@@ -2960,33 +3092,7 @@
   .category-filters button:hover { transform: translateY(-1px); color: #fff; }
   .category-filters button.active { color: #111315; border-color: transparent; background: rgba(var(--accent-rgb), 0.9); }
 
-  .personal-library {
-    display: grid;
-    gap: 16px;
-    margin: 3px 0 18px;
-    padding: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 21px;
-    background: rgba(12, 15, 17, 0.3);
-  }
-  .personal-library section { min-width: 0; }
-  .personal-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 2px 8px; }
-  .personal-heading h3 { margin: 0; color: rgba(255, 255, 255, 0.68); font-size: 0.68rem; font-weight: 620; letter-spacing: 0.05em; text-transform: uppercase; }
-  .personal-heading button,
   .recent-settings-heading button { padding: 0; border: 0; color: rgba(var(--accent-rgb), 0.82); background: transparent; cursor: pointer; font-size: 0.63rem; }
-  .personal-card-row,
-  .recent-card-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 0.76fr); gap: 7px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: thin; scrollbar-color: rgba(var(--accent-rgb), 0.24) transparent; }
-  .personal-mix-card { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px; padding: 6px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 15px; background: rgba(22, 25, 27, 0.66); }
-  .personal-mix-load { min-width: 0; display: grid; gap: 4px; padding: 7px; border: 0; color: rgba(255, 255, 255, 0.78); background: transparent; cursor: pointer; text-align: left; }
-  .personal-mix-load strong { overflow: hidden; font-size: 0.72rem; font-weight: 560; text-overflow: ellipsis; white-space: nowrap; }
-  .personal-mix-load span { overflow: hidden; color: rgba(255, 255, 255, 0.38); font-size: 0.58rem; text-overflow: ellipsis; white-space: nowrap; }
-  .personal-mix-card > div { display: grid; gap: 3px; }
-  .personal-mix-card > div button { width: 27px; height: 27px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 9px; color: rgba(255, 255, 255, 0.38); background: transparent; cursor: pointer; }
-  .personal-mix-card > div button:hover,
-  .personal-mix-card > div button.active { color: var(--accent); background: rgba(var(--accent-rgb), 0.09); }
-  .recent-card-row button { min-width: 0; display: grid; gap: 4px; padding: 11px 12px; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 14px; color: rgba(255, 255, 255, 0.68); background: rgba(22, 25, 27, 0.58); cursor: pointer; text-align: left; }
-  .recent-card-row strong { font-size: 0.7rem; font-weight: 550; }
-  .recent-card-row span { overflow: hidden; color: rgba(255, 255, 255, 0.35); font-size: 0.57rem; text-overflow: ellipsis; white-space: nowrap; }
 
   .scene-state.favorite { width: auto; height: auto; color: rgba(17, 19, 21, 0.56); background: transparent; font-size: 0.72rem; box-shadow: none; }
   .scene-card:not(.active) .scene-state.favorite { color: var(--accent); }
@@ -2996,19 +3102,42 @@
   .mix-action-row button:hover { transform: translateY(-1px); color: #fff; border-color: rgba(var(--accent-rgb), 0.34); }
   .mix-action-row svg { width: 14px; height: 14px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
 
+  .now-mixing-tray { display: grid; gap: 11px; margin-top: 14px; padding: 14px; border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 18px; background: rgba(12, 15, 17, 0.34); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035); }
+  .now-mixing-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .now-mixing-heading h3 { margin: 3px 0 0; color: rgba(255, 255, 255, 0.82); font-size: 0.78rem; font-weight: 560; }
+  .now-mixing-heading > button { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid rgba(255, 255, 255, 0.085); border-radius: 999px; color: rgba(255, 255, 255, 0.48); background: rgba(255, 255, 255, 0.035); cursor: pointer; font-size: 0.6rem; transition: color 180ms ease, border-color 180ms ease, background 180ms ease; }
+  .now-mixing-heading > button:hover,
+  .now-mixing-heading > button.active { color: #fff; border-color: rgba(var(--accent-rgb), 0.3); background: rgba(var(--accent-rgb), 0.08); }
+  .now-mixing-heading svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+  .layer-chip-row { display: flex; gap: 6px; overflow-x: auto; padding: 1px 0 3px; scrollbar-width: none; }
+  .layer-chip-row::-webkit-scrollbar { display: none; }
+  .layer-chip { min-width: 126px; max-width: 180px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px; flex: 1 0 auto; padding: 9px 9px 8px; border: 1px solid rgba(var(--accent-rgb), 0.14); border-radius: 13px; color: rgba(255, 255, 255, 0.72); background: rgba(var(--accent-rgb), 0.055); }
+  .layer-chip > svg { width: 14px; height: 14px; grid-row: 1 / 3; fill: none; stroke: var(--accent); stroke-width: 1.45; stroke-linecap: round; }
+  .layer-chip > span:nth-of-type(1) { overflow: hidden; font-size: 0.64rem; font-weight: 540; text-overflow: ellipsis; white-space: nowrap; }
+  .layer-chip-level { height: 2px; grid-column: 2; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.08); }
+  .layer-chip-level i { display: block; height: 100%; border-radius: inherit; background: rgba(var(--accent-rgb), 0.78); }
+  .layer-chip > button { width: 24px; height: 24px; grid-column: 3; grid-row: 1 / 3; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; color: rgba(255, 255, 255, 0.35); background: transparent; cursor: pointer; font-size: 0.85rem; }
+  .layer-chip > button:hover { color: #fff; background: rgba(255, 255, 255, 0.07); }
+  .mix-editor { margin-top: 12px; padding: 14px; border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 18px; background: rgba(10, 13, 15, 0.25); }
+  .mix-editor-heading { display: flex; justify-content: space-between; gap: 12px; }
+  .mix-editor-heading > div { display: grid; gap: 4px; }
+  .mix-editor-heading h3 { margin: 0; }
+  .mix-editor-heading > div span { color: rgba(255, 255, 255, 0.36); font-size: 0.58rem; }
+  .mix-editor-heading > button { align-self: center; min-height: 31px; padding: 6px 9px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 999px; color: rgba(255, 255, 255, 0.42); background: transparent; cursor: pointer; font-size: 0.56rem; }
+  .mix-editor-heading > button.active { color: var(--accent); border-color: rgba(var(--accent-rgb), 0.26); background: rgba(var(--accent-rgb), 0.06); }
+
   .track-item { min-width: 0; overflow: hidden; display: grid; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 15px; background: rgba(15, 18, 20, 0.42); transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease; }
   .track-item.active { border-color: rgba(var(--accent-rgb), 0.4); background: rgba(var(--accent-rgb), 0.085); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 0 22px rgba(var(--accent-rgb), 0.045); }
   .track-item .track-card { width: 100%; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .track-item .track-card.active { color: rgba(255, 255, 255, 0.92); border-color: transparent; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), transparent 74%); box-shadow: none; }
   .track-item .track-card.active small { color: rgba(255, 255, 255, 0.43); }
-  .layer-volume { display: grid; grid-template-columns: auto minmax(0, 1fr) 28px; align-items: center; gap: 9px; margin: 0 10px 10px; padding: 7px 9px; border-top: 1px solid rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.4); font-size: 0.58rem; }
+  .layer-volume { display: block; margin: 0 10px 9px; padding: 5px 7px 0; border-top: 1px solid rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.4); font-size: 0.58rem; }
   .layer-volume input { height: 24px; }
   .layer-volume input::-webkit-slider-runnable-track { height: 5px; }
   .layer-volume input::-webkit-slider-thumb { width: 16px; height: 16px; margin-top: -6px; }
   .layer-volume input::-moz-range-track,
   .layer-volume input::-moz-range-progress { height: 5px; }
   .layer-volume input::-moz-range-thumb { width: 16px; height: 16px; }
-  .layer-volume output { color: rgba(255, 255, 255, 0.72); font-variant-numeric: tabular-nums; text-align: right; }
 
   .data-saver-note { margin: -3px 2px 10px; color: rgba(var(--accent-rgb), 0.75); font-size: 0.64rem; line-height: 1.45; }
   .compact-note { margin-top: 2px; }
@@ -3076,10 +3205,6 @@
   .immersive-bars { position: relative; height: 68px; }
   .immersive-bars i { width: 4px; min-height: 7px; border-radius: 999px; background: linear-gradient(to top, rgba(255, 255, 255, 0.48), var(--accent)); box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.2); transition: height 70ms linear, opacity 140ms ease; }
 
-  @media (min-width: 1200px) {
-    main.recipes-visible { padding-right: calc(clamp(16px, 3.5vw, 52px) + 308px); }
-  }
-
   @media (min-width: 1121px) {
     .library-panel {
       position: sticky;
@@ -3141,8 +3266,6 @@
     .scene-grid::-webkit-scrollbar { display: none; }
     .track-grid, .video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .mix-action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .personal-library { padding: 13px; }
-    .personal-card-row, .recent-card-row { grid-auto-columns: minmax(168px, 72vw); }
     .scene-card { min-height: 78px; padding: 11px; gap: 9px; }
     .scene-card { min-height: 0; scroll-snap-align: start; }
     .scene-card small { display: none; }
@@ -3151,10 +3274,12 @@
     .audio-button-core { width: 64px; height: 64px; }
     .track-card:last-child:nth-child(odd) { grid-column: auto; }
     .quiet-view-button { left: 16px; bottom: 16px; width: 46px; height: 46px; border-radius: 15px; }
-    .recipe-drawer { top: 88px; right: 10px; width: min(82vw, 304px); }
-    .recipe-drawer.closed { transform: translateX(calc(100% + 10px)); }
-    .recipe-drawer-handle { top: 28px; left: -42px; width: 43px; height: 58px; }
-    .recommendation-panel { max-height: calc(100svh - 106px); }
+    .recipe-drawer { top: auto; right: 0; bottom: 0; width: 100%; padding: 0 10px; transform: translateY(0); }
+    .recipe-drawer.closed { transform: translateY(100%); }
+    .recipe-drawer-handle { top: -50px; right: 16px; left: auto; width: 104px; height: 44px; border-right-color: rgba(255, 255, 255, 0.14); border-bottom-color: rgba(255, 255, 255, 0.05); border-radius: 16px 16px 0 0; }
+    .recipe-drawer-handle svg { transform: rotate(90deg); }
+    .recipe-drawer.closed .recipe-drawer-handle svg { transform: rotate(-90deg); }
+    .recommendation-panel { max-height: min(72svh, 650px); border-radius: 28px 28px 0 0; }
     .settings-backdrop { align-items: end; padding: 0; }
     .settings-modal { width: 100%; max-height: calc(100svh - 18px); border-radius: 28px 28px 0 0; }
     .settings-header { padding: 21px 19px 17px; }

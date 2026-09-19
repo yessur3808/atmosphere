@@ -65,6 +65,16 @@ test("Smart Mix and library discovery controls are exposed in the interface", ()
   assert.match(appSource, /filterSceneLibrary/);
 });
 
+test("mix discovery uses progressive disclosure across desktop and mobile", () => {
+  assert.match(appSource, /Now mixing/);
+  assert.match(appSource, /mixEditorOpen/);
+  assert.match(appSource, /Fine tune/);
+  assert.match(appSource, /role="tablist" aria-label="Mix collections"/);
+  assert.match(appSource, /For you/);
+  assert.match(appSource, /Saved\{savedMixes\.length/);
+  assert.match(appSource, /\.recipe-drawer\.closed \{ transform: translateY\(100%\); \}/);
+});
+
 test("Hotel Lobby targets elevator music without stacking several instrumentals", () => {
   assert.match(
     appSource,
