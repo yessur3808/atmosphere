@@ -72,7 +72,19 @@ test("mix discovery uses progressive disclosure across desktop and mobile", () =
   assert.match(appSource, /role="tablist" aria-label="Mix collections"/);
   assert.match(appSource, /For you/);
   assert.match(appSource, /Saved\{savedMixes\.length/);
+  assert.match(appSource, /class="mix-drawer-sticky"/);
+  assert.match(appSource, /width: min\(720px, calc\(100vw - 116px\)\)/);
+  assert.match(appSource, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(appSource, /\.recipe-drawer\.closed \{ transform: translateY\(100%\); \}/);
+});
+
+test("mobile prioritizes playback and progressively reveals a modern atmosphere grid", () => {
+  assert.match(appSource, /class:expanded=\{libraryExpanded \|\| Boolean\(libraryQuery\) \|\| libraryCategory !== "all"\}/);
+  assert.match(appSource, /Show all \$\{filteredScenes\.length\} atmospheres/);
+  assert.match(appSource, /\.mixer-panel \{ order: -2; \}/);
+  assert.match(appSource, /\.library-panel \{ order: -1; \}/);
+  assert.match(appSource, /\.scene-grid:not\(\.expanded\) \.scene-card:nth-child\(n\+9\):not\(\.active\)/);
+  assert.match(appSource, /\.recipe-drawer-handle \{ top: -62px;/);
 });
 
 test("Hotel Lobby targets elevator music without stacking several instrumentals", () => {

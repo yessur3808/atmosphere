@@ -67,6 +67,7 @@
   let favoriteSceneIds = [];
   let libraryQuery = "";
   let libraryCategory = "all";
+  let libraryExpanded = false;
   let saveMixOpen = false;
   let saveMixName = "";
   let toastMessage = "";
@@ -1561,7 +1562,7 @@
         </div>
 
         {#if filteredScenes.length}
-        <div class="scene-grid">
+        <div class:expanded={libraryExpanded || Boolean(libraryQuery) || libraryCategory !== "all"} class="scene-grid">
           {#each filteredScenes as scene (scene.id)}
             <button
               type="button"
@@ -1579,6 +1580,12 @@
             </button>
           {/each}
         </div>
+        {#if filteredScenes.length > 8 && !libraryQuery && libraryCategory === "all"}
+          <button class="mobile-library-more" type="button" aria-expanded={libraryExpanded} on:click={() => (libraryExpanded = !libraryExpanded)}>
+            <span>{libraryExpanded ? "Show fewer atmospheres" : `Show all ${filteredScenes.length} atmospheres`}</span>
+            <svg class:expanded={libraryExpanded} viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
+          </button>
+        {/if}
         {:else}
           <div class="empty-library-state scene-empty"><strong>No atmosphere matches that search</strong><span>Try a broader sound, mood, or category.</span><button type="button" on:click={() => { libraryQuery = ""; libraryCategory = "all"; }}>Show everything</button></div>
         {/if}
@@ -1761,26 +1768,31 @@
       <span>Mixes</span>
     </button>
     <div id="sound-recipe-panel" class="recommendation-panel liquid-panel" aria-hidden={!recipesOpen} inert={!recipesOpen}>
-      <div class="mix-drawer-heading">
-        <div>
-          <p class="kicker">Mixes</p>
-          <h2 id="recommendation-heading">Find your atmosphere</h2>
+      <div class="mix-drawer-sticky">
+        <div class="mix-drawer-heading">
+          <div>
+            <p class="kicker">Mixes</p>
+            <h2 id="recommendation-heading">Find your atmosphere</h2>
+          </div>
+          <button type="button" aria-label="Close mixes" title="Close" on:click={toggleRecipes}>×</button>
         </div>
-        <button type="button" aria-label="Close mixes" title="Close" on:click={toggleRecipes}>×</button>
-      </div>
 
-      <div class="mix-drawer-tabs" role="tablist" aria-label="Mix collections">
-        <button class:active={mixDrawerTab === "for-you"} type="button" role="tab" aria-selected={mixDrawerTab === "for-you"} on:click={() => selectMixDrawerTab("for-you")}>For you</button>
-        <button class:active={mixDrawerTab === "saved"} type="button" role="tab" aria-selected={mixDrawerTab === "saved"} on:click={() => selectMixDrawerTab("saved")}>Saved{savedMixes.length ? ` ${savedMixes.length}` : ""}</button>
-        <button class:active={mixDrawerTab === "recent"} type="button" role="tab" aria-selected={mixDrawerTab === "recent"} on:click={() => selectMixDrawerTab("recent")}>Recent</button>
+        <div class="mix-drawer-tabs" role="tablist" aria-label="Mix collections">
+          <button class:active={mixDrawerTab === "for-you"} type="button" role="tab" aria-selected={mixDrawerTab === "for-you"} on:click={() => selectMixDrawerTab("for-you")}>For you</button>
+          <button class:active={mixDrawerTab === "saved"} type="button" role="tab" aria-selected={mixDrawerTab === "saved"} on:click={() => selectMixDrawerTab("saved")}>Saved{savedMixes.length ? ` ${savedMixes.length}` : ""}</button>
+          <button class:active={mixDrawerTab === "recent"} type="button" role="tab" aria-selected={mixDrawerTab === "recent"} on:click={() => selectMixDrawerTab("recent")}>Recent</button>
+        </div>
+
+        {#if mixDrawerTab === "for-you"}
+          <div class="mix-intent-filters" aria-label="Filter recommended mixes">
+            {#each mixIntents as intent}
+              <button class:active={mixIntent === intent} type="button" aria-pressed={mixIntent === intent} on:click={() => selectMixIntent(intent)}>{formatCategory(intent)}</button>
+            {/each}
+          </div>
+        {/if}
       </div>
 
       {#if mixDrawerTab === "for-you"}
-        <div class="mix-intent-filters" aria-label="Filter recommended mixes">
-          {#each mixIntents as intent}
-            <button class:active={mixIntent === intent} type="button" aria-pressed={mixIntent === intent} on:click={() => selectMixIntent(intent)}>{formatCategory(intent)}</button>
-          {/each}
-        </div>
         <div class="recipe-list" role="tabpanel">
           {#each visibleSoundRecipes as recipe}
             <article class="recipe-card">
@@ -2322,6 +2334,8 @@
     gap: 8px;
   }
 
+  .mobile-library-more { display: none; }
+
   .scene-card,
   .track-card,
   .video-card {
@@ -2663,7 +2677,7 @@
     z-index: 24;
     top: 94px;
     right: 16px;
-    width: min(340px, calc(100vw - 34px));
+    width: min(720px, calc(100vw - 116px));
     transform: translateX(0);
     transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -2702,17 +2716,33 @@
   .recipe-drawer.closed .recipe-drawer-handle svg { transform: rotate(180deg); }
 
   .recommendation-panel {
+    --mix-panel-pad: 20px;
     width: 100%;
     max-height: calc(100svh - 112px);
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 20px;
+    padding: var(--mix-panel-pad);
     background:
       radial-gradient(circle at 12% 0%, rgba(var(--accent-rgb), 0.11), transparent 38%),
       linear-gradient(155deg, rgba(27, 31, 33, 0.86), rgba(11, 13, 15, 0.8));
     scrollbar-width: thin;
     scrollbar-color: rgba(var(--accent-rgb), 0.34) transparent;
+  }
+
+  .mix-drawer-sticky {
+    position: sticky;
+    z-index: 3;
+    top: calc(var(--mix-panel-pad) * -1);
+    margin: calc(var(--mix-panel-pad) * -1) calc(var(--mix-panel-pad) * -1) 12px;
+    padding: var(--mix-panel-pad) var(--mix-panel-pad) 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(var(--accent-rgb), 0.13), transparent 45%),
+      linear-gradient(180deg, rgba(25, 29, 31, 0.97), rgba(18, 21, 23, 0.9));
+    box-shadow: 0 16px 26px rgba(7, 9, 10, 0.16);
+    backdrop-filter: blur(26px) saturate(140%);
+    -webkit-backdrop-filter: blur(26px) saturate(140%);
   }
 
   .mix-drawer-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 17px; }
@@ -2731,7 +2761,10 @@
   .mix-intent-filters button.active { color: #111315; border-color: transparent; background: rgba(var(--accent-rgb), 0.92); }
 
   .recipe-list,
-  .mix-personal-list { display: grid; gap: 7px; margin-top: 12px; }
+  .mix-personal-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 0; }
+
+  .mix-manage-button,
+  .mix-empty-state { grid-column: 1 / -1; }
 
   .recipe-card {
     position: relative;
@@ -3249,37 +3282,55 @@
     .scene-hero > p { width: min(100%, 420px); margin-top: 22px; font-size: 0.9rem; }
     .liquid-panel { border-radius: 26px; }
     .library-panel, .mixer-panel { padding: 18px; }
-    .recommendation-panel { padding: 18px; }
+    .recommendation-panel { --mix-panel-pad: 18px; padding: var(--mix-panel-pad); }
     .mixer-panel { display: block; }
-    .library-panel { order: -2; }
-    .mixer-panel { order: -1; }
+    .mixer-panel { order: -2; }
+    .library-panel { order: -1; }
     .scene-grid {
-      grid-template-columns: none;
-      grid-template-rows: repeat(2, 76px);
-      grid-auto-flow: column;
-      grid-auto-columns: minmax(150px, 44vw);
-      overflow-x: auto;
-      padding: 2px 1px 8px;
-      scroll-snap-type: x proximity;
-      scrollbar-width: none;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: none;
+      grid-auto-flow: row;
+      gap: 8px;
+      overflow: visible;
+      padding: 0;
     }
-    .scene-grid::-webkit-scrollbar { display: none; }
+    .scene-grid:not(.expanded) .scene-card:nth-child(n+9):not(.active) { display: none; }
     .track-grid, .video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .mix-action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .scene-card { min-height: 78px; padding: 11px; gap: 9px; }
-    .scene-card { min-height: 0; scroll-snap-align: start; }
-    .scene-card small { display: none; }
-    .scene-card strong { font-size: 0.8rem; }
+    .scene-card { min-height: 86px; padding: 12px; gap: 10px; border-radius: 18px; }
+    .scene-card.active { grid-column: 1 / -1; min-height: 92px; }
+    .scene-card small { display: block; font-size: 0.61rem; }
+    .scene-card strong { font-size: 0.79rem; }
+    .mobile-library-more {
+      width: 100%;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.075);
+      border-radius: 15px;
+      color: rgba(255, 255, 255, 0.62);
+      background: rgba(255, 255, 255, 0.035);
+      cursor: pointer;
+      font-size: 0.66rem;
+      font-weight: 560;
+    }
+    .mobile-library-more svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform 260ms ease; }
+    .mobile-library-more svg.expanded { transform: rotate(180deg); }
     .audio-button { width: 88px; height: 88px; }
     .audio-button-core { width: 64px; height: 64px; }
     .track-card:last-child:nth-child(odd) { grid-column: auto; }
     .quiet-view-button { left: 16px; bottom: 16px; width: 46px; height: 46px; border-radius: 15px; }
-    .recipe-drawer { top: auto; right: 0; bottom: 0; width: 100%; padding: 0 10px; transform: translateY(0); }
+    .recipe-drawer { top: auto; right: 0; bottom: 0; width: 100%; padding: 0 10px 10px; transform: translateY(0); }
     .recipe-drawer.closed { transform: translateY(100%); }
-    .recipe-drawer-handle { top: -50px; right: 16px; left: auto; width: 104px; height: 44px; border-right-color: rgba(255, 255, 255, 0.14); border-bottom-color: rgba(255, 255, 255, 0.05); border-radius: 16px 16px 0 0; }
+    .recipe-drawer-handle { top: -62px; right: 16px; left: auto; width: 104px; height: 44px; border-color: rgba(255, 255, 255, 0.14); border-radius: 16px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 12px 28px rgba(0, 0, 0, 0.28), 0 0 24px rgba(var(--accent-rgb), 0.08); }
     .recipe-drawer-handle svg { transform: rotate(90deg); }
     .recipe-drawer.closed .recipe-drawer-handle svg { transform: rotate(-90deg); }
-    .recommendation-panel { max-height: min(72svh, 650px); border-radius: 28px 28px 0 0; }
+    .recommendation-panel { max-height: min(72svh, 650px); border-radius: 28px; }
+    .recipe-list,
+    .mix-personal-list { grid-template-columns: 1fr; gap: 8px; }
     .settings-backdrop { align-items: end; padding: 0; }
     .settings-modal { width: 100%; max-height: calc(100svh - 18px); border-radius: 28px 28px 0 0; }
     .settings-header { padding: 21px 19px 17px; }
