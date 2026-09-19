@@ -5,7 +5,22 @@ import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
-const library = JSON.parse(readFileSync(resolve(projectRoot, "src/videoLoops.json"), "utf8"));
+const sourceLibrary = JSON.parse(readFileSync(resolve(projectRoot, "src/videoLoops.json"), "utf8"));
+const resolvedLibraryPath = resolve(projectRoot, "src/videoLoops.resolved.json");
+const requestedScenes = String(process.env.ATMOSPHERE_SCENES || "")
+  .split(",").map((scene) => scene.trim()).filter(Boolean);
+for (const sceneId of requestedScenes) {
+  if (!sourceLibrary[sceneId]) throw new Error(`Unknown atmosphere: ${sceneId}`);
+}
+const previousResolved = requestedScenes.length && existsSync(resolvedLibraryPath)
+  ? JSON.parse(readFileSync(resolvedLibraryPath, "utf8"))
+  : {};
+const library = Object.fromEntries(Object.entries(sourceLibrary).map(([sceneId, entries]) => [
+  sceneId,
+  requestedScenes.length && !requestedScenes.includes(sceneId) && previousResolved[sceneId]
+    ? previousResolved[sceneId]
+    : entries,
+]));
 const checkOnly = process.argv.includes("--check");
 const resolveOnly = process.argv.includes("--resolve");
 const userAgent = "Mozilla/5.0 (compatible; AtmosphereMediaFetcher/1.0)";
@@ -37,7 +52,9 @@ async function download(url, destination) {
   return "downloaded";
 }
 
-const entries = Object.values(library).flat();
+const entries = Object.entries(library)
+  .filter(([sceneId]) => !requestedScenes.length || requestedScenes.includes(sceneId))
+  .flatMap(([, sceneEntries]) => sceneEntries);
 let completed = 0;
 let cursor = 0;
 
@@ -83,7 +100,7 @@ async function worker() {
 await Promise.all(Array.from({ length: Math.min(6, entries.length) }, worker));
 
 if (resolveOnly && completed === entries.length) {
-  writeFileSync(resolve(projectRoot, "src/videoLoops.resolved.json"), `${JSON.stringify(library, null, 2)}\n`);
+  writeFileSync(resolvedLibraryPath, `${JSON.stringify(library, null, 2)}\n`);
 }
 
 if (completed !== entries.length) {

@@ -660,6 +660,17 @@
     "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
   },
   {
+    "sceneId": "tab_typing",
+    "file": "/assets/audio/white_noise/02-deep-brown.mp3",
+    "title": "Focus bed",
+    "sourceTitle": "Brown noise 15-00 69kbps.mp3",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Brown_noise_15-00_69kbps.mp3",
+    "artist": "JPxG",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
     "sceneId": "tab_foot_steps",
     "file": "/assets/audio/foot_steps/01-evening-walk.mp3",
     "title": "Evening walk",
@@ -778,17 +789,6 @@
     "artist": "Omegatron",
     "license": "Public domain",
     "licenseUrl": "",
-    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
-  },
-  {
-    "sceneId": "tab_white_noise",
-    "file": "/assets/audio/white_noise/02-deep-brown.mp3",
-    "title": "Deep brown",
-    "sourceTitle": "Brown noise 15-00 69kbps.mp3",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File:Brown_noise_15-00_69kbps.mp3",
-    "artist": "JPxG",
-    "license": "CC0",
-    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
     "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
   },
   {
@@ -921,6 +921,160 @@
     "artist": "Amada44",
     "license": "CC BY-SA 3.0",
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_elevator_music",
+    "file": "/assets/audio/elevator_music/01-local-forecast.mp3",
+    "title": "Local forecast",
+    "sourceTitle": "Local Forecast - Elevator (ISRC USUAN1300012).mp3",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_elevator_music",
+    "file": "/assets/audio/elevator_music/02-airport-lounge.mp3",
+    "title": "Airport lounge",
+    "sourceTitle": "Airport Lounge (ISRC USUAN1100806).mp3",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Airport_Lounge_(ISRC_USUAN1100806).mp3",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_elevator_music",
+    "file": "/assets/audio/elevator_music/03-backbay-lounge.mp3",
+    "title": "Backbay lounge",
+    "sourceTitle": "Backbay Lounge (ISRC USUAN1700068).mp3",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Backbay_Lounge_(ISRC_USUAN1700068).mp3",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_elevator_music",
+    "file": "/assets/audio/elevator_music/04-bossa-antigua.mp3",
+    "title": "Bossa antigua",
+    "sourceTitle": "Bossa Antigua (ISRC USUAN1700069).mp3",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Bossa_Antigua_(ISRC_USUAN1700069).mp3",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_elevator_music",
+    "file": "/assets/audio/elevator_music/05-disco-lounge.mp3",
+    "title": "Disco lounge",
+    "sourceTitle": "Disco Lounge (ISRC USUAN1100602).mp3",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Disco_Lounge_(ISRC_USUAN1100602).mp3",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_space_observation",
+    "file": "/assets/audio/space_observation/01-life-support.mp3",
+    "title": "Life support",
+    "sourceTitle": "WWS Ventilationfan.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:WWS_Ventilationfan.ogg",
+    "artist": "Work With Sounds / Technical Museum of Slovenia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_space_observation",
+    "file": "/assets/audio/space_observation/03-power-system.mp3",
+    "title": "Power system",
+    "sourceTitle": "400Hz hum square.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:400Hz_hum_square.ogg",
+    "artist": "BPK",
+    "license": "Public domain",
+    "licenseUrl": "",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_space_observation",
+    "file": "/assets/audio/space_observation/04-interstellar-plasma.mp3",
+    "title": "Interstellar plasma",
+    "sourceTitle": "Voyager Captures Sounds of Interstellar Space.webm",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Voyager_Captures_Sounds_of_Interstellar_Space.webm",
+    "artist": "NASA Jet Propulsion Laboratory",
+    "license": "Public domain",
+    "licenseUrl": "",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_space_observation",
+    "file": "/assets/audio/space_observation/05-deep-space-static.mp3",
+    "title": "Deep-space static",
+    "sourceTitle": "Static B.wav",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Static_B.wav",
+    "artist": "Oreocooke",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_space_observation",
+    "file": "/assets/audio/space_observation/06-ancient-universe.mp3",
+    "title": "Ancient universe",
+    "sourceTitle": "Sounds of the Ancient Universe (PIA16881).wav",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Sounds_of_the_Ancient_Universe_(PIA16881).wav",
+    "artist": "ESA/NASA/JPL-Caltech",
+    "license": "Public domain",
+    "licenseUrl": "",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_farm",
+    "file": "/assets/audio/farm/01-barnyard.mp3",
+    "title": "Barnyard morning",
+    "sourceTitle": "WWS Cattleshed.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:WWS_Cattleshed.ogg",
+    "artist": "Work With Sounds / Museum of Municipal Engineering",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_farm",
+    "file": "/assets/audio/farm/02-hens-and-rooster.mp3",
+    "title": "Hens and rooster",
+    "sourceTitle": "Voice of Poland chicken.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Voice_of_Poland_chicken.ogg",
+    "artist": "Nokia ST",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_farm",
+    "file": "/assets/audio/farm/03-sheep-field.mp3",
+    "title": "Sheep field",
+    "sourceTitle": "Corner of a sheep field in summer.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Corner_of_a_sheep_field_in_summer.ogg",
+    "artist": "earthcalling",
+    "license": "Public domain",
+    "licenseUrl": "",
+    "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
+  },
+  {
+    "sceneId": "tab_farm",
+    "file": "/assets/audio/farm/04-tractor-engine.mp3",
+    "title": "Distant tractor",
+    "sourceTitle": "WWS TractorLanzBuldogHL12engineinoperation.ogg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:WWS_TractorLanzBuldogHL12engineinoperation.ogg",
+    "artist": "Work With Sounds / Museum of Municipal Engineering",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
     "edit": "60-second normalized MP3 excerpt; fade in/out; stereo 44.1 kHz at 160 kbps"
   }
 ]

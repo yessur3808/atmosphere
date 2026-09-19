@@ -23,9 +23,9 @@ test("SEO metadata targets the public HTTPS deployment", async () => {
 
   assert.doesNotMatch(combined, /100\.104\.252\.183/);
   assert.match(combined, /https:\/\/yessur3808\.github\.io\/atmosphere\//);
-  assert.match(files[0], /110 immersive ambient tracks/);
-  assert.match(files[0], /88 cinematic video loops/);
-  assert.match(files[0], /22 atmospheres/);
+  assert.match(files[0], /155 immersive ambient tracks/);
+  assert.match(files[0], /126 cinematic video loops/);
+  assert.match(files[0], /29 atmospheres/);
   for (const route of ["install.html", "legal.html", "privacy.html", "terms.html", "security.html", "licenses.html", "accessibility.html"]) {
     assert.match(files[3], new RegExp(route.replace(".", "\\.")), `sitemap is missing ${route}`);
   }

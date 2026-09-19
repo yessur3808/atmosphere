@@ -46,7 +46,8 @@
     { "file": "02-soft-flurry.mp3", "title": "Soft flurry", "note": "Cold wind inside a passing snow shower", "sourceTitle": "File:IJzige wind met een sneeuwbui - SoundCloud - Beeld en Geluid.ogg", "start": 92 },
     { "file": "03-frozen-air.mp3", "title": "Fresh snow steps", "note": "Slow footsteps pressed into fresh snow", "sourceTitle": "File:Walking through snow.mp3", "start": 0 },
     { "file": "04-distant-wind.mp3", "title": "Crunching trail", "note": "Crisp boots moving over crunchy snow", "sourceTitle": "File:Crunchy Snow Walking Sound Effect - Human Sounds.opus", "start": 0 },
-    { "file": "05-snow-at-night.mp3", "title": "Snow walker", "note": "A lone walker crossing a snowy path", "sourceTitle": "File:Man walking on the snow.ogg", "start": 0 }
+    { "file": "05-snow-at-night.mp3", "title": "Snow walker", "note": "A lone walker crossing a snowy path", "sourceTitle": "File:Man walking on the snow.ogg", "start": 0 },
+    { "file": "06-cabin-fire.mp3", "src": "/assets/audio/fire/03-low-embers.mp3", "title": "Cabin fire", "note": "A real hearth sheltered from the winter weather", "sourceTitle": "File:Mount Rainier Holiday Hearth.webm", "start": 94 }
   ],
   "tab_street": [
     { "file": "01-after-midnight.mp3", "title": "City crossing", "note": "A busy city street with layered road noise", "sourceTitle": "File:Sagetyrtle - citystreet3 (cc0) (freesound).mp3", "start": 24 },
@@ -74,14 +75,18 @@
     { "file": "02-rail-rhythm.mp3", "title": "Rail rhythm", "note": "Train cars working along the track", "sourceTitle": "File:Taiwan railways EP727 train cars sounds.ogg", "start": 22 },
     { "file": "03-window-seat.mp3", "title": "Window seat", "note": "A train decelerating toward the platform", "sourceTitle": "File:E231Deceleration.ogg", "start": 0 },
     { "file": "04-distant-station.mp3", "title": "Distant station", "note": "Trains passing through a railway space", "sourceTitle": "File:Trains through a railwa.ogg", "start": 20 },
-    { "file": "05-night-express.mp3", "title": "Night express", "note": "A long train crossing open desert", "sourceTitle": "File:Train passing by in the Wirikuta Desert (Mexico, SLP).wav", "start": 32 }
+    { "file": "05-night-express.mp3", "title": "Night express", "note": "A long train crossing open desert", "sourceTitle": "File:Train passing by in the Wirikuta Desert (Mexico, SLP).wav", "start": 32 },
+    { "file": "06-carriage-rain.mp3", "src": "/assets/audio/rain/01-window-rain.mp3", "title": "Carriage rain", "note": "Rain following the train along the window", "sourceTitle": "File:Rain against the window.ogg", "start": 4 },
+    { "file": "07-passing-roads.mp3", "src": "/assets/audio/street/03-distant-traffic.mp3", "title": "Passing roads", "note": "Distant road movement beyond the rail line", "sourceTitle": "File:Highway from bridge center.ogg", "start": 26 }
   ],
   "tab_typing": [
     { "file": "01-focused-keys.mp3", "title": "Focused keys", "note": "A full-size computer keyboard in use", "sourceTitle": "File:Computer keyboard.ogg", "start": 8 },
     { "file": "02-quiet-office.mp3", "title": "Quiet office", "note": "Lighter laptop keystrokes at a desk", "sourceTitle": "File:Laptop keyboard.ogg", "start": 4 },
     { "file": "03-soft-keyboard.mp3", "title": "Soft keyboard", "note": "Gentle keys with a close room tone", "sourceTitle": "File:Keyboard noise.ogg", "start": 0 },
     { "file": "04-late-deadline.mp3", "title": "Late deadline", "note": "Mechanical typewriter keys and carriage", "sourceTitle": "File:WWS Typewriter.ogg", "start": 0 },
-    { "file": "05-studio-desk.mp3", "title": "Studio desk", "note": "A long, uninterrupted computer-keyboard session", "sourceTitle": "File:399603 dustin-davis typing.wav", "start": 180 }
+    { "file": "05-studio-desk.mp3", "title": "Studio desk", "note": "A long, uninterrupted computer-keyboard session", "sourceTitle": "File:399603 dustin-davis typing.wav", "start": 180 },
+    { "file": "06-focus-bed.mp3", "src": "/assets/audio/white_noise/02-deep-brown.mp3", "title": "Focus bed", "note": "Low brown noise beneath concentrated work", "sourceTitle": "File:Brown noise 15-00 69kbps.mp3", "start": 120 },
+    { "file": "07-office-murmur.mp3", "src": "/assets/audio/coffee_shop/05-soft-chatter.mp3", "title": "Office murmur", "note": "Soft indistinct conversation beyond the desk", "sourceTitle": "File:Publiek in Café het Koetshuis - SoundCloud - Beeld en Geluid.ogg", "start": 4 }
   ],
   "tab_foot_steps": [
     { "file": "01-evening-walk.mp3", "title": "Evening walk", "note": "Footsteps in a large reverberant interior", "sourceTitle": "File:Church people walking steps with reverb.ogg", "start": 0 },
@@ -123,7 +128,8 @@
     { "file": "02-study-desk.mp3", "src": "/assets/audio/typing/01-focused-keys.mp3", "title": "Study desk", "note": "Measured keyboard work at a distant table", "sourceTitle": "File:Computer keyboard.ogg", "start": 8 },
     { "file": "03-distant-aisle.mp3", "src": "/assets/audio/foot_steps/01-evening-walk.mp3", "title": "Distant aisle", "note": "Soft footsteps crossing a reverberant room", "sourceTitle": "File:Church people walking steps with reverb.ogg", "start": 0 },
     { "file": "04-reading-hearth.mp3", "src": "/assets/audio/fire/03-low-embers.mp3", "title": "Reading hearth", "note": "A real stone hearth beside a late reading session", "sourceTitle": "File:Mount Rainier Holiday Hearth.webm", "start": 94 },
-    { "file": "05-archive-room.mp3", "title": "Quiet study room", "note": "Authentic low room ambience from TU Delft Library", "sourceTitle": "File:20121112 TU Delft Library, quiet study room - general ambience - SoundCloud - el mar.ogg", "start": 72 }
+    { "file": "05-archive-room.mp3", "title": "Quiet study room", "note": "Authentic low room ambience from TU Delft Library", "sourceTitle": "File:20121112 TU Delft Library, quiet study room - general ambience - SoundCloud - el mar.ogg", "start": 72 },
+    { "file": "06-library-rain.mp3", "src": "/assets/audio/rain/01-window-rain.mp3", "title": "Library rain", "note": "Rain settling against tall reading-room windows", "sourceTitle": "File:Rain against the window.ogg", "start": 4 }
   ],
   "tab_forest": [
     { "file": "01-canopy-air.mp3", "src": "/assets/audio/leaves/01-canopy-rustle.mp3", "title": "Canopy air", "note": "Real leaves moving in steady woodland wind", "sourceTitle": "wind_forest_08_strong_l_01.wav", "start": 0 },
@@ -152,5 +158,58 @@
     { "file": "03-highway-flow.mp3", "src": "/assets/audio/street/03-distant-traffic.mp3", "title": "Highway flow", "note": "Continuous road movement heard from above", "sourceTitle": "File:Highway from bridge center.ogg", "start": 26 },
     { "file": "04-quiet-crossing.mp3", "src": "/assets/audio/street/04-quiet-crossing.mp3", "title": "Quiet crossing", "note": "Light traffic with plenty of breathing room", "sourceTitle": "File:Sunday in the city street noise1.ogg", "start": 48 },
     { "file": "05-city-current.mp3", "src": "/assets/audio/street/05-city-hum.mp3", "title": "City current", "note": "A low continuous wash of passing vehicles", "sourceTitle": "File:Highway from bridge right side.ogg", "start": 14 }
+  ],
+  "tab_elevator_music": [
+    { "file": "01-local-forecast.mp3", "title": "Local forecast", "note": "Bright, unmistakable elevator jazz with piano, flute, and brass", "kind": "music", "sourceTitle": "File:Local Forecast - Elevator (ISRC USUAN1300012).mp3", "start": 8 },
+    { "file": "02-airport-lounge.mp3", "title": "Airport lounge", "note": "Soft lounge music for a slow ride between floors", "kind": "music", "sourceTitle": "File:Airport Lounge (ISRC USUAN1100806).mp3", "start": 24 },
+    { "file": "03-backbay-lounge.mp3", "title": "Backbay lounge", "note": "Polished hotel-lounge jazz with an easy evening pace", "kind": "music", "sourceTitle": "File:Backbay Lounge (ISRC USUAN1700068).mp3", "start": 22 },
+    { "file": "04-bossa-antigua.mp3", "title": "Bossa antigua", "note": "A warm bossa groove for a mid-century lobby", "kind": "music", "sourceTitle": "File:Bossa Antigua (ISRC USUAN1700069).mp3", "start": 18 },
+    { "file": "05-disco-lounge.mp3", "title": "Disco lounge", "note": "A softly upbeat retro lounge instrumental", "kind": "music", "sourceTitle": "File:Disco Lounge (ISRC USUAN1100602).mp3", "start": 20 },
+    { "file": "06-lobby-murmur.mp3", "src": "/assets/audio/coffee_shop/05-soft-chatter.mp3", "title": "Lobby murmur", "note": "Distant conversation and room tone for a lived-in hotel lobby", "sourceTitle": "File:Publiek in Café het Koetshuis - SoundCloud - Beeld en Geluid.ogg", "start": 4 }
+  ],
+  "tab_rainy_bedroom": [
+    { "file": "01-rain-on-glass.mp3", "src": "/assets/audio/rain/01-window-rain.mp3", "title": "Rain on glass", "note": "Close rain tapping against the bedroom window", "sourceTitle": "File:Rain against the window.ogg", "start": 4 },
+    { "file": "02-roof-rain.mp3", "src": "/assets/audio/rain/03-roof-droplets.mp3", "title": "Roof rain", "note": "Soft droplets gathering along the roof and gutter", "sourceTitle": "File:Gutter.ogg", "start": 12 },
+    { "file": "03-distant-storm.mp3", "src": "/assets/audio/rain/02-distant-downpour.mp3", "title": "Distant storm", "note": "Steady rainfall with thunder kept well beyond the room", "sourceTitle": "File:Light Rain Distant Thunder July 5th 2016.wav", "start": 42 },
+    { "file": "04-room-tone.mp3", "src": "/assets/audio/white_noise/02-deep-brown.mp3", "title": "Sleep room tone", "note": "Low, unobtrusive room tone for settling down", "sourceTitle": "File:Brown noise 15-00 69kbps.mp3", "start": 120 },
+    { "file": "05-bedside-fire.mp3", "src": "/assets/audio/fire/03-low-embers.mp3", "title": "Bedside hearth", "note": "A quiet fire glowing at the far side of the room", "sourceTitle": "File:Mount Rainier Holiday Hearth.webm", "start": 94 },
+    { "file": "06-city-below.mp3", "src": "/assets/audio/street/05-city-hum.mp3", "title": "City below", "note": "A muted urban wash beneath the rainfall", "sourceTitle": "File:Highway from bridge right side.ogg", "start": 14 }
+  ],
+  "tab_brown_noise": [
+    { "file": "01-deep-brown.mp3", "src": "/assets/audio/white_noise/02-deep-brown.mp3", "title": "Deep brown", "note": "A dense low-frequency field for masking distractions", "sourceTitle": "File:Brown noise 15-00 69kbps.mp3", "start": 120 },
+    { "file": "02-soft-static.mp3", "src": "/assets/audio/white_noise/01-soft-static.mp3", "title": "Soft spectrum", "note": "A balanced broadband layer with a lighter edge", "sourceTitle": "File:White noise.ogg", "start": 0 },
+    { "file": "03-airy-pink.mp3", "src": "/assets/audio/white_noise/03-airy-pink.mp3", "title": "Airy pink", "note": "A softer noise profile with reduced high frequencies", "sourceTitle": "File:Pink noise.wav", "start": 0 },
+    { "file": "04-velvet-gray.mp3", "src": "/assets/audio/white_noise/04-velvet-gray.mp3", "title": "Velvet gray", "note": "An even perceptual spectrum for long listening", "sourceTitle": "File:Gray noise.ogg", "start": 0 },
+    { "file": "05-violet-focus.mp3", "src": "/assets/audio/white_noise/05-sleep-layer.mp3", "title": "Violet focus", "note": "A brighter texture for short, concentrated sessions", "sourceTitle": "File:Purple noise.ogg", "start": 0 }
+  ],
+  "tab_space_observation": [
+    { "file": "01-life-support.mp3", "title": "Life support", "note": "Steady ventilation moving through the observation deck", "sourceTitle": "File:WWS Ventilationfan.ogg", "start": 4 },
+    { "file": "02-engine-bed.mp3", "src": "/assets/audio/white_noise/02-deep-brown.mp3", "title": "Engine bed", "note": "A deep continuous propulsion-like rumble", "sourceTitle": "File:Brown noise 15-00 69kbps.mp3", "start": 120 },
+    { "file": "03-power-system.mp3", "title": "Power system", "note": "A restrained electrical hum beneath the deck", "sourceTitle": "File:400Hz hum square.ogg", "start": 0 },
+    { "file": "04-interstellar-plasma.mp3", "title": "Interstellar plasma", "note": "Plasma-wave data captured by NASA's Voyager 1", "sourceTitle": "File:Voyager Captures Sounds of Interstellar Space.webm", "start": 0 },
+    { "file": "05-deep-space-static.mp3", "title": "Deep-space static", "note": "Light communication static at the edge of reception", "sourceTitle": "File:Static B.wav", "start": 0 },
+    { "file": "06-ancient-universe.mp3", "title": "Ancient universe", "note": "Primordial observations translated into audible sound", "sourceTitle": "File:Sounds of the Ancient Universe (PIA16881).wav", "start": 0 }
+  ],
+  "tab_night_drive": [
+    { "file": "01-wet-road.mp3", "src": "/assets/audio/street/02-wet-pavement.mp3", "title": "Wet road", "note": "Tyres and passing traffic on rain-dark pavement", "sourceTitle": "File:Urban Street on a Rainy Afternoon.flac", "start": 160 },
+    { "file": "02-highway-flow.mp3", "src": "/assets/audio/street/03-distant-traffic.mp3", "title": "Highway flow", "note": "An uninterrupted current of vehicles on the open road", "sourceTitle": "File:Highway from bridge center.ogg", "start": 26 },
+    { "file": "03-city-cruise.mp3", "src": "/assets/audio/street/01-after-midnight.mp3", "title": "City cruise", "note": "A broad nighttime street heard from inside the car", "sourceTitle": "File:Sagetyrtle - citystreet3 (cc0) (freesound).mp3", "start": 24 },
+    { "file": "04-window-rain.mp3", "src": "/assets/audio/rain/01-window-rain.mp3", "title": "Windshield rain", "note": "Close droplets across the windshield and roof", "sourceTitle": "File:Rain against the window.ogg", "start": 4 },
+    { "file": "05-night-air.mp3", "src": "/assets/audio/wind/03-window-breeze.mp3", "title": "Night air", "note": "Soft airflow around a moving vehicle", "sourceTitle": "File:Het ruisen van de wind - SoundCloud - Beeld en Geluid.ogg", "start": 34 }
+  ],
+  "tab_city_apartment": [
+    { "file": "01-city-below.mp3", "src": "/assets/audio/street/05-city-hum.mp3", "title": "City below", "note": "A low urban wash rising between high-rises", "sourceTitle": "File:Highway from bridge right side.ogg", "start": 14 },
+    { "file": "02-distant-traffic.mp3", "src": "/assets/audio/street/03-distant-traffic.mp3", "title": "Distant traffic", "note": "Continuous roads heard through closed glass", "sourceTitle": "File:Highway from bridge center.ogg", "start": 26 },
+    { "file": "03-window-rain.mp3", "src": "/assets/audio/rain/01-window-rain.mp3", "title": "Window rain", "note": "Rain settling against an apartment window", "sourceTitle": "File:Rain against the window.ogg", "start": 4 },
+    { "file": "04-room-tone.mp3", "src": "/assets/audio/white_noise/02-deep-brown.mp3", "title": "Quiet room", "note": "A deep interior tone beneath the city", "sourceTitle": "File:Brown noise 15-00 69kbps.mp3", "start": 120 },
+    { "file": "05-neighbours.mp3", "src": "/assets/audio/coffee_shop/05-soft-chatter.mp3", "title": "Distant neighbours", "note": "Indistinct voices softened by walls and distance", "sourceTitle": "File:Publiek in Café het Koetshuis - SoundCloud - Beeld en Geluid.ogg", "start": 4 },
+    { "file": "06-ventilation.mp3", "src": "/assets/audio/space_observation/01-life-support.mp3", "title": "Ventilation", "note": "A steady building ventilation layer", "sourceTitle": "File:WWS Ventilationfan.ogg", "start": 4 }
+  ],
+  "tab_farm": [
+    { "file": "01-barnyard.mp3", "title": "Barnyard morning", "note": "Sheep, goats, pigs, and other livestock inside a working farm shed", "sourceTitle": "File:WWS Cattleshed.ogg", "start": 8 },
+    { "file": "02-hens-and-rooster.mp3", "title": "Hens and rooster", "note": "A full minute of real chicken and rooster calls", "sourceTitle": "File:Voice of Poland chicken.ogg", "start": 0 },
+    { "file": "03-sheep-field.mp3", "title": "Sheep field", "note": "Ewes, lambs, and birds in a summer pasture", "sourceTitle": "File:Corner of a sheep field in summer.ogg", "start": 0 },
+    { "file": "04-tractor-engine.mp3", "title": "Distant tractor", "note": "A vintage tractor engine working beyond the field", "sourceTitle": "File:WWS TractorLanzBuldogHL12engineinoperation.ogg", "start": 70 },
+    { "file": "05-field-birds.mp3", "src": "/assets/audio/birds/03-forest-morning.mp3", "title": "Field birds", "note": "Morning birds spread across open farmland", "sourceTitle": "File:20090610 0 ambience.ogg", "start": 18 }
   ]
 }

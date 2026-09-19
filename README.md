@@ -13,7 +13,7 @@ Desktop installers are generated from tagged commits by GitHub Actions. Read [IN
 
 ## Features
 
-- 22 audited atmosphere themes with five audio choices and four video loops each
+- 29 audited atmosphere themes with five to eight audio choices and four video loops each, plus an expanded 14-route Night Drive collection
 - Layered sound mixing with independent volumes, smooth crossfades, Smart Mix, saved mixes, favorites, shareable mixes, and resume history
 - Linked or separate audio/video playback, audio-only data saver mode, quiet view, and a mini player
 - Optional local weather and consent-gated Google Analytics

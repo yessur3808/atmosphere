@@ -3,7 +3,7 @@
   export let active = false;
 </script>
 
-<span class="scene-icon" class:active class:rain={scene === "tab_rain"} class:coffee={scene === "tab_coffee_shop"} class:waterfall={scene === "tab_waterfall"} class:lightning={scene === "tab_lightning"} class:wind={scene === "tab_wind"} class:fire={scene === "tab_fire"} class:snow={scene === "tab_snow"} class:street={scene === "tab_street"} class:leaves={scene === "tab_leaves"} class:ocean={scene === "tab_ocean_waves"} class:train={scene === "tab_train"} class:typing={scene === "tab_typing"} class:footsteps={scene === "tab_foot_steps"} class:birds={scene === "tab_birds"} class:static={scene === "tab_white_noise"} class:onsen={scene === "tab_onsen"} class:cat={scene === "tab_cat_window"} class:library={scene === "tab_library"} class:forest={scene === "tab_forest"} class:jungle={scene === "tab_jungle"} class:shore={scene === "tab_beach_shore"} class:traffic={scene === "tab_traffic"} aria-hidden="true">
+<span class="scene-icon" class:active class:rain={scene === "tab_rain"} class:coffee={scene === "tab_coffee_shop"} class:waterfall={scene === "tab_waterfall"} class:lightning={scene === "tab_lightning"} class:wind={scene === "tab_wind"} class:fire={scene === "tab_fire"} class:snow={scene === "tab_snow"} class:street={scene === "tab_street"} class:leaves={scene === "tab_leaves"} class:ocean={scene === "tab_ocean_waves"} class:train={scene === "tab_train"} class:typing={scene === "tab_typing"} class:footsteps={scene === "tab_foot_steps"} class:birds={scene === "tab_birds"} class:static={scene === "tab_white_noise"} class:onsen={scene === "tab_onsen"} class:cat={scene === "tab_cat_window"} class:library={scene === "tab_library"} class:forest={scene === "tab_forest"} class:jungle={scene === "tab_jungle"} class:shore={scene === "tab_beach_shore"} class:traffic={scene === "tab_traffic"} class:elevator={scene === "tab_elevator_music"} class:bedroom={scene === "tab_rainy_bedroom"} class:brown={scene === "tab_brown_noise"} class:space={scene === "tab_space_observation"} class:nightdrive={scene === "tab_night_drive"} class:apartment={scene === "tab_city_apartment"} class:farm={scene === "tab_farm"} aria-hidden="true">
   <svg viewBox="0 0 24 24">
     {#if scene === "tab_rain"}
       <path d="M6.5 15.5h10.3a3.2 3.2 0 0 0 .2-6.4 5.2 5.2 0 0 0-9.8 1.1 2.7 2.7 0 0 0-.7 5.3Z" />
@@ -52,6 +52,22 @@
       <circle class="shore-sun" cx="17" cy="7" r="2.4" /><path class="shore-wave wave-a" d="M3 14c2.3 0 2.3-1.8 4.6-1.8S10 14 12.3 14s2.3-1.8 4.6-1.8S19.2 14 21.5 14" /><path class="shore-wave wave-b" d="M4 18c2 0 2-1.4 4-1.4s2 1.4 4 1.4 2-1.4 4-1.4 2 1.4 4 1.4" /><path d="M3 21h18" />
     {:else if scene === "tab_traffic"}
       <g class="traffic-car"><path d="m5 13 1.8-4h10.4l1.8 4v5H5v-5Z" /><path d="M7 13h10M8 18v2M16 18v2" /><circle class="headlight" cx="8" cy="15.5" r=".8" /><circle class="headlight" cx="16" cy="15.5" r=".8" /></g><path class="road-line" d="M4 22h4m4 0h4m4 0h1" />
+    {:else if scene === "tab_elevator_music"}
+      <rect x="5" y="3" width="14" height="18" rx="2" /><path d="M12 10v11M5 10h14" />
+      <path class="elevator-arrow arrow-up" d="m9 8 3-3 3 3" /><path class="elevator-arrow arrow-down" d="m9 5 3 3 3-3" />
+      <path class="elevator-door door-left" d="M8.5 12v7" /><path class="elevator-door door-right" d="M15.5 12v7" />
+    {:else if scene === "tab_rainy_bedroom"}
+      <path d="M4 13h16v7H4zM4 16h16M7 13V7h5a3 3 0 0 1 3 3v3" /><path class="bedroom-drop drop-a" d="m17 5-.7 2" /><path class="bedroom-drop drop-b" d="m20 7-.7 2" /><path class="bedroom-lamp" d="M7 9h3M8.5 9V6" />
+    {:else if scene === "tab_brown_noise"}
+      <path class="brown-wave wave-a" d="M3 8c2-2 4 2 6 0s4 2 6 0 4 2 6 0" /><path class="brown-wave wave-b" d="M3 12c2-2 4 2 6 0s4 2 6 0 4 2 6 0" /><path class="brown-wave wave-c" d="M3 16c2-2 4 2 6 0s4 2 6 0 4 2 6 0" />
+    {:else if scene === "tab_space_observation"}
+      <circle cx="12" cy="12" r="8.5" /><path class="space-orbit" d="M5 14c4.5 2.4 10.5 2.4 14 0" /><path class="space-planet" d="M7.2 15.3A6.3 6.3 0 0 1 17.8 10" /><path class="space-star star-a" d="m17 5 .4 1.1 1.1.4-1.1.4L17 8l-.4-1.1-1.1-.4 1.1-.4L17 5Z" /><path class="space-star star-b" d="m8 7 .3.8.8.3-.8.3-.3.8-.3-.8-.8-.3.8-.3L8 7Z" />
+    {:else if scene === "tab_night_drive"}
+      <path d="m8 21 2-15h4l2 15M5 21h14M11 16h2" /><path class="drive-line" d="M12 8v3" /><circle class="drive-light light-a" cx="6" cy="9" r="1" /><circle class="drive-light light-b" cx="18" cy="7" r="1" />
+    {:else if scene === "tab_city_apartment"}
+      <path d="M5 21V5h10v16M15 10h4v11M8 8h2M8 12h2M8 16h2M12 8h1M12 12h1M12 16h1M17 13h1M17 17h1" /><path class="apartment-moon" d="M18 3.5a2.7 2.7 0 0 0 2.8 3.2A3.1 3.1 0 1 1 18 3.5Z" />
+    {:else if scene === "tab_farm"}
+      <path d="M4 21V11l8-5 8 5v10M8 21v-6h8v6M5 11h14" /><path class="farm-blade blade-a" d="M12 10V5" /><path class="farm-blade blade-b" d="m12 10 4-2.5" /><path class="farm-blade blade-c" d="m12 10-4-2.5" /><circle class="farm-sun" cx="19" cy="5" r="1.5" />
     {:else}
       <path class="noise n1" d="M5 9v6" /><path class="noise n2" d="M8 6v12" /><path class="noise n3" d="M11 8v8" /><path class="noise n4" d="M14 4v16" /><path class="noise n5" d="M17 7v10" /><path class="noise n6" d="M20 10v4" />
     {/if}
@@ -79,7 +95,7 @@
     transform: scale(1.05);
   }
   svg { width: 22px; height: 22px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
-  .drop, .steam, .fall, .gust, .bolt, .flame, .snowflake, .lamp-glow, .leaf-sway, .wave, .rail, .key-tap, .step, .bird, .noise, .onsen-steam, .cat-tail, .book-page, .forest-sway, .jungle-sway, .shore-wave, .shore-sun, .traffic-car, .headlight, .road-line { transform-box: fill-box; transform-origin: center; }
+  .drop, .steam, .fall, .gust, .bolt, .flame, .snowflake, .lamp-glow, .leaf-sway, .wave, .rail, .key-tap, .step, .bird, .noise, .onsen-steam, .cat-tail, .book-page, .forest-sway, .jungle-sway, .shore-wave, .shore-sun, .traffic-car, .headlight, .road-line, .elevator-arrow, .elevator-door, .bedroom-drop, .bedroom-lamp, .brown-wave, .space-orbit, .space-planet, .space-star, .drive-line, .drive-light, .apartment-moon, .farm-blade, .farm-sun { transform-box: fill-box; transform-origin: center; }
   .active.rain .drop { animation: rain-fall 1s ease-in infinite; }
   .active.rain .drop-b { animation-delay: .22s; } .active.rain .drop-c { animation-delay: .44s; }
   .active.coffee .steam { animation: steam-rise 1.8s ease-in-out infinite; }
@@ -118,6 +134,26 @@
   .active.traffic .traffic-car { animation: traffic-move 1.8s ease-in-out infinite; }
   .active.traffic .headlight { fill: currentColor; animation: lamp-pulse 1.8s ease-in-out infinite; }
   .active.traffic .road-line { animation: rail-move .8s linear infinite; }
+  .active.elevator .arrow-up { animation: elevator-rise 2.4s ease-in-out infinite; }
+  .active.elevator .arrow-down { animation: elevator-fall 2.4s 1.2s ease-in-out infinite; }
+  .active.elevator .door-left { animation: elevator-left-door 3.2s ease-in-out infinite; }
+  .active.elevator .door-right { animation: elevator-right-door 3.2s ease-in-out infinite; }
+  .active.bedroom .bedroom-drop { animation: rain-fall 1.25s ease-in infinite; }
+  .active.bedroom .drop-b { animation-delay: .5s; }
+  .active.bedroom .bedroom-lamp { animation: lamp-pulse 2.6s ease-in-out infinite; }
+  .active.brown .brown-wave { animation: brown-drift 2.3s ease-in-out infinite; }
+  .active.brown .wave-b { animation-delay: -.7s; }
+  .active.brown .wave-c { animation-delay: -1.4s; }
+  .active.space .space-orbit { animation: space-orbit 4.8s linear infinite; }
+  .active.space .space-planet { animation: space-breathe 3.2s ease-in-out infinite; }
+  .active.space .space-star { animation: lamp-pulse 2.2s ease-in-out infinite; }
+  .active.space .star-b { animation-delay: .8s; }
+  .active.nightdrive .drive-line { animation: drive-road .85s linear infinite; }
+  .active.nightdrive .drive-light { fill: currentColor; animation: drive-light 2s ease-in-out infinite; }
+  .active.nightdrive .light-b { animation-delay: .6s; }
+  .active.apartment .apartment-moon { animation: moon-drift 3s ease-in-out infinite; }
+  .active.farm .farm-blade { animation: farm-turn 4.5s linear infinite; transform-origin: 50% 100%; }
+  .active.farm .farm-sun { fill: currentColor; animation: lamp-pulse 3s ease-in-out infinite; }
 
   @keyframes rain-fall { 0% { opacity: 0; transform: translateY(-2px); } 35% { opacity: 1; } 100% { opacity: 0; transform: translateY(3px); } }
   @keyframes steam-rise { 0%, 100% { opacity: .35; transform: translateY(1px); } 50% { opacity: 1; transform: translateY(-2px); } }
@@ -141,6 +177,16 @@
   @keyframes forest-sway { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(2deg); } }
   @keyframes jungle-sway { 0%, 100% { transform: rotate(-2.5deg) scaleY(.98); } 50% { transform: rotate(3deg) scaleY(1.02); } }
   @keyframes traffic-move { 0%, 100% { transform: translateX(-1px); } 50% { transform: translateX(1.5px) translateY(-.5px); } }
+  @keyframes elevator-rise { 0%, 42%, 100% { opacity: .25; transform: translateY(1px); } 18% { opacity: 1; transform: translateY(-1px); } }
+  @keyframes elevator-fall { 0%, 42%, 100% { opacity: .22; transform: translateY(-1px); } 18% { opacity: 1; transform: translateY(1px); } }
+  @keyframes elevator-left-door { 0%, 30%, 76%, 100% { transform: translateX(0); } 45%, 62% { transform: translateX(-1.5px); } }
+  @keyframes elevator-right-door { 0%, 30%, 76%, 100% { transform: translateX(0); } 45%, 62% { transform: translateX(1.5px); } }
+  @keyframes brown-drift { 0%, 100% { transform: translateX(-1px); opacity: .48; } 50% { transform: translateX(1.4px); opacity: 1; } }
+  @keyframes space-orbit { to { transform: rotate(360deg); } }
+  @keyframes space-breathe { 0%, 100% { opacity: .55; transform: scale(.97); } 50% { opacity: 1; transform: scale(1.03); } }
+  @keyframes drive-road { from { stroke-dasharray: 2 3; stroke-dashoffset: 5; } to { stroke-dasharray: 2 3; stroke-dashoffset: 0; } }
+  @keyframes drive-light { 0%, 100% { opacity: .25; transform: translateY(-1px); } 50% { opacity: 1; transform: translateY(1px); } }
+  @keyframes farm-turn { to { transform: rotate(360deg); } }
 
   @media (prefers-reduced-motion: reduce) {
     .scene-icon *, .scene-icon { animation: none !important; transition-duration: .01ms !important; }

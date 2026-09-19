@@ -92,6 +92,15 @@
     { id: "office-focus", title: "Office focus", detail: "A steady foundation with just enough natural detail to stay attentive.", indices: [0, 2] },
     { id: "gentle-depth", title: "Gentle depth", detail: "A softer two-layer blend for reading, journaling, and unwinding.", indices: [1, 4] },
     { id: "full-atmosphere", title: "Full atmosphere", detail: "A richer three-part soundscape that fills the room without feeling busy.", indices: [0, 2, 3] },
+    { id: "hotel-lobby", title: "Hotel lobby", detail: "Classic elevator jazz with a restrained layer of distant lobby conversation.", sceneId: "tab_elevator_music", indices: [0, 5], volumes: [0.78, 0.24] },
+    { id: "cozy-cabin", title: "Cozy cabin", detail: "A sheltered hearth while snow and winter air move outside.", sceneId: "tab_snow", indices: [0, 1, 5], volumes: [0.34, 0.28, 0.82] },
+    { id: "midnight-reading", title: "Midnight reading", detail: "Pages, a low fire, and rain against the library windows.", sceneId: "tab_library", indices: [0, 3, 5], volumes: [0.46, 0.62, 0.42] },
+    { id: "rainy-commute", title: "Rainy commute", detail: "A steady carriage rhythm carried through rain and passing roads.", sceneId: "tab_train", indices: [0, 5, 6], volumes: [0.72, 0.44, 0.22] },
+    { id: "deep-office-focus", title: "Deep office focus", detail: "Measured keys over brown noise and a distant office murmur.", sceneId: "tab_typing", indices: [0, 5, 6], volumes: [0.48, 0.68, 0.2] },
+    { id: "forest-stream", title: "Forest stream", detail: "Birds, moving canopy, and water heard deeper among the trees.", sceneId: "tab_forest", indices: [0, 1, 4], volumes: [0.38, 0.46, 0.66] },
+    { id: "storm-watching", title: "Storm watching", detail: "Distant thunder and layered rain from a safe place indoors.", sceneId: "tab_lightning", indices: [0, 1, 4], volumes: [0.58, 0.5, 0.32] },
+    { id: "spa-retreat", title: "Spa retreat", detail: "Thermal water, morning birds, and cool mountain air.", sceneId: "tab_onsen", indices: [0, 3, 4], volumes: [0.68, 0.34, 0.28] },
+    { id: "cat-nap", title: "Cat nap", detail: "A close purr beside window rain and a compact fireplace.", sceneId: "tab_cat_window", indices: [0, 1, 2], volumes: [0.78, 0.38, 0.3] },
   ];
 
   const pipPreferences = [
@@ -115,11 +124,16 @@
   $: activeVideo = activeScene.videoLoops[selectedVideo];
   $: selectedTrackNames = selectedAudios.map((index) => activeScene.audioTracks[index]?.title).filter(Boolean);
   $: mixTitle = selectedAudios.length > 1 ? `${selectedAudios.length} sounds mixed` : activeTrack.title;
-  $: mixNote = selectedAudios.length > 1 ? selectedTrackNames.join(" + ") : `${activeTrack.note} · recorded ambience`;
-  $: soundRecipes = recipeBlueprints.map((recipe) => ({
-    ...recipe,
-    tracks: recipe.indices.map((index) => activeScene.audioTracks[index]).filter(Boolean),
-  }));
+  $: mixNote = selectedAudios.length > 1 ? selectedTrackNames.join(" + ") : `${activeTrack.note} · ${activeTrack.kind === "music" ? "instrumental music" : "recorded ambience"}`;
+  $: soundRecipes = recipeBlueprints.filter((recipe) => recipe.sceneId || activeScene.id !== "tab_elevator_music").map((recipe) => {
+    const recipeSceneIndex = recipe.sceneId ? scenes.findIndex((scene) => scene.id === recipe.sceneId) : activeIndex;
+    const recipeScene = scenes[recipeSceneIndex] || activeScene;
+    return {
+      ...recipe,
+      sceneIndex: recipeSceneIndex,
+      tracks: recipe.indices.map((index) => recipeScene.audioTracks[index]).filter(Boolean),
+    };
+  });
   $: sceneCategories = ["all", "favorites", ...new Set(scenes.map((scene) => scene.category))];
   $: filteredScenes = filterSceneLibrary(scenes, libraryQuery, libraryCategory, favoriteSceneIds);
   $: currentSceneFavorite = favoriteSceneIds.includes(activeScene.id);
@@ -517,13 +531,17 @@
   }
 
   async function applyRecipe(recipe) {
+    if (Number.isInteger(recipe.sceneIndex) && recipe.sceneIndex >= 0 && recipe.sceneIndex !== activeIndex) {
+      await selectScene(recipe.sceneIndex);
+    }
     multiSoundEnabled = true;
     selectedAudios = recipe.indices.filter((index) => activeScene.audioTracks[index]);
     selectedAudio = selectedAudios[0];
     selectedAudios.forEach((index, position) => {
       const trackId = getTrackId(index);
-      if (trackId && !Number.isFinite(Number(layerVolumes[trackId]))) {
-        layerVolumes = { ...layerVolumes, [trackId]: position === 0 ? 0.74 : 0.62 };
+      const recipeVolume = Number(recipe.volumes?.[position]);
+      if (trackId && (Number.isFinite(recipeVolume) || !Number.isFinite(Number(layerVolumes[trackId])))) {
+        layerVolumes = { ...layerVolumes, [trackId]: Number.isFinite(recipeVolume) ? recipeVolume : position === 0 ? 0.74 : 0.62 };
       }
     });
     isVideoPlaying = !dataSaverMode;
@@ -1677,7 +1695,7 @@
                   aria-pressed={selectedVideo === index}
                   on:click={() => selectVideo(index)}
                 >
-                  <span>0{index + 1}</span>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
                   <strong>{loop.title}</strong>
                 </button>
               {/each}
@@ -1702,7 +1720,7 @@
         </div>
         <span>{activeScene.title}</span>
       </div>
-      <p class="recommendation-intro">Layer recordings from this atmosphere for a little more texture.</p>
+      <p class="recommendation-intro">{activeScene.id === "tab_elevator_music" ? "Pair one lounge instrumental with subtle room tone." : "Layer recordings from this atmosphere for a little more texture."}</p>
       <div class="recipe-list">
         {#each soundRecipes as recipe}
           <article class="recipe-card">

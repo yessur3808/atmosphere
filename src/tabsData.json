@@ -172,6 +172,55 @@
         "background": "traffic.mp4",
         "description": "Steady city traffic",
         "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_elevator_music",
+        "title": "Elevator Music",
+        "background": "elevator.mp4",
+        "description": "An endless lift ride with soft lobby music",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_rainy_bedroom",
+        "title": "Rainy Bedroom",
+        "background": "rainy-bedroom.mp4",
+        "description": "Rain beyond a warm, quiet bedroom",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_brown_noise",
+        "title": "Brown Noise",
+        "background": "brown-noise.mp4",
+        "description": "A deep, even sound bed for focus and sleep",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_space_observation",
+        "title": "Spaceship Observation Deck",
+        "background": "space-observation.mp4",
+        "description": "A quiet observation deck drifting beyond Earth",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_night_drive",
+        "title": "Night Drive",
+        "background": "night-drive.mp4",
+        "description": "An unhurried drive through rain and city light",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_city_apartment",
+        "title": "City Apartment at Night",
+        "background": "city-apartment.mp4",
+        "description": "The city glowing quietly beyond the glass",
+        "levels": [1, 2, 3]
+      },
+      {
+        "id": "tab_farm",
+        "title": "Farm",
+        "background": "farm.mp4",
+        "description": "Open fields, livestock, and a slow country morning",
+        "levels": [1, 2, 3]
       }
 
     

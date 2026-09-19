@@ -18,6 +18,13 @@ const remoteFirstScenes = new Set([
   "tab_jungle",
   "tab_beach_shore",
   "tab_traffic",
+  "tab_elevator_music",
+  "tab_rainy_bedroom",
+  "tab_brown_noise",
+  "tab_space_observation",
+  "tab_night_drive",
+  "tab_city_apartment",
+  "tab_farm",
 ]);
 
 function publicPath(urlPath) {
@@ -25,19 +32,19 @@ function publicPath(urlPath) {
 }
 
 test("the atmosphere catalog is complete and has unique scene IDs", () => {
-  assert.equal(tabs.length, 22);
+  assert.equal(tabs.length, 29);
   assert.equal(new Set(tabs.map(({ id }) => id)).size, tabs.length);
   assert.deepEqual(Object.keys(audioSources).sort(), tabs.map(({ id }) => id).sort());
   assert.deepEqual(Object.keys(videoSources).sort(), tabs.map(({ id }) => id).sort());
 });
 
-test("every atmosphere exposes five playable audio choices", async () => {
+test("every atmosphere exposes five to eight playable audio choices", async () => {
   let choiceCount = 0;
   const uniqueFiles = new Set();
 
   for (const scene of tabs) {
     const tracks = audioSources[scene.id];
-    assert.equal(tracks.length, 5, `${scene.id} should have five audio choices`);
+    assert.ok(tracks.length >= 5 && tracks.length <= 8, `${scene.id} should have five to eight audio choices`);
     choiceCount += tracks.length;
 
     for (const track of tracks) {
@@ -61,18 +68,19 @@ test("every atmosphere exposes five playable audio choices", async () => {
     }
   }
 
-  assert.equal(choiceCount, 110);
-  assert.equal(uniqueFiles.size, 84);
+  assert.equal(choiceCount, 155);
+  assert.equal(uniqueFiles.size, 98);
   assert.deepEqual(publishedFiles.sort(), [...uniqueFiles].sort(), "published audio should contain no orphaned files");
 });
 
-test("every atmosphere exposes four distinct video loops and a local poster", async () => {
+test("every atmosphere exposes its intended distinct video collection and a local poster", async () => {
   let loopCount = 0;
 
   for (const scene of tabs) {
     const loops = videoSources[scene.id];
     const renderedLoopCount = loops.length + (remoteFirstScenes.has(scene.id) ? 0 : 1);
-    assert.equal(renderedLoopCount, 4, `${scene.id} should render four video loops`);
+    const expectedLoopCount = scene.id === "tab_night_drive" ? 14 : 4;
+    assert.equal(renderedLoopCount, expectedLoopCount, `${scene.id} should render ${expectedLoopCount} video loops`);
     loopCount += renderedLoopCount;
 
     assert.equal(new Set(loops.map(({ high }) => high)).size, loops.length, `${scene.id} should not repeat 1080p loops`);
@@ -84,7 +92,7 @@ test("every atmosphere exposes four distinct video loops and a local poster", as
       } else {
         assert.match(loop.high, /^assets\/videos\/loops\/.+\.mp4$/);
         assert.match(loop.adaptive, /^assets\/videos\/adaptive\/loops\/.+\.mp4$/);
-        assert.match(loop.source, /^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+        assert.match(loop.source, /^https:\/\/(?:commons\.wikimedia\.org\/wiki\/File:|www\.pexels\.com\/video\/)/);
         await access(publicPath(loop.high));
         await access(publicPath(loop.adaptive));
       }
@@ -98,7 +106,7 @@ test("every atmosphere exposes four distinct video loops and a local poster", as
     }
   }
 
-  assert.equal(loopCount, 88);
+  assert.equal(loopCount, 126);
 });
 
 test("audited atmosphere mappings reject known semantic mismatches", () => {
@@ -133,6 +141,48 @@ test("audited atmosphere mappings reject known semantic mismatches", () => {
   }
   assert.equal(videoSources.tab_onsen.filter(({ source }) => source.includes("commons.wikimedia.org")).length, 3);
   assert.equal(videoSources.tab_cat_window.filter(({ source }) => source.includes("Cat_body_language")).length, 1);
+  assert.deepEqual(
+    videoSources.tab_elevator_music.slice(0, 2).map(({ source }) => source),
+    [
+      "https://www.pexels.com/video/elevators-going-up-and-down-855191/",
+      "https://www.pexels.com/video/a-person-riding-an-elevator-5080921/",
+    ],
+  );
+  assert.deepEqual(
+    audioSources.tab_elevator_music.slice(0, 5).map(({ sourceTitle }) => sourceTitle),
+    [
+      "File:Local Forecast - Elevator (ISRC USUAN1300012).mp3",
+      "File:Airport Lounge (ISRC USUAN1100806).mp3",
+      "File:Backbay Lounge (ISRC USUAN1700068).mp3",
+      "File:Bossa Antigua (ISRC USUAN1700069).mp3",
+      "File:Disco Lounge (ISRC USUAN1100602).mp3",
+    ],
+  );
+  assert.deepEqual(
+    videoSources.tab_space_observation.map(({ source }) => source),
+    [
+      "https://www.pexels.com/video/stars-and-the-planet-earth-7184620/",
+      "https://www.pexels.com/video/lost-astronaut-gazes-at-earth-s-horizon-from-spaceship-29779800/",
+      "https://www.pexels.com/video/futuristic-spaceship-traveling-through-galaxy-29882130/",
+      "https://www.pexels.com/video/dynamic-cosmic-starfield-animation-37652488/",
+    ],
+  );
+  assert.equal(videoSources.tab_night_drive.length, 14);
+  assert.ok(videoSources.tab_night_drive.every(({ source }) => /driv|car|windshield|traffic|road|tunnel|highway/i.test(source)));
+  assert.ok(videoSources.tab_night_drive.some(({ title }) => /Dubai/i.test(title)));
+  assert.ok(videoSources.tab_night_drive.some(({ title }) => /Seoul/i.test(title)));
+  assert.ok(videoSources.tab_night_drive.some(({ title }) => /Los Angeles/i.test(title)));
+  assert.ok(videoSources.tab_night_drive.some(({ title }) => /Shenzhen/i.test(title)));
+  assert.ok(videoSources.tab_farm.every(({ source }) => /cow|farm|field/i.test(source)));
+  assert.deepEqual(
+    audioSources.tab_farm.slice(0, 4).map(({ sourceTitle }) => sourceTitle),
+    [
+      "File:WWS Cattleshed.ogg",
+      "File:Voice of Poland chicken.ogg",
+      "File:Corner of a sheep field in summer.ogg",
+      "File:WWS TractorLanzBuldogHL12engineinoperation.ogg",
+    ],
+  );
 });
 
 test("all published media files remain within GitHub's per-file limit", async () => {

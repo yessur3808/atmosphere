@@ -26,6 +26,13 @@ const meta = {
   tab_jungle: ["Jungle", "Nature", "Dense tropical life layered with rain, birds, and falling water.", "#55ad7a", "85, 173, 122"],
   tab_beach_shore: ["Beach / shore", "Water", "Waves folding onto sand beneath an open coastal sky.", "#66bfd0", "102, 191, 208"],
   tab_traffic: ["Traffic", "City", "A steady urban current of roads, engines, and passing light.", "#d08f68", "208, 143, 104"],
+  tab_elevator_music: ["Elevator music", "Transit", "A never-ending ride through polished lobbies and glowing floors.", "#d6b06f", "214, 176, 111"],
+  tab_rainy_bedroom: ["Rainy bedroom", "Home", "A warm room, softened light, and rain settling against the glass.", "#7f9db6", "127, 157, 182"],
+  tab_brown_noise: ["Brown noise", "Focus", "A deep, even sound bed that leaves the rest of the room alone.", "#a47d62", "164, 125, 98"],
+  tab_space_observation: ["Spaceship observation deck", "Space", "Life-support hum and a wide view beyond the edge of Earth.", "#788ce0", "120, 140, 224"],
+  tab_night_drive: ["Night drive", "Transit", "Wet roads, dashboard glow, and an unhurried route through the dark.", "#c5688f", "197, 104, 143"],
+  tab_city_apartment: ["City apartment at night", "City", "A private room above the distant current of the city.", "#9b82cf", "155, 130, 207"],
+  tab_farm: ["Farm", "Countryside", "Open fields, barnyard life, and the slow rhythm of a country morning.", "#9fb16c", "159, 177, 108"],
 };
 
 const remoteFirstScenes = new Set([
@@ -37,6 +44,13 @@ const remoteFirstScenes = new Set([
   "tab_jungle",
   "tab_beach_shore",
   "tab_traffic",
+  "tab_elevator_music",
+  "tab_rainy_bedroom",
+  "tab_brown_noise",
+  "tab_space_observation",
+  "tab_night_drive",
+  "tab_city_apartment",
+  "tab_farm",
 ]);
 
 function withoutExtension(filename) {

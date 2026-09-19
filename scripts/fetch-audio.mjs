@@ -7,13 +7,22 @@ import { spawn } from 'node:child_process';
 
 const projectRoot = new URL('../', import.meta.url).pathname;
 const catalog = JSON.parse(await readFile(join(projectRoot, 'audio-sources.json'), 'utf8'));
+const requestedScenes = String(process.env.ATMOSPHERE_SCENES || '')
+  .split(',').map((scene) => scene.trim()).filter(Boolean);
+const activeCatalog = requestedScenes.length
+  ? Object.fromEntries(requestedScenes.map((sceneId) => {
+    if (!catalog[sceneId]) throw new Error(`Unknown atmosphere: ${sceneId}`);
+    return [sceneId, catalog[sceneId]];
+  }))
+  : catalog;
 const outputRoot = join(projectRoot, 'public/assets/audio');
 const cacheRoot = join(projectRoot, '.audio-source-cache');
 const encoderMode = process.env.ATMOSPHERE_ENCODER || 'ffmpeg';
 const ffmpegImage = 'docker.io/jrottenberg/ffmpeg:7.1-alpine';
 const commonsIp = process.env.ATMOSPHERE_COMMONS_IP || '';
 const uploadIp = process.env.ATMOSPHERE_UPLOAD_IP || '';
-const sourceTitles = [...new Set(Object.values(catalog).flat().map((track) => track.sourceTitle))];
+const sourceTitles = [...new Set(Object.values(activeCatalog).flat()
+  .filter((track) => !track.src).map((track) => track.sourceTitle))];
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const metadataCacheFile = join(projectRoot, 'audio-metadata.json');
 const downloadDelay = Number(process.env.ATMOSPHERE_DOWNLOAD_DELAY || 900);
@@ -59,11 +68,12 @@ async function commonsMetadata(titles) {
   });
 }
 
-let metadata = await readFile(metadataCacheFile, 'utf8').then(JSON.parse).catch(() => null);
-if (!metadata) {
-  metadata = [];
-  for (let i = 0; i < sourceTitles.length; i += 45) {
-    metadata.push(...await commonsMetadata(sourceTitles.slice(i, i + 45)));
+let metadata = await readFile(metadataCacheFile, 'utf8').then(JSON.parse).catch(() => []);
+const knownTitles = new Set(metadata.map((item) => item.sourceTitle));
+const missingTitles = sourceTitles.filter((title) => !knownTitles.has(title));
+if (missingTitles.length) {
+  for (let i = 0; i < missingTitles.length; i += 45) {
+    metadata.push(...await commonsMetadata(missingTitles.slice(i, i + 45)));
   }
   await writeFile(metadataCacheFile, `${JSON.stringify(metadata, null, 2)}\n`);
 }
@@ -157,14 +167,16 @@ if (process.argv.includes('--download-only')) {
   process.exit(0);
 }
 
-const manifest = [];
+const previousManifest = await readFile(join(outputRoot, 'SOURCES.json'), 'utf8').then(JSON.parse).catch(() => []);
+const manifestByFile = new Map(previousManifest.map((item) => [item.file, item]));
 let rendered = 0;
-const total = Object.values(catalog).flat().length;
-for (const [sceneId, tracks] of Object.entries(catalog)) {
+const total = Object.values(activeCatalog).flat().filter((track) => !track.src).length;
+for (const [sceneId, tracks] of Object.entries(activeCatalog)) {
   const folder = sceneId.replace(/^tab_/, '');
   const sceneOutput = join(outputRoot, folder);
   await mkdir(sceneOutput, { recursive: true });
   for (const track of tracks) {
+    if (track.src) continue;
     const source = byTitle.get(track.sourceTitle);
     const input = sourceFiles.get(track.sourceTitle);
     const output = join(sceneOutput, track.file);
@@ -174,7 +186,7 @@ for (const [sceneId, tracks] of Object.entries(catalog)) {
     rendered += 1;
     console.log(`Rendering ${rendered}/${total}: ${folder}/${track.file}`);
     await encode(input, output, safeStart);
-    manifest.push({
+    manifestByFile.set(`/assets/audio/${folder}/${track.file}`, {
       sceneId,
       file: `/assets/audio/${folder}/${track.file}`,
       title: track.title,
@@ -188,6 +200,11 @@ for (const [sceneId, tracks] of Object.entries(catalog)) {
   }
 }
 
+const referencedFiles = new Set(Object.entries(catalog).flatMap(([sceneId, tracks]) => {
+  const folder = sceneId.replace(/^tab_/, '');
+  return tracks.map((track) => track.src || `/assets/audio/${folder}/${track.file}`);
+}));
+const manifest = [...manifestByFile.values()].filter((item) => referencedFiles.has(item.file));
 await writeFile(join(outputRoot, 'SOURCES.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 await writeFile(join(outputRoot, 'README.txt'), [
   'Atmosphere audio library',
@@ -205,7 +222,7 @@ await writeFile(join(projectRoot, 'public/audio-credits.html'), `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Atmosphere audio credits</title><style>
 :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0c0d0f;color:#f4f4f1;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{width:min(900px,calc(100% - 36px));margin:0 auto;padding:72px 0 96px}a{color:#d9e7ff}p{color:#a9abb1}.back{display:inline-block;margin-bottom:36px;text-decoration:none}.credit{padding:20px 0;border-top:1px solid #2b2d31}.credit h2{font-size:1rem;margin:0 0 5px}.credit p{margin:3px 0;font-size:.9rem}.license{display:inline-flex;padding:4px 9px;border:1px solid #3b3d42;border-radius:99px;text-decoration:none;font-size:.78rem}
-</style></head><body><main><a class="back" href="/">← Back to Atmosphere</a><h1>Audio credits</h1><p>${manifest.length} theme-matched clips, edited from ${uniqueCredits.length} field recordings. Each file is normalized to a consistent listening level and remains available under the same license as its source; the original creators and licenses are listed below.</p>
+</style></head><body><main><a class="back" href="/">← Back to Atmosphere</a><h1>Audio credits</h1><p>${manifest.length} theme-matched clips, edited from ${uniqueCredits.length} music and ambience recordings. Each file is normalized to a consistent listening level and remains available under the same license as its source; the original creators and licenses are listed below.</p>
 ${uniqueCredits.map((item) => `<article class="credit"><h2><a href="${escapeHtml(item.sourcePage)}">${escapeHtml(item.sourceTitle)}</a></h2><p>${escapeHtml(item.artist || 'Creator listed on source page')}</p><a class="license" href="${escapeHtml(item.licenseUrl || item.sourcePage)}">${escapeHtml(item.license)}</a></article>`).join('\n')}
 </main></body></html>\n`);
 await rm(cacheRoot, { recursive: true, force: true });

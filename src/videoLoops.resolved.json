@@ -560,5 +560,285 @@
       "high": "https://cdn.coverr.co/videos/coverr-traffic-in-the-city-4869/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-traffic-in-the-city-4869/720p.mp4"
     }
+  ],
+  "tab_elevator_music": [
+    {
+      "title": "Atrium elevators",
+      "file": "elevator/atrium-elevators.mp4",
+      "source": "https://www.pexels.com/video/elevators-going-up-and-down-855191/",
+      "high": "assets/videos/loops/elevator/atrium-elevators.mp4",
+      "adaptive": "assets/videos/adaptive/loops/elevator/atrium-elevators.mp4"
+    },
+    {
+      "title": "Endless glass ride",
+      "file": "elevator/endless-glass-ride.mp4",
+      "source": "https://www.pexels.com/video/a-person-riding-an-elevator-5080921/",
+      "high": "assets/videos/loops/elevator/endless-glass-ride.mp4",
+      "adaptive": "assets/videos/adaptive/loops/elevator/endless-glass-ride.mp4"
+    },
+    {
+      "title": "Solo elevator ride",
+      "file": "elevator/solo-ride.mp4",
+      "source": "https://coverr.co/videos/solo-elevator-ride",
+      "high": "https://cdn.coverr.co/videos/coverr-solo-elevator-ride/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-solo-elevator-ride/720p.mp4"
+    },
+    {
+      "title": "Choosing a floor",
+      "file": "elevator/floor-buttons.mp4",
+      "source": "https://coverr.co/videos/elevator-buttons-close-up",
+      "high": "https://cdn.coverr.co/videos/coverr-premium-elevator-buttons-close-up/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-premium-elevator-buttons-close-up/720p.mp4"
+    }
+  ],
+  "tab_rainy_bedroom": [
+    {
+      "title": "Rain on the window",
+      "file": "rainy-bedroom/rain-window.mp4",
+      "source": "https://coverr.co/videos/raindrops-on-the-window-amlapwfzyf",
+      "high": "https://cdn.coverr.co/videos/coverr-raindrops-on-the-window-7102/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-raindrops-on-the-window-7102/720p.mp4"
+    },
+    {
+      "title": "Midnight scroll",
+      "file": "rainy-bedroom/midnight-scroll.mp4",
+      "source": "https://coverr.co/videos/person-in-bed-on-their-iphone-prmnnhapxd",
+      "high": "https://cdn.coverr.co/videos/coverr-person-in-bed-on-their-iphone-3025/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-person-in-bed-on-their-iphone-3025/720p.mp4"
+    },
+    {
+      "title": "Bedside lamp",
+      "file": "rainy-bedroom/bedside-lamp.mp4",
+      "source": "https://coverr.co/videos/touch-lamp-tlxcxdbmcx",
+      "high": "https://cdn.coverr.co/videos/coverr-touch-lamp-6697/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-touch-lamp-6697/720p.mp4"
+    },
+    {
+      "title": "Room above the city",
+      "file": "rainy-bedroom/city-window.mp4",
+      "source": "https://coverr.co/videos/a-city-view-through-a-window-ifstcjddur",
+      "high": "https://cdn.coverr.co/videos/coverr-a-city-view-through-a-window-1190/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-a-city-view-through-a-window-1190/720p.mp4"
+    }
+  ],
+  "tab_brown_noise": [
+    {
+      "title": "Brown liquid",
+      "file": "brown-noise/brown-liquid.mp4",
+      "source": "https://www.pexels.com/video/video-of-brown-liquid-4219852/",
+      "high": "assets/videos/loops/brown-noise/brown-liquid.mp4",
+      "adaptive": "assets/videos/adaptive/loops/brown-noise/brown-liquid.mp4"
+    },
+    {
+      "title": "Liquid grain",
+      "file": "brown-noise/liquid-grain.mp4",
+      "source": "https://coverr.co/videos/green-liquid-with-black-particles-6xjzaarjrz",
+      "high": "https://cdn.coverr.co/videos/coverr-green-liquid-with-black-particles-7037/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-green-liquid-with-black-particles-7037/720p.mp4"
+    },
+    {
+      "title": "Soft fog",
+      "file": "brown-noise/soft-fog.mp4",
+      "source": "https://coverr.co/videos/foggy-forest-06yshrbpk8",
+      "high": "https://cdn.coverr.co/videos/coverr-foggy-forest-8688/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-foggy-forest-8688/720p.mp4"
+    },
+    {
+      "title": "Misty field",
+      "file": "brown-noise/misty-field.mp4",
+      "source": "https://coverr.co/videos/tree-in-the-mist-jl07anu9ty",
+      "high": "https://cdn.coverr.co/videos/coverr-tree-in-the-mist-4598/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-tree-in-the-mist-4598/720p.mp4"
+    }
+  ],
+  "tab_space_observation": [
+    {
+      "title": "Earth turning below",
+      "file": "space-observation/earth-orbit.mp4",
+      "source": "https://www.pexels.com/video/stars-and-the-planet-earth-7184620/",
+      "high": "assets/videos/loops/space-observation/earth-orbit.mp4",
+      "adaptive": "assets/videos/adaptive/loops/space-observation/earth-orbit.mp4"
+    },
+    {
+      "title": "Observation window",
+      "file": "space-observation/observation-window.mp4",
+      "source": "https://www.pexels.com/video/lost-astronaut-gazes-at-earth-s-horizon-from-spaceship-29779800/",
+      "high": "assets/videos/loops/space-observation/observation-window.mp4",
+      "adaptive": "assets/videos/adaptive/loops/space-observation/observation-window.mp4"
+    },
+    {
+      "title": "Interstellar passage",
+      "file": "space-observation/interstellar-passage.mp4",
+      "source": "https://www.pexels.com/video/futuristic-spaceship-traveling-through-galaxy-29882130/",
+      "high": "assets/videos/loops/space-observation/interstellar-passage.mp4",
+      "adaptive": "assets/videos/adaptive/loops/space-observation/interstellar-passage.mp4"
+    },
+    {
+      "title": "Deep starfield",
+      "file": "space-observation/deep-starfield.mp4",
+      "source": "https://www.pexels.com/video/dynamic-cosmic-starfield-animation-37652488/",
+      "high": "assets/videos/loops/space-observation/deep-starfield.mp4",
+      "adaptive": "assets/videos/adaptive/loops/space-observation/deep-starfield.mp4"
+    }
+  ],
+  "tab_night_drive": [
+    {
+      "title": "Dashboard view",
+      "file": "night-drive/dashboard-view.mp4",
+      "source": "https://coverr.co/videos/driving-at-night-vc6o7ninmp",
+      "high": "https://cdn.coverr.co/videos/coverr-driving-at-night-6089/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-driving-at-night-6089/720p.mp4"
+    },
+    {
+      "title": "City through the glass",
+      "file": "night-drive/city-through-glass.mp4",
+      "source": "https://coverr.co/videos/night-city-from-a-moving-car-fwwkkulrgf",
+      "high": "https://cdn.coverr.co/videos/coverr-night-city-from-a-moving-car-6550/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-night-city-from-a-moving-car-6550/720p.mp4"
+    },
+    {
+      "title": "Rain on the windshield",
+      "file": "night-drive/rain-windshield.mp4",
+      "source": "https://coverr.co/videos/rain-falling-on-windshield-fs8uwlp7tr",
+      "high": "https://cdn.coverr.co/videos/coverr-rain-falling-on-windshield-6625/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-rain-falling-on-windshield-6625/720p.mp4"
+    },
+    {
+      "title": "Wipers in the rain",
+      "file": "night-drive/wipers.mp4",
+      "source": "https://coverr.co/videos/windshield-wipers-viewed-from-the-inside-of-the-car-hcwvtthx0i",
+      "high": "https://cdn.coverr.co/videos/coverr-windshield-wipers-viewed-from-the-inside-of-the-car-1493/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-windshield-wipers-viewed-from-the-inside-of-the-car-1493/720p.mp4"
+    },
+    {
+      "title": "Rainy downtown",
+      "file": "night-drive/rainy-downtown.mp4",
+      "source": "https://www.pexels.com/video/nighttime-rain-drive-through-city-streets-31940805/",
+      "high": "assets/videos/loops/night-drive/rainy-downtown.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/rainy-downtown.mp4"
+    },
+    {
+      "title": "City light trails",
+      "file": "night-drive/city-light-trails.mp4",
+      "source": "https://www.pexels.com/video/point-of-view-of-a-person-driving-a-car-at-night-3895030/",
+      "high": "assets/videos/loops/night-drive/city-light-trails.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/city-light-trails.mp4"
+    },
+    {
+      "title": "Dubai expressway",
+      "file": "night-drive/dubai-expressway.mp4",
+      "source": "https://www.pexels.com/video/video-of-dubai-traffic-at-night-5057525/",
+      "high": "assets/videos/loops/night-drive/dubai-expressway.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/dubai-expressway.mp4"
+    },
+    {
+      "title": "Seoul after dark",
+      "file": "night-drive/seoul-after-dark.mp4",
+      "source": "https://www.pexels.com/video/vehicles-on-the-road-4191314/",
+      "high": "assets/videos/loops/night-drive/seoul-after-dark.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/seoul-after-dark.mp4"
+    },
+    {
+      "title": "Los Angeles freeway",
+      "file": "night-drive/los-angeles-freeway.mp4",
+      "source": "https://www.pexels.com/video/video-of-cars-on-the-road-5741833/",
+      "high": "assets/videos/loops/night-drive/los-angeles-freeway.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/los-angeles-freeway.mp4"
+    },
+    {
+      "title": "Shenzhen tunnel",
+      "file": "night-drive/shenzhen-tunnel.mp4",
+      "source": "https://www.pexels.com/video/driving-through-a-modern-tunnel-at-night-35987757/",
+      "high": "assets/videos/loops/night-drive/shenzhen-tunnel.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/shenzhen-tunnel.mp4"
+    },
+    {
+      "title": "Rural midnight road",
+      "file": "night-drive/rural-midnight-road.mp4",
+      "source": "https://www.pexels.com/video/driving-in-a-road-at-night-5542449/",
+      "high": "assets/videos/loops/night-drive/rural-midnight-road.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/rural-midnight-road.mp4"
+    },
+    {
+      "title": "Snow-covered highway",
+      "file": "night-drive/winter-night-road.mp4",
+      "source": "https://www.pexels.com/video/a-snow-covered-road-7080152/",
+      "high": "assets/videos/loops/night-drive/winter-night-road.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/winter-night-road.mp4"
+    },
+    {
+      "title": "Cyprus coast at twilight",
+      "file": "night-drive/cyprus-coast.mp4",
+      "source": "https://www.pexels.com/video/scenic-coastal-highway-at-twilight-36550391/",
+      "high": "assets/videos/loops/night-drive/cyprus-coast.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/cyprus-coast.mp4"
+    },
+    {
+      "title": "Vibrant city POV",
+      "file": "night-drive/vibrant-city-pov.mp4",
+      "source": "https://www.pexels.com/video/a-car-driving-through-a-city-at-night-19830439/",
+      "high": "assets/videos/loops/night-drive/vibrant-city-pov.mp4",
+      "adaptive": "assets/videos/adaptive/loops/night-drive/vibrant-city-pov.mp4"
+    }
+  ],
+  "tab_city_apartment": [
+    {
+      "title": "Window reflections",
+      "file": "city-apartment/window-reflections.mp4",
+      "source": "https://coverr.co/videos/nights-in-the-city-hmgs6phyvl",
+      "high": "https://cdn.coverr.co/videos/coverr-nights-in-the-city-9359/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-nights-in-the-city-9359/720p.mp4"
+    },
+    {
+      "title": "City through the window",
+      "file": "city-apartment/city-window.mp4",
+      "source": "https://coverr.co/videos/a-city-view-through-a-window-ifstcjddur",
+      "high": "https://cdn.coverr.co/videos/coverr-a-city-view-through-a-window-1190/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-a-city-view-through-a-window-1190/720p.mp4"
+    },
+    {
+      "title": "Manhattan glow",
+      "file": "city-apartment/manhattan-glow.mp4",
+      "source": "https://coverr.co/videos/manhattan-skyline-yfgcmbawdk",
+      "high": "https://cdn.coverr.co/videos/coverr-manhattan-skyline-7479/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-manhattan-skyline-7479/720p.mp4"
+    },
+    {
+      "title": "Midnight skyline",
+      "file": "city-apartment/midnight-skyline.mp4",
+      "source": "https://coverr.co/videos/new-york-city-skyline-izkb4qwfkp",
+      "high": "https://cdn.coverr.co/videos/coverr-new-york-city-skyline-4563/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-new-york-city-skyline-4563/720p.mp4"
+    }
+  ],
+  "tab_farm": [
+    {
+      "title": "Cows in New Zealand",
+      "file": "farm/cows-new-zealand.mp4",
+      "source": "https://coverr.co/videos/cows-on-a-field-in-new-zealand-yz5pwitfne",
+      "high": "https://cdn.coverr.co/videos/coverr-cows-on-a-field-in-new-zealand-8669/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-cows-on-a-field-in-new-zealand-8669/720p.mp4"
+    },
+    {
+      "title": "Grazing herd",
+      "file": "farm/grazing-herd.mp4",
+      "source": "https://coverr.co/videos/cows-in-a-field-flkhyhygwf",
+      "high": "https://cdn.coverr.co/videos/coverr-cows-in-a-field-7235/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-cows-in-a-field-7235/720p.mp4"
+    },
+    {
+      "title": "Farming fields",
+      "file": "farm/farming-fields.mp4",
+      "source": "https://coverr.co/videos/farming-fields-w6sspugcpx",
+      "high": "https://cdn.coverr.co/videos/coverr-farming-fields-2188/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-farming-fields-2188/720p.mp4"
+    },
+    {
+      "title": "Irrigated field",
+      "file": "farm/irrigated-field.mp4",
+      "source": "https://coverr.co/videos/farming-field-y7ilwkx1lk",
+      "high": "https://cdn.coverr.co/videos/coverr-farming-field-50/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-farming-field-50/720p.mp4"
+    }
   ]
 }

@@ -38,8 +38,23 @@ for (const marker of [
   "Quiet library",
   "Beach / shore",
   "tab_traffic",
+  "Elevator music",
+  "tab_elevator_music",
+  "Hotel lobby",
   "onsen-rise",
   "traffic-move",
+  "elevator-rise",
+  "Rainy bedroom",
+  "Brown noise",
+  "Spaceship observation deck",
+  "Night drive",
+  "City apartment at night",
+  "tab_farm",
+  "Cozy cabin",
+  "Midnight reading",
+  "deep-office-focus",
+  "space-orbit",
+  "farm-turn",
 ]) {
   assert.ok(searchable.includes(marker), `production build is missing ${marker}`);
 }

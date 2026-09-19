@@ -47,3 +47,26 @@ test("Smart Mix and library discovery controls are exposed in the interface", ()
   assert.match(appSource, /Search atmospheres and sounds/);
   assert.match(appSource, /filterSceneLibrary/);
 });
+
+test("Hotel Lobby targets elevator music without stacking several instrumentals", () => {
+  assert.match(
+    appSource,
+    /id: "hotel-lobby".*sceneId: "tab_elevator_music".*indices: \[0, 5\].*volumes: \[0\.78, 0\.24\]/,
+  );
+  assert.match(appSource, /recipe\.sceneId \|\| activeScene\.id !== "tab_elevator_music"/);
+});
+
+test("the curated recipe collection includes every recommended cross-purpose mix", () => {
+  for (const recipeId of [
+    "cozy-cabin",
+    "midnight-reading",
+    "rainy-commute",
+    "deep-office-focus",
+    "forest-stream",
+    "storm-watching",
+    "spa-retreat",
+    "cat-nap",
+  ]) {
+    assert.ok(appSource.includes(`id: "${recipeId}"`), `${recipeId} recipe is missing`);
+  }
+});
