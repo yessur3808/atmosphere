@@ -15,6 +15,7 @@ const scenes = [
     title: "Rain",
     category: "Weather",
     description: "Rain on a window",
+    subcategories: [{ id: "monsoon", title: "Monsoon", description: "Dense tropical downpour" }],
     audioTracks: [
       { id: "rain-soft", title: "Soft rain", note: "Window droplets" },
       { id: "rain-roof", title: "Roof rain", note: "Steady rainfall" },
@@ -73,6 +74,7 @@ test("invalid mix values fall back to playable scene media", () => {
 test("scene search covers titles, categories, descriptions, and track metadata", () => {
   assert.deepEqual(filterSceneLibrary(scenes, "pages").map((scene) => scene.id), ["library"]);
   assert.deepEqual(filterSceneLibrary(scenes, "droplets").map((scene) => scene.id), ["rain"]);
+  assert.deepEqual(filterSceneLibrary(scenes, "monsoon").map((scene) => scene.id), ["rain"]);
   assert.deepEqual(filterSceneLibrary(scenes, "", "Focus").map((scene) => scene.id), ["library"]);
   assert.deepEqual(filterSceneLibrary(scenes, "", "favorites", ["rain"]).map((scene) => scene.id), ["rain"]);
 });

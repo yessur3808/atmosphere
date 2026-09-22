@@ -3,7 +3,7 @@
   export let active = false;
 </script>
 
-<span class="scene-icon" class:active class:rain={scene === "tab_rain"} class:coffee={scene === "tab_coffee_shop"} class:waterfall={scene === "tab_waterfall"} class:lightning={scene === "tab_lightning"} class:wind={scene === "tab_wind"} class:fire={scene === "tab_fire"} class:snow={scene === "tab_snow"} class:street={scene === "tab_street"} class:leaves={scene === "tab_leaves"} class:ocean={scene === "tab_ocean_waves"} class:train={scene === "tab_train"} class:typing={scene === "tab_typing"} class:footsteps={scene === "tab_foot_steps"} class:birds={scene === "tab_birds"} class:static={scene === "tab_white_noise"} class:onsen={scene === "tab_onsen"} class:cat={scene === "tab_cat_window"} class:library={scene === "tab_library"} class:forest={scene === "tab_forest"} class:jungle={scene === "tab_jungle"} class:shore={scene === "tab_beach_shore"} class:traffic={scene === "tab_traffic"} class:elevator={scene === "tab_elevator_music"} class:bedroom={scene === "tab_rainy_bedroom"} class:brown={scene === "tab_brown_noise"} class:space={scene === "tab_space_observation"} class:nightdrive={scene === "tab_night_drive"} class:apartment={scene === "tab_city_apartment"} class:farm={scene === "tab_farm"} aria-hidden="true">
+<span class="scene-icon" class:active class:rain={scene === "tab_rain"} class:coffee={scene === "tab_coffee_shop"} class:waterfall={scene === "tab_waterfall"} class:lightning={scene === "tab_lightning"} class:wind={scene === "tab_wind"} class:fire={scene === "tab_fire"} class:snow={scene === "tab_snow"} class:street={scene === "tab_street"} class:leaves={scene === "tab_leaves"} class:ocean={scene === "tab_ocean_waves"} class:train={scene === "tab_train"} class:typing={scene === "tab_typing"} class:footsteps={scene === "tab_foot_steps"} class:birds={scene === "tab_birds"} class:static={scene === "tab_white_noise"} class:onsen={scene === "tab_onsen"} class:cat={scene === "tab_cat_window"} class:library={scene === "tab_library"} class:forest={scene === "tab_forest"} class:jungle={scene === "tab_jungle"} class:shore={scene === "tab_beach_shore"} class:city={scene === "tab_traffic"} class:elevator={scene === "tab_elevator_music"} class:bedroom={scene === "tab_rainy_bedroom"} class:brown={scene === "tab_brown_noise"} class:space={scene === "tab_space_observation"} class:nightdrive={scene === "tab_night_drive"} class:apartment={scene === "tab_city_apartment"} class:farm={scene === "tab_farm"} aria-hidden="true">
   <svg viewBox="0 0 24 24">
     {#if scene === "tab_rain"}
       <path d="M6.5 15.5h10.3a3.2 3.2 0 0 0 .2-6.4 5.2 5.2 0 0 0-9.8 1.1 2.7 2.7 0 0 0-.7 5.3Z" />
@@ -51,7 +51,7 @@
     {:else if scene === "tab_beach_shore"}
       <circle class="shore-sun" cx="17" cy="7" r="2.4" /><path class="shore-wave wave-a" d="M3 14c2.3 0 2.3-1.8 4.6-1.8S10 14 12.3 14s2.3-1.8 4.6-1.8S19.2 14 21.5 14" /><path class="shore-wave wave-b" d="M4 18c2 0 2-1.4 4-1.4s2 1.4 4 1.4 2-1.4 4-1.4 2 1.4 4 1.4" /><path d="M3 21h18" />
     {:else if scene === "tab_traffic"}
-      <g class="traffic-car"><path d="m5 13 1.8-4h10.4l1.8 4v5H5v-5Z" /><path d="M7 13h10M8 18v2M16 18v2" /><circle class="headlight" cx="8" cy="15.5" r=".8" /><circle class="headlight" cx="16" cy="15.5" r=".8" /></g><path class="road-line" d="M4 22h4m4 0h4m4 0h1" />
+      <g class="city-skyline"><path d="M4 21V10h5v11M9 21V5h7v16M16 21v-8h4v8M2.5 21h19" /><path class="city-window window-a" d="M6.5 13h.1M6.5 17h.1M12 8h.1M12 12h.1M12 16h.1M18 16h.1" /></g><path class="city-light" d="M3 7h3M18 9h3" />
     {:else if scene === "tab_elevator_music"}
       <rect x="5" y="3" width="14" height="18" rx="2" /><path d="M12 10v11M5 10h14" />
       <path class="elevator-arrow arrow-up" d="m9 8 3-3 3 3" /><path class="elevator-arrow arrow-down" d="m9 5 3 3 3-3" />
@@ -95,7 +95,7 @@
     transform: scale(1.05);
   }
   svg { width: 22px; height: 22px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
-  .drop, .steam, .fall, .gust, .bolt, .flame, .snowflake, .lamp-glow, .leaf-sway, .wave, .rail, .key-tap, .step, .bird, .noise, .onsen-steam, .cat-tail, .book-page, .forest-sway, .jungle-sway, .shore-wave, .shore-sun, .traffic-car, .headlight, .road-line, .elevator-arrow, .elevator-door, .bedroom-drop, .bedroom-lamp, .brown-wave, .space-orbit, .space-planet, .space-star, .drive-line, .drive-light, .apartment-moon, .farm-blade, .farm-sun { transform-box: fill-box; transform-origin: center; }
+  .drop, .steam, .fall, .gust, .bolt, .flame, .snowflake, .lamp-glow, .leaf-sway, .wave, .rail, .key-tap, .step, .bird, .noise, .onsen-steam, .cat-tail, .book-page, .forest-sway, .jungle-sway, .shore-wave, .shore-sun, .city-skyline, .city-window, .city-light, .elevator-arrow, .elevator-door, .bedroom-drop, .bedroom-lamp, .brown-wave, .space-orbit, .space-planet, .space-star, .drive-line, .drive-light, .apartment-moon, .farm-blade, .farm-sun { transform-box: fill-box; transform-origin: center; }
   .active.rain .drop { animation: rain-fall 1s ease-in infinite; }
   .active.rain .drop-b { animation-delay: .22s; } .active.rain .drop-c { animation-delay: .44s; }
   .active.coffee .steam { animation: steam-rise 1.8s ease-in-out infinite; }
@@ -131,9 +131,9 @@
   .active.shore .shore-wave { animation: wave-shift 1.9s ease-in-out infinite; }
   .active.shore .wave-b { animation-delay: -.7s; }
   .active.shore .shore-sun { animation: lamp-pulse 2.8s ease-in-out infinite; }
-  .active.traffic .traffic-car { animation: traffic-move 1.8s ease-in-out infinite; }
-  .active.traffic .headlight { fill: currentColor; animation: lamp-pulse 1.8s ease-in-out infinite; }
-  .active.traffic .road-line { animation: rail-move .8s linear infinite; }
+  .active.city .city-skyline { animation: city-breathe 3.4s ease-in-out infinite; }
+  .active.city .city-window { animation: city-window 2.8s steps(2, end) infinite; }
+  .active.city .city-light { animation: city-light 1.9s ease-in-out infinite; }
   .active.elevator .arrow-up { animation: elevator-rise 2.4s ease-in-out infinite; }
   .active.elevator .arrow-down { animation: elevator-fall 2.4s 1.2s ease-in-out infinite; }
   .active.elevator .door-left { animation: elevator-left-door 3.2s ease-in-out infinite; }
@@ -176,7 +176,9 @@
   @keyframes page-turn { 0%, 25%, 100% { opacity: .45; transform: scaleX(1); } 55% { opacity: 1; transform: scaleX(.68) skewY(-4deg); } }
   @keyframes forest-sway { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(2deg); } }
   @keyframes jungle-sway { 0%, 100% { transform: rotate(-2.5deg) scaleY(.98); } 50% { transform: rotate(3deg) scaleY(1.02); } }
-  @keyframes traffic-move { 0%, 100% { transform: translateX(-1px); } 50% { transform: translateX(1.5px) translateY(-.5px); } }
+  @keyframes city-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-.6px); } }
+  @keyframes city-window { 0%, 45% { opacity: .38; } 46%, 100% { opacity: 1; filter: drop-shadow(0 0 2px currentColor); } }
+  @keyframes city-light { 0%, 100% { opacity: .25; transform: translateX(-1px); } 50% { opacity: 1; transform: translateX(1px); } }
   @keyframes elevator-rise { 0%, 42%, 100% { opacity: .25; transform: translateY(1px); } 18% { opacity: 1; transform: translateY(-1px); } }
   @keyframes elevator-fall { 0%, 42%, 100% { opacity: .22; transform: translateY(-1px); } 18% { opacity: 1; transform: translateY(1px); } }
   @keyframes elevator-left-door { 0%, 30%, 76%, 100% { transform: translateX(0); } 45%, 62% { transform: translateX(-1.5px); } }

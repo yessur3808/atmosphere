@@ -168,9 +168,9 @@
       },
       {
         "id": "tab_traffic",
-        "title": "Traffic",
+        "title": "City Sounds",
         "background": "traffic.mp4",
-        "description": "Steady city traffic",
+        "description": "Layered urban ambience",
         "levels": [1, 2, 3]
       },
       {

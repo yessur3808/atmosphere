@@ -9,7 +9,7 @@ const miniPlayerSource = await readFile(new URL("../src/miniPlayer.js", import.m
 test("individual audio layers use dedicated gain nodes and accessible sliders", () => {
   assert.match(appSource, /audioContext\.createGain\(\)/);
   assert.match(appSource, /layerGainNodes\[index\] = layerGain/);
-  assert.match(appSource, /aria-label={`\$\{track\.title\} layer volume`}/);
+  assert.match(appSource, /aria-label={`\$\{(?:entry\.)?track\.title\} layer volume`}/);
   assert.match(appSource, /layer_volume_change/);
 });
 
@@ -96,6 +96,14 @@ test("Live Weather is a first-class, privacy-conscious adaptive atmosphere", () 
   assert.match(appSource, /Use another city/);
   assert.match(appSource, /bind:this=\{ambientStatusComponent\}/);
   assert.doesNotMatch(appSource, /weather_(?:match|mode|strength)[^\n]*locationLabel/);
+});
+
+test("City Sounds exposes Traffic as a searchable sound subcategory", () => {
+  assert.match(appSource, /Choose a sound category/);
+  assert.match(appSource, /selectSoundCategory/);
+  assert.match(appSource, /sound_subcategory_select/);
+  assert.match(appSource, /visibleAudioTracks/);
+  assert.match(appSource, /visibleVideoLoops/);
 });
 
 test("Hotel Lobby targets elevator music without stacking several instrumentals", () => {

@@ -25,6 +25,7 @@
   let selectedAudio = 0;
   let selectedAudios = [0];
   let selectedVideo = 0;
+  let selectedSoundCategory = "";
   let audioStarted = false;
   let isAudioPlaying = false;
   let isVideoPlaying = false;
@@ -146,6 +147,17 @@
   const accessibilityHref = siteUrl("accessibility.html");
 
   $: activeScene = scenes[activeIndex];
+  $: activeSoundCategories = activeScene.subcategories || [];
+  $: if (!activeSoundCategories.some((subcategory) => subcategory.id === selectedSoundCategory)) {
+    selectedSoundCategory = activeSoundCategories[0]?.id || "";
+  }
+  $: activeSoundCategory = activeSoundCategories.find((subcategory) => subcategory.id === selectedSoundCategory);
+  $: visibleAudioTracks = activeScene.audioTracks
+    .map((track, index) => ({ track, index }))
+    .filter(({ track }) => !activeSoundCategory || track.subcategory === activeSoundCategory.id);
+  $: visibleVideoLoops = activeScene.videoLoops
+    .map((loop, index) => ({ loop, index }))
+    .filter(({ loop }) => !activeSoundCategory || loop.subcategory === activeSoundCategory.id);
   $: activeTrack = activeScene.audioTracks[selectedAudio];
   $: activeVideo = activeScene.videoLoops[selectedVideo];
   $: selectedTrackNames = selectedAudios.map((index) => activeScene.audioTracks[index]?.title).filter(Boolean);
@@ -199,6 +211,7 @@
       sceneTitle: activeScene?.title,
       trackId: selectedAudios.map((index) => activeScene?.audioTracks[index]?.id).filter(Boolean).join(","),
       activeSoundCount: selectedAudios.length,
+      soundCategory: selectedSoundCategory || undefined,
       videoId: activeVideo?.id,
       linkedPlayback,
       immersiveMode,
@@ -512,6 +525,7 @@
     selectedAudio = 0;
     selectedAudios = [0];
     selectedVideo = 0;
+    selectedSoundCategory = scenes[index].subcategories?.[0]?.id || "";
     isVideoPlaying = false;
     const firstTrackId = scenes[index].audioTracks[0]?.id;
     if (firstTrackId && !Number.isFinite(Number(layerVolumes[firstTrackId]))) {
@@ -665,6 +679,23 @@
       active_track_ids: selectedAudios.map((trackIndex) => activeScene.audioTracks[trackIndex]?.id).filter(Boolean).join(","),
     });
     queuePersistSession();
+  }
+
+  async function selectSoundCategory(subcategory) {
+    if (!subcategory || subcategory.id === selectedSoundCategory) return;
+    selectedSoundCategory = subcategory.id;
+    const nextTrackIndex = subcategory.trackIndices.find((index) => activeScene.audioTracks[index]);
+    const nextVideoIndex = subcategory.videoIndices.find((index) => activeScene.videoLoops[index]);
+    if (Number.isInteger(nextTrackIndex) && !subcategory.trackIndices.includes(selectedAudio)) {
+      await selectTrack(nextTrackIndex, true);
+    }
+    if (Number.isInteger(nextVideoIndex) && !subcategory.videoIndices.includes(selectedVideo)) {
+      selectVideo(nextVideoIndex);
+    }
+    trackEvent("sound_subcategory_select", {
+      sound_subcategory_id: subcategory.id,
+      sound_subcategory_title: subcategory.title,
+    });
   }
 
   async function applyRecipe(recipe) {
@@ -1861,6 +1892,29 @@
           <output>{Math.round(volume * 100)}</output>
         </label>
 
+        {#if activeSoundCategories.length}
+          <section class="sound-category-browser" aria-labelledby="sound-category-heading">
+            <div class="sound-category-heading">
+              <div>
+                <p class="kicker">{activeScene.title}</p>
+                <h3 id="sound-category-heading">Choose a sound category</h3>
+              </div>
+              <span>{activeSoundCategories.length} {activeSoundCategories.length === 1 ? "category" : "categories"}</span>
+            </div>
+            <div class="sound-category-list" aria-label={`${activeScene.title} sound categories`}>
+              {#each activeSoundCategories as subcategory (subcategory.id)}
+                <button class:active={subcategory.id === selectedSoundCategory} type="button" aria-pressed={subcategory.id === selectedSoundCategory} on:click={() => selectSoundCategory(subcategory)}>
+                  <span class="sound-category-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="m5 13 1.8-4h10.4l1.8 4v5H5v-5Z" /><path d="M7 13h10M8 18v2M16 18v2" /><circle cx="8" cy="15.5" r=".8" /><circle cx="16" cy="15.5" r=".8" /><path class="sound-category-road" d="M4 22h4m4 0h4m4 0h1" /></svg>
+                  </span>
+                  <span class="sound-category-copy"><strong>{subcategory.title}</strong><small>{subcategory.description}</small></span>
+                  <span class="sound-category-count">{subcategory.trackIndices.length} sounds</span>
+                </button>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
         <div class="mix-action-row" aria-label="Mix actions">
           <button type="button" on:click={openSaveMix}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h12l2 2V20H5V4.5Z" /><path d="M8 4.5v5h8v-5M8.5 20v-6h7v6" /></svg>
@@ -1910,33 +1964,33 @@
             </div>
             {#key activeScene.id}
               <div class="track-grid">
-                {#each activeScene.audioTracks as track, index (track.id)}
-                  <article class:active={selectedAudios.includes(index)} class="track-item">
+                {#each visibleAudioTracks as entry (entry.track.id)}
+                  <article class:active={selectedAudios.includes(entry.index)} class="track-item">
                     <button
                       type="button"
                       class="track-card"
-                      class:active={selectedAudios.includes(index)}
-                      aria-pressed={selectedAudios.includes(index)}
-                      on:click={() => selectTrack(index)}
+                      class:active={selectedAudios.includes(entry.index)}
+                      aria-pressed={selectedAudios.includes(entry.index)}
+                      on:click={() => selectTrack(entry.index)}
                     >
                       <svg class="option-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13v-2M8.5 16V8M12 18V6M15.5 15V9M19 13v-2" /></svg>
-                      <span class="option-copy"><strong>{track.title}</strong><small>{track.note}</small></span>
+                      <span class="option-copy"><strong>{entry.track.title}</strong><small>{entry.track.note}</small></span>
                       <span class="selection-dot" aria-hidden="true"></span>
                     </button>
-                    {#if selectedAudios.includes(index)}
+                    {#if selectedAudios.includes(entry.index)}
                       <label class="layer-volume">
-                        <span class="sr-only">{track.title} layer</span>
+                        <span class="sr-only">{entry.track.title} layer</span>
                         <input
                           type="range"
                           min="0"
                           max="1"
                           step="0.01"
-                          value={layerVolumes[track.id] ?? 1}
-                          style={`--volume-percent: ${Math.round((layerVolumes[track.id] ?? 1) * 100)}%`}
-                          aria-label={`${track.title} layer volume`}
-                          aria-valuetext={`${Math.round((layerVolumes[track.id] ?? 1) * 100)} percent`}
-                          on:input={(event) => updateLayerVolume(index, event)}
-                          on:change={() => commitLayerVolume(index)}
+                          value={layerVolumes[entry.track.id] ?? 1}
+                          style={`--volume-percent: ${Math.round((layerVolumes[entry.track.id] ?? 1) * 100)}%`}
+                          aria-label={`${entry.track.title} layer volume`}
+                          aria-valuetext={`${Math.round((layerVolumes[entry.track.id] ?? 1) * 100)} percent`}
+                          on:input={(event) => updateLayerVolume(entry.index, event)}
+                          on:change={() => commitLayerVolume(entry.index)}
                         />
                       </label>
                     {/if}
@@ -1950,21 +2004,21 @@
         <div class="option-section video-section">
           <div class="option-heading">
             <h3>Video loops</h3>
-            <span>{dataSaverMode ? "Audio only" : `${activeScene.videoLoops.length} views`}</span>
+            <span>{dataSaverMode ? "Audio only" : `${visibleVideoLoops.length} views`}</span>
           </div>
           {#if dataSaverMode}<p class="data-saver-note">Video downloads are paused. Choose a view now and it will appear when Audio only is turned off.</p>{/if}
           {#key activeScene.id}
             <div class="video-grid option-grid-enter">
-              {#each activeScene.videoLoops as loop, index (loop.id)}
+              {#each visibleVideoLoops as entry (entry.loop.id)}
                 <button
                   type="button"
                   class="video-card"
-                  class:active={selectedVideo === index}
-                  aria-pressed={selectedVideo === index}
-                  on:click={() => selectVideo(index)}
+                  class:active={selectedVideo === entry.index}
+                  aria-pressed={selectedVideo === entry.index}
+                  on:click={() => selectVideo(entry.index)}
                 >
                   <svg class="option-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="3" /><path d="m9.5 9 5 3-5 3V9Z" /></svg>
-                  <strong>{loop.title}</strong>
+                  <strong>{entry.loop.title}</strong>
                   <span class="selection-dot" aria-hidden="true"></span>
                 </button>
               {/each}
@@ -3419,6 +3473,49 @@
   .live-weather-card-settings:hover { color: #fff; border-color: rgba(var(--accent-rgb), 0.3); }
   .live-weather-card-settings svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; }
 
+  .sound-category-browser {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    border-radius: 18px;
+    background: rgba(10, 13, 15, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  }
+  .sound-category-heading { display: flex; align-items: end; justify-content: space-between; gap: 14px; padding: 0 2px; }
+  .sound-category-heading > div { display: grid; gap: 3px; }
+  .sound-category-heading h3 { margin: 0; color: rgba(255, 255, 255, 0.84); font-size: 0.79rem; font-weight: 570; letter-spacing: -0.01em; }
+  .sound-category-heading > span { color: rgba(255, 255, 255, 0.38); font-size: 0.61rem; white-space: nowrap; }
+  .sound-category-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .sound-category-list button {
+    min-width: 0;
+    min-height: 65px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 11px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 15px;
+    color: rgba(255, 255, 255, 0.62);
+    background: rgba(19, 22, 24, 0.58);
+    cursor: pointer;
+    text-align: left;
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), color 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+  .sound-category-list button:hover { transform: translateY(-1px); color: #fff; border-color: rgba(var(--accent-rgb), 0.32); }
+  .sound-category-list button.active { color: #fff; border-color: rgba(var(--accent-rgb), 0.42); background: rgba(var(--accent-rgb), 0.1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 0 22px rgba(var(--accent-rgb), 0.05); }
+  .sound-category-icon { width: 37px; height: 37px; display: grid; place-items: center; border: 1px solid rgba(var(--accent-rgb), 0.2); border-radius: 12px; color: var(--accent); background: rgba(var(--accent-rgb), 0.07); }
+  .sound-category-icon svg { width: 20px; height: 20px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; }
+  .sound-category-list button.active .sound-category-road { animation: sound-category-road .85s linear infinite; }
+  @keyframes sound-category-road { from { stroke-dasharray: 2 2; stroke-dashoffset: 4; } to { stroke-dasharray: 2 2; stroke-dashoffset: 0; } }
+  .sound-category-copy { min-width: 0; display: grid; gap: 4px; }
+  .sound-category-copy strong { font-size: 0.72rem; font-weight: 570; }
+  .sound-category-copy small { overflow: hidden; color: rgba(255, 255, 255, 0.39); font-size: 0.61rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+  .sound-category-count { color: rgba(var(--accent-rgb), 0.8); font-size: 0.57rem; font-weight: 620; white-space: nowrap; }
+  .sound-category-list button:only-child { grid-column: 1 / -1; }
+
   .recent-settings-heading button { padding: 0; border: 0; color: rgba(var(--accent-rgb), 0.82); background: transparent; cursor: pointer; font-size: 0.63rem; }
 
   .scene-state.favorite { width: auto; height: auto; color: rgba(17, 19, 21, 0.56); background: transparent; font-size: 0.72rem; box-shadow: none; }
@@ -3663,6 +3760,10 @@
     .track-grid { grid-template-columns: 1fr; }
     .track-item:last-child:nth-child(odd) { grid-column: auto; }
     .mix-action-row button { justify-content: flex-start; padding-inline: 12px; }
+    .sound-category-browser { padding: 11px; }
+    .sound-category-list { grid-template-columns: 1fr; }
+    .sound-category-count { display: none; }
+    .sound-category-copy small { white-space: normal; }
     .app-toast { bottom: 14px; width: max-content; max-width: calc(100vw - 28px); justify-content: center; text-align: center; }
     .video-card strong { font-size: 0.72rem; }
   }

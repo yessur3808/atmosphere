@@ -9,6 +9,7 @@ const publicRoot = path.join(projectRoot, "public");
 const tabs = JSON.parse(await readFile(path.join(projectRoot, "src/tabsData.json"), "utf8"));
 const audioSources = JSON.parse(await readFile(path.join(projectRoot, "audio-sources.json"), "utf8"));
 const videoSources = JSON.parse(await readFile(path.join(projectRoot, "src/videoLoops.resolved.json"), "utf8"));
+const sceneLibrarySource = await readFile(path.join(projectRoot, "src/sceneLibrary.js"), "utf8");
 const remoteFirstScenes = new Set([
   "tab_foot_steps",
   "tab_onsen",
@@ -36,6 +37,13 @@ test("the atmosphere catalog is complete and has unique scene IDs", () => {
   assert.equal(new Set(tabs.map(({ id }) => id)).size, tabs.length);
   assert.deepEqual(Object.keys(audioSources).sort(), tabs.map(({ id }) => id).sort());
   assert.deepEqual(Object.keys(videoSources).sort(), tabs.map(({ id }) => id).sort());
+});
+
+test("City Sounds keeps Traffic as an explicit media subcategory", () => {
+  const citySounds = tabs.find(({ id }) => id === "tab_traffic");
+  assert.equal(citySounds?.title, "City Sounds");
+  assert.match(sceneLibrarySource, /tab_traffic: \["City sounds", "City"/);
+  assert.match(sceneLibrarySource, /id: "traffic"[\s\S]*title: "Traffic"[\s\S]*trackIndices: \[0, 1, 2, 3, 4\][\s\S]*videoIndices: \[0, 1, 2, 3\]/);
 });
 
 test("every atmosphere exposes five to eight playable audio choices", async () => {

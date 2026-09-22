@@ -123,6 +123,7 @@ export function filterSceneLibrary(scenes, query = "", category = "all", favorit
       scene.title,
       scene.category,
       scene.description,
+      ...(scene.subcategories || []).flatMap((subcategory) => [subcategory.title, subcategory.description]),
       ...scene.audioTracks.flatMap((track) => [track.title, track.note]),
     ].join(" ").toLocaleLowerCase();
     return searchableText.includes(normalizedQuery);
