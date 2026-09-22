@@ -16,9 +16,11 @@
   import { initializeDesktopRuntime } from "./desktopRuntime";
   import { scenes } from "./sceneLibrary";
   import { mediaUrl, siteUrl } from "./siteUrl.mjs";
+  import { weatherAtmosphereProfile } from "./weather.mjs";
 
   let audioElements = [];
   let backgroundComponent;
+  let ambientStatusComponent;
   let activeIndex = 0;
   let selectedAudio = 0;
   let selectedAudios = [0];
@@ -68,6 +70,17 @@
   let libraryQuery = "";
   let libraryCategory = "all";
   let libraryExpanded = false;
+  let localWeather;
+  let weatherUiState = "idle";
+  let weatherMatchRequested = false;
+  let weatherMatchActive = false;
+  let weatherMode = "match";
+  let weatherSoundStrength = "realistic";
+  let weatherAutoMatch = true;
+  let weatherFollowTime = true;
+  let weatherCityQuery = "";
+  let weatherCityBusy = false;
+  let activeWeatherProfile;
   let saveMixOpen = false;
   let saveMixName = "";
   let toastMessage = "";
@@ -89,6 +102,7 @@
   const settingsTabs = [
     { id: "playback", title: "Playback" },
     { id: "mixes", title: "My mixes" },
+    { id: "weather", title: "Live weather" },
     { id: "display", title: "Display" },
     { id: "mini-player", title: "Mini player" },
     { id: "privacy", title: "Privacy" },
@@ -149,6 +163,8 @@
   $: visibleSoundRecipes = mixIntent === "all" ? soundRecipes : soundRecipes.filter((recipe) => recipe.intent === mixIntent);
   $: sceneCategories = ["all", "favorites", ...new Set(scenes.map((scene) => scene.category))];
   $: filteredScenes = filterSceneLibrary(scenes, libraryQuery, libraryCategory, favoriteSceneIds);
+  $: weatherCardVisible = ["all", "Weather"].includes(libraryCategory)
+    && (!libraryQuery.trim() || ["live", "weather", "outside", localWeather?.label, localWeather?.locationLabel].filter(Boolean).join(" ").toLowerCase().includes(libraryQuery.trim().toLowerCase()));
   $: currentSceneFavorite = favoriteSceneIds.includes(activeScene.id);
   $: visibleSettingsTabs = pipControlsAvailable
     ? settingsTabs
@@ -486,9 +502,10 @@
     await selectTrack(nextIndex, true);
   }
 
-  async function selectScene(index) {
+  async function selectScene(index, selectionSource = "library", resumeWithDefault = true) {
     const continuePlaying = isAudioPlaying;
     const previousScene = activeScene;
+    if (selectionSource !== "weather_match") weatherMatchActive = false;
     if (continuePlaying) await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2);
     else pauseAllAudio();
     activeIndex = index;
@@ -506,12 +523,112 @@
       selected_scene_id: scenes[index].id,
       selected_scene_title: scenes[index].title,
       continued_playback: continuePlaying,
+      selection_source: selectionSource,
     });
     await tick();
-    if (continuePlaying) {
+    if (continuePlaying && resumeWithDefault) {
       await playSelectedTracks([0], "atmosphere_change");
     }
     queuePersistSession();
+    return continuePlaying;
+  }
+
+  function handleWeatherState(event) {
+    weatherUiState = event.detail?.state || "idle";
+    if (["denied", "secure", "unavailable"].includes(weatherUiState)) weatherMatchRequested = false;
+  }
+
+  async function applyLiveWeather(weather = localWeather, source = "weather_match") {
+    if (!weather) return;
+    const profile = weatherAtmosphereProfile(weather, {
+      mode: weatherMode,
+      strength: weatherSoundStrength,
+      followTime: weatherFollowTime,
+    });
+    const sceneIndex = scenes.findIndex((scene) => scene.id === profile.sceneId);
+    if (sceneIndex < 0) return;
+
+    const continuePlaying = await selectScene(sceneIndex, "weather_match", false);
+    const matchedScene = scenes[sceneIndex];
+    const nextIndices = profile.indices.filter((index) => matchedScene.audioTracks[index]);
+    selectedAudios = nextIndices.length ? nextIndices : [0];
+    selectedAudio = selectedAudios[0];
+    multiSoundEnabled = selectedAudios.length > 1;
+    selectedVideo = profile.videoSeed % matchedScene.videoLoops.length;
+    selectedAudios.forEach((index, position) => {
+      const trackId = getTrackId(index, matchedScene);
+      if (trackId) layerVolumes = { ...layerVolumes, [trackId]: profile.volumes[position] ?? 0.62 };
+    });
+    activeWeatherProfile = profile;
+    weatherMatchActive = true;
+    isVideoPlaying = false;
+    savePreferences();
+    await tick();
+    if (continuePlaying) await playSelectedTracks(selectedAudios, source);
+    else showToast(`${profile.title} · Press play when you’re ready`);
+    trackEvent("weather_match_apply", {
+      weather_condition: weather.label.toLowerCase().replaceAll(" ", "_"),
+      weather_mode: weatherMode,
+      weather_sound_strength: weatherSoundStrength,
+      matched_scene_id: profile.sceneId,
+      active_sound_count: selectedAudios.length,
+      update_source: source,
+    });
+    queuePersistSession();
+  }
+
+  async function handleWeatherUpdate(event) {
+    localWeather = event.detail;
+    weatherUiState = "ready";
+    const shouldMatch = weatherMatchRequested || (weatherMatchActive && weatherAutoMatch);
+    const source = weatherMatchRequested ? "weather_match" : "weather_auto_refresh";
+    weatherMatchRequested = false;
+    if (shouldMatch) await applyLiveWeather(localWeather, source);
+  }
+
+  function requestLiveWeather() {
+    weatherMatchRequested = true;
+    weatherUiState = "locating";
+    trackEvent("weather_match_request", { weather_mode: weatherMode, request_source: "library_card" });
+    ambientStatusComponent?.requestLocalWeather(true);
+  }
+
+  async function requestCityWeather() {
+    if (weatherCityBusy) return;
+    weatherMatchRequested = true;
+    weatherCityBusy = true;
+    const matched = await ambientStatusComponent?.requestCityWeather(weatherCityQuery, true);
+    weatherCityBusy = false;
+    if (matched) weatherCityQuery = "";
+    else weatherMatchRequested = false;
+  }
+
+  async function setWeatherMode(nextMode) {
+    weatherMode = nextMode === "comfort" ? "comfort" : "match";
+    savePreferences();
+    trackEvent("weather_mode_preference", { weather_mode: weatherMode });
+    if (weatherMatchActive && localWeather) await applyLiveWeather(localWeather, "weather_preference_change");
+  }
+
+  async function setWeatherSoundStrength(nextStrength) {
+    if (!["subtle", "realistic", "immersive"].includes(nextStrength)) return;
+    weatherSoundStrength = nextStrength;
+    savePreferences();
+    trackEvent("weather_strength_preference", { weather_sound_strength: nextStrength });
+    if (weatherMatchActive && localWeather) await applyLiveWeather(localWeather, "weather_preference_change");
+  }
+
+  function setWeatherAutoMatch(enabled) {
+    weatherAutoMatch = enabled;
+    savePreferences();
+    trackEvent("weather_auto_match_preference", { enabled });
+  }
+
+  async function setWeatherFollowTime(enabled) {
+    weatherFollowTime = enabled;
+    savePreferences();
+    trackEvent("weather_follow_time_preference", { enabled });
+    if (weatherMatchActive && localWeather) await applyLiveWeather(localWeather, "weather_preference_change");
   }
 
   async function selectTrack(index, replaceSelection = false) {
@@ -898,6 +1015,10 @@
       smartMixEnabled,
       dataSaverMode,
       volume,
+      weatherMode,
+      weatherSoundStrength,
+      weatherAutoMatch,
+      weatherFollowTime,
     }));
   }
 
@@ -1080,6 +1201,10 @@
     if (typeof savedPreferences.smartMixEnabled === "boolean") smartMixEnabled = savedPreferences.smartMixEnabled;
     if (typeof savedPreferences.dataSaverMode === "boolean") dataSaverMode = savedPreferences.dataSaverMode;
     if (Number.isFinite(Number(savedPreferences.volume))) volume = Math.max(0, Math.min(1, Number(savedPreferences.volume)));
+    if (["match", "comfort"].includes(savedPreferences.weatherMode)) weatherMode = savedPreferences.weatherMode;
+    if (["subtle", "realistic", "immersive"].includes(savedPreferences.weatherSoundStrength)) weatherSoundStrength = savedPreferences.weatherSoundStrength;
+    if (typeof savedPreferences.weatherAutoMatch === "boolean") weatherAutoMatch = savedPreferences.weatherAutoMatch;
+    if (typeof savedPreferences.weatherFollowTime === "boolean") weatherFollowTime = savedPreferences.weatherFollowTime;
     savedMixes = sortSavedMixes(readStoredJson(savedMixesStorageKey, []), scenes);
     recentMixes = readStoredJson(recentMixesStorageKey, [])
       .map((mix) => normalizeMixSnapshot(mix, scenes))
@@ -1196,7 +1321,13 @@
       <img class="brand-icon" src={faviconHref} width="30" height="30" alt="" aria-hidden="true" decoding="async" />
       <span class="wordmark-copy"><span>ATMO</span><i></i><span>SPHERE</span></span>
     </a>
-    <AmbientStatus immersive={immersiveMode} on:notice={(event) => showToast(event.detail)} />
+    <AmbientStatus
+      bind:this={ambientStatusComponent}
+      immersive={immersiveMode}
+      on:notice={(event) => showToast(event.detail)}
+      on:weatherstate={handleWeatherState}
+      on:weather={handleWeatherUpdate}
+    />
     {#if !immersiveMode}
       <div class="topbar-actions">
       {#if pipControlsAvailable}
@@ -1408,6 +1539,48 @@
                   </div>
                 {/if}
               </div>
+            {:else if settingsTab === "weather"}
+              <div class="settings-pane" aria-labelledby="weather-settings-heading">
+                <div class="settings-pane-heading">
+                  <h3 id="weather-settings-heading">Live weather</h3>
+                  <p>Let the current conditions choose a verified atmosphere and balance its sound layers.</p>
+                </div>
+                <div class="preference-choice-list weather-mode-choices">
+                  <button class:active={weatherMode === "match"} type="button" aria-pressed={weatherMode === "match"} on:click={() => setWeatherMode("match")}>
+                    <i aria-hidden="true"></i>
+                    <span><strong>Mirror outside</strong><small>Match rain, wind, cloud, snow, temperature, and local daylight.</small></span>
+                  </button>
+                  <button class:active={weatherMode === "comfort"} type="button" aria-pressed={weatherMode === "comfort"} on:click={() => setWeatherMode("comfort")}>
+                    <i aria-hidden="true"></i>
+                    <span><strong>Comforting contrast</strong><small>Choose a sheltered or cooling atmosphere for the weather outside.</small></span>
+                  </button>
+                </div>
+                <div class="weather-strength-control" aria-labelledby="weather-strength-label">
+                  <span id="weather-strength-label">Weather sound strength</span>
+                  <div>
+                    {#each ["subtle", "realistic", "immersive"] as strength}
+                      <button class:active={weatherSoundStrength === strength} type="button" aria-pressed={weatherSoundStrength === strength} on:click={() => setWeatherSoundStrength(strength)}>{formatCategory(strength)}</button>
+                    {/each}
+                  </div>
+                </div>
+                <button class="preference-row" type="button" aria-pressed={weatherAutoMatch} on:click={() => setWeatherAutoMatch(!weatherAutoMatch)}>
+                  <span><strong>Keep the match current</strong><small>Refresh the active weather atmosphere when conditions update.</small></span>
+                  <i class:active={weatherAutoMatch} class="preference-switch" aria-hidden="true"><b></b></i>
+                </button>
+                <button class="preference-row" type="button" aria-pressed={weatherFollowTime} on:click={() => setWeatherFollowTime(!weatherFollowTime)}>
+                  <span><strong>Follow local daylight</strong><small>Use daytime or nighttime footage based on the selected location.</small></span>
+                  <i class:active={weatherFollowTime} class="preference-switch" aria-hidden="true"><b></b></i>
+                </button>
+                <form class="weather-city-form" on:submit|preventDefault={requestCityWeather}>
+                  <label for="weather-city-input">Use another city</label>
+                  <div>
+                    <input id="weather-city-input" bind:value={weatherCityQuery} type="search" minlength="2" autocomplete="address-level2" placeholder="City or region" />
+                    <button type="submit" disabled={weatherCityBusy || weatherCityQuery.trim().length < 2}>{weatherCityBusy ? "Finding…" : "Match"}</button>
+                  </div>
+                  <small>The search term and rounded coordinates go only to Open‑Meteo and are not saved.</small>
+                </form>
+                <button class="settings-action secondary" type="button" on:click={requestLiveWeather}>Use this device’s location</button>
+              </div>
             {:else if settingsTab === "display"}
               <div class="settings-pane" aria-labelledby="display-settings-heading">
                 <div class="settings-pane-heading">
@@ -1517,19 +1690,42 @@
     </div>
   {:else}
   <main>
-    {#key activeScene.id}
-      <section class="scene-hero">
-        <div>
-          <p class="eyebrow">{activeScene.category}</p>
-          <div class="hero-title-row">
-            <h1>{activeScene.title}</h1>
-            <button class:active={currentSceneFavorite} class="scene-favorite-button" type="button" aria-pressed={currentSceneFavorite} aria-label={currentSceneFavorite ? `Remove ${activeScene.title} from favorites` : `Add ${activeScene.title} to favorites`} title={currentSceneFavorite ? "Remove favorite" : "Favorite atmosphere"} on:click={toggleCurrentSceneFavorite}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.45 6.02.88-4.36 4.25 1.03 6-5.39-2.83-5.39 2.83 1.03-6-4.36-4.25 6.02-.88L12 3Z" /></svg>
-            </button>
+    {#key `${activeScene.id}:${weatherMatchActive}`}
+      {#if weatherMatchActive && localWeather && activeWeatherProfile}
+        <section class="scene-hero live-weather-hero" aria-label={`Live weather in ${localWeather.locationLabel}`}>
+          <div class="weather-hero-primary">
+            <p class="eyebrow">Live weather · {weatherMode === "match" ? "Mirror outside" : "Comforting contrast"}</p>
+            <div class="weather-hero-reading">
+              <strong>{localWeather.temperature}°</strong>
+              <span>
+                <b>{localWeather.locationLabel}</b>
+                <small>{localWeather.label} · Feels like {localWeather.apparentTemperature ?? localWeather.temperature}°</small>
+              </span>
+            </div>
           </div>
-        </div>
-        <p>{activeScene.description}</p>
-      </section>
+          <div class="weather-hero-side">
+            <p><strong>{activeWeatherProfile.title}</strong><span>{activeWeatherProfile.detail}</span><small>Matched to {activeScene.title}</small></p>
+            <dl>
+              <div><dt>Humidity</dt><dd>{localWeather.humidity ?? "—"}%</dd></div>
+              <div><dt>Wind</dt><dd>{localWeather.windSpeed} {localWeather.windUnit}</dd></div>
+              <div><dt>Rain</dt><dd>{localWeather.precipitation} {localWeather.precipitationUnit}</dd></div>
+            </dl>
+          </div>
+        </section>
+      {:else}
+        <section class="scene-hero">
+          <div>
+            <p class="eyebrow">{activeScene.category}</p>
+            <div class="hero-title-row">
+              <h1>{activeScene.title}</h1>
+              <button class:active={currentSceneFavorite} class="scene-favorite-button" type="button" aria-pressed={currentSceneFavorite} aria-label={currentSceneFavorite ? `Remove ${activeScene.title} from favorites` : `Add ${activeScene.title} to favorites`} title={currentSceneFavorite ? "Remove favorite" : "Favorite atmosphere"} on:click={toggleCurrentSceneFavorite}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.45 6.02.88-4.36 4.25 1.03 6-5.39-2.83-5.39 2.83 1.03-6-4.36-4.25 6.02-.88L12 3Z" /></svg>
+              </button>
+            </div>
+          </div>
+          <p>{activeScene.description}</p>
+        </section>
+      {/if}
     {/key}
 
     <div class="workspace">
@@ -1561,6 +1757,24 @@
           {/each}
         </div>
 
+        {#if weatherCardVisible}
+          <article class:active={weatherMatchActive} class:loading={["locating", "loading"].includes(weatherUiState)} class="live-weather-card">
+            <button class="live-weather-card-main" type="button" aria-pressed={weatherMatchActive} on:click={requestLiveWeather}>
+              <span class="live-weather-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5.5 16.8h11.8a3.4 3.4 0 0 0 .2-6.8 5.4 5.4 0 0 0-10.3 1.3 2.9 2.9 0 0 0-1.7 5.5Z" /><path class="weather-card-rain" d="m8 19-1 2m5-2-1 2m5-2-1 2" /></svg>
+              </span>
+              <span class="live-weather-card-copy">
+                <span><i>Live</i><strong>Current weather</strong></span>
+                <small>{localWeather ? `${localWeather.temperature}${localWeather.unit} · ${localWeather.label} · ${localWeather.locationLabel}` : weatherUiState === "denied" ? "Location blocked · choose a city instead" : ["locating", "loading"].includes(weatherUiState) ? "Reading the conditions outside…" : "Match a video and sound mix to the weather outside"}</small>
+              </span>
+              <span class="live-weather-card-action">{weatherMatchActive ? "Rematch" : "Match now"}</span>
+            </button>
+            <button class="live-weather-card-settings" type="button" aria-label="Open Live Weather preferences" title="Live Weather preferences" on:click={() => openSettings("weather")}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" /><path d="M19 13.5a7.2 7.2 0 0 0 0-3l1.8-1.4-1.8-3-2.3.9a8 8 0 0 0-2.5-1.4L13.8 3h-3.6l-.4 2.6A8 8 0 0 0 7.3 7L5 6.1l-1.8 3L5 10.5a7.2 7.2 0 0 0 0 3l-1.8 1.4 1.8 3 2.3-.9a8 8 0 0 0 2.5 1.4l.4 2.6h3.6l.4-2.6a8 8 0 0 0 2.5-1.4l2.3.9 1.8-3-1.8-1.4Z" /></svg>
+            </button>
+          </article>
+        {/if}
+
         {#if filteredScenes.length}
         <div class:expanded={libraryExpanded || Boolean(libraryQuery) || libraryCategory !== "all"} class="scene-grid">
           {#each filteredScenes as scene (scene.id)}
@@ -1586,7 +1800,7 @@
             <svg class:expanded={libraryExpanded} viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
           </button>
         {/if}
-        {:else}
+        {:else if !weatherCardVisible}
           <div class="empty-library-state scene-empty"><strong>No atmosphere matches that search</strong><span>Try a broader sound, mood, or category.</span><button type="button" on:click={() => { libraryQuery = ""; libraryCategory = "all"; }}>Show everything</button></div>
         {/if}
       </section>
@@ -2265,6 +2479,38 @@
     font-size: 0.96rem;
     line-height: 1.55;
   }
+
+  .live-weather-hero {
+    min-height: 190px;
+    align-items: end;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(330px, 0.62fr);
+    gap: clamp(34px, 6vw, 90px);
+  }
+
+  .weather-hero-primary { min-width: 0; }
+  .weather-hero-reading { display: flex; align-items: flex-end; gap: clamp(18px, 2.4vw, 34px); }
+  .weather-hero-reading > strong {
+    font-size: clamp(5.4rem, 10vw, 10rem);
+    font-weight: 350;
+    font-variant-numeric: tabular-nums;
+    line-height: 0.72;
+    letter-spacing: -0.09em;
+    text-shadow: 0 0 46px rgba(var(--accent-rgb), 0.15);
+  }
+  .weather-hero-reading > span { min-width: 0; display: grid; gap: 6px; padding-bottom: 3px; }
+  .weather-hero-reading b { overflow: hidden; font-size: clamp(1.45rem, 2.6vw, 2.4rem); font-weight: 470; letter-spacing: -0.045em; text-overflow: ellipsis; white-space: nowrap; }
+  .weather-hero-reading small { color: rgba(255, 255, 255, 0.62); font-size: 0.78rem; }
+
+  .weather-hero-side { display: grid; gap: 18px; padding-bottom: 4px; }
+  .weather-hero-side > p { display: grid; gap: 5px; margin: 0; }
+  .weather-hero-side > p strong { font-size: 0.95rem; font-weight: 560; }
+  .weather-hero-side > p span { color: rgba(255, 255, 255, 0.62); font-size: 0.73rem; line-height: 1.5; }
+  .weather-hero-side > p small { color: rgba(var(--accent-rgb), 0.84); font-size: 0.64rem; }
+  .weather-hero-side dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.13); }
+  .weather-hero-side dl div { display: grid; gap: 4px; }
+  .weather-hero-side dt { color: rgba(255, 255, 255, 0.4); font-size: 0.59rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .weather-hero-side dd { margin: 0; font-size: 0.72rem; font-variant-numeric: tabular-nums; }
 
   .workspace {
     display: grid;
@@ -3020,6 +3266,21 @@
   .preference-choice-list strong { font-size: 0.76rem; font-weight: 570; }
   .preference-choice-list small { color: rgba(255, 255, 255, 0.42); font-size: 0.66rem; }
 
+  .weather-mode-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .weather-strength-control { display: grid; gap: 9px; padding: 15px 16px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 18px; background: rgba(18, 21, 23, 0.46); }
+  .weather-strength-control > span { color: rgba(255, 255, 255, 0.72); font-size: 0.72rem; font-weight: 560; }
+  .weather-strength-control > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .weather-strength-control button { min-height: 34px; padding: 7px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 11px; color: rgba(255, 255, 255, 0.46); background: rgba(255, 255, 255, 0.035); cursor: pointer; font-size: 0.63rem; }
+  .weather-strength-control button.active { color: #121416; border-color: transparent; background: rgba(var(--accent-rgb), 0.92); }
+  .weather-city-form { display: grid; gap: 8px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 18px; background: rgba(18, 21, 23, 0.46); }
+  .weather-city-form > label { color: rgba(255, 255, 255, 0.75); font-size: 0.74rem; font-weight: 560; }
+  .weather-city-form > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+  .weather-city-form input { min-width: 0; min-height: 42px; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 13px; outline: 0; color: #fff; background: rgba(8, 11, 13, 0.48); font: inherit; font-size: 0.72rem; }
+  .weather-city-form input:focus { border-color: rgba(var(--accent-rgb), 0.46); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.07); }
+  .weather-city-form button { min-width: 88px; padding: 9px 14px; border: 0; border-radius: 13px; color: #111315; background: rgba(var(--accent-rgb), 0.94); cursor: pointer; font-size: 0.67rem; font-weight: 640; }
+  .weather-city-form button:disabled { opacity: 0.42; cursor: not-allowed; }
+  .weather-city-form > small { color: rgba(255, 255, 255, 0.36); font-size: 0.61rem; line-height: 1.45; }
+
   .privacy-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
   .analytics-status { flex: 0 0 auto; padding: 6px 9px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 999px; color: rgba(255, 255, 255, 0.44); background: rgba(255, 255, 255, 0.045); font-size: 0.61rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; }
   .analytics-status.active { color: var(--accent); border-color: rgba(var(--accent-rgb), 0.28); background: rgba(var(--accent-rgb), 0.08); }
@@ -3124,6 +3385,39 @@
   }
   .category-filters button:hover { transform: translateY(-1px); color: #fff; }
   .category-filters button.active { color: #111315; border-color: transparent; background: rgba(var(--accent-rgb), 0.9); }
+
+  .live-weather-card {
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: 20px;
+    background:
+      radial-gradient(circle at 8% 0%, rgba(var(--accent-rgb), 0.19), transparent 46%),
+      linear-gradient(135deg, rgba(28, 32, 34, 0.78), rgba(14, 17, 19, 0.7));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 30px rgba(0, 0, 0, 0.12);
+    transition: border-color 220ms ease, transform 280ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease;
+  }
+  .live-weather-card:hover { transform: translateY(-2px); border-color: rgba(var(--accent-rgb), 0.34); }
+  .live-weather-card.active { border-color: rgba(var(--accent-rgb), 0.54); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11), 0 0 34px rgba(var(--accent-rgb), 0.1); }
+  .live-weather-card.loading .live-weather-icon { animation: weather-card-pulse 1.2s ease-in-out infinite; }
+  @keyframes weather-card-pulse { 50% { opacity: 0.42; transform: scale(0.92); } }
+  .live-weather-card-main { min-width: 0; min-height: 86px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; padding: 13px 12px 13px 15px; border: 0; color: #fff; background: transparent; cursor: pointer; text-align: left; }
+  .live-weather-icon { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 15px; color: var(--accent); background: rgba(var(--accent-rgb), 0.09); transition: transform 220ms ease, opacity 220ms ease; }
+  .live-weather-icon svg { width: 24px; height: 24px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .weather-card-rain { opacity: 0.7; }
+  .live-weather-card-copy { min-width: 0; display: grid; gap: 6px; }
+  .live-weather-card-copy > span { display: flex; align-items: center; gap: 8px; }
+  .live-weather-card-copy i { padding: 3px 6px; border-radius: 999px; color: #111315; background: rgba(var(--accent-rgb), 0.9); font-size: 0.49rem; font-style: normal; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
+  .live-weather-card-copy strong { font-size: 0.88rem; font-weight: 570; }
+  .live-weather-card-copy small { overflow: hidden; color: rgba(255, 255, 255, 0.46); font-size: 0.65rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+  .live-weather-card-action { color: rgba(var(--accent-rgb), 0.9); font-size: 0.62rem; font-weight: 620; }
+  .live-weather-card-settings { width: 46px; display: grid; place-items: center; align-self: stretch; margin: 8px 8px 8px 0; padding: 0; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; color: rgba(255, 255, 255, 0.46); background: rgba(255, 255, 255, 0.035); cursor: pointer; }
+  .live-weather-card-settings:hover { color: #fff; border-color: rgba(var(--accent-rgb), 0.3); }
+  .live-weather-card-settings svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; }
 
   .recent-settings-heading button { padding: 0; border: 0; color: rgba(var(--accent-rgb), 0.82); background: transparent; cursor: pointer; font-size: 0.63rem; }
 
@@ -3276,6 +3570,13 @@
     .analytics-consent-actions button { width: 100%; }
     main { padding: 88px 12px 28px; }
     .scene-hero { min-height: 140px; display: block; margin: 0 8px 24px; }
+    .live-weather-hero { min-height: 0; display: grid; grid-template-columns: 1fr; gap: 24px; padding-top: 28px; }
+    .weather-hero-reading { align-items: center; gap: 18px; }
+    .weather-hero-reading > strong { font-size: clamp(5.3rem, 25vw, 7.5rem); }
+    .weather-hero-reading b { font-size: clamp(1.2rem, 6vw, 1.75rem); }
+    .weather-hero-reading small { line-height: 1.4; }
+    .weather-hero-side { gap: 13px; }
+    .weather-hero-side dl { padding-top: 12px; }
     h1 { font-size: clamp(4rem, 21vw, 6.3rem); }
     .hero-title-row { align-items: center; }
     .scene-favorite-button { width: 43px; height: 43px; margin: 7px 0 0; border-radius: 14px; }
@@ -3301,6 +3602,10 @@
     .scene-card.active { grid-column: 1 / -1; min-height: 92px; }
     .scene-card small { display: block; font-size: 0.61rem; }
     .scene-card strong { font-size: 0.79rem; }
+    .live-weather-card-main { min-height: 82px; grid-template-columns: auto minmax(0, 1fr); gap: 11px; padding: 12px; }
+    .live-weather-card-action { display: none; }
+    .live-weather-card-copy small { white-space: normal; }
+    .live-weather-icon { width: 42px; height: 42px; border-radius: 14px; }
     .mobile-library-more {
       width: 100%;
       min-height: 44px;
@@ -3340,6 +3645,7 @@
     .settings-tabs button { min-height: 40px; padding: 9px 12px; }
     .settings-tabs button:hover { transform: none; }
     .settings-content { overflow: visible; padding: 20px 17px 28px; }
+    .weather-mode-choices { grid-template-columns: 1fr; }
     .recent-settings-list { grid-template-columns: 1fr; }
     .preference-row { min-height: 74px; gap: 14px; padding: 14px; }
     .quiet-view-preview { min-height: 160px; }

@@ -87,6 +87,17 @@ test("mobile prioritizes playback and progressively reveals a modern atmosphere 
   assert.match(appSource, /\.recipe-drawer-handle \{ top: -62px;/);
 });
 
+test("Live Weather is a first-class, privacy-conscious adaptive atmosphere", () => {
+  assert.match(appSource, /Current weather/);
+  assert.match(appSource, /weatherAtmosphereProfile/);
+  assert.match(appSource, /weather_match_apply/);
+  assert.match(appSource, /Mirror outside/);
+  assert.match(appSource, /Comforting contrast/);
+  assert.match(appSource, /Use another city/);
+  assert.match(appSource, /bind:this=\{ambientStatusComponent\}/);
+  assert.doesNotMatch(appSource, /weather_(?:match|mode|strength)[^\n]*locationLabel/);
+});
+
 test("Hotel Lobby targets elevator music without stacking several instrumentals", () => {
   assert.match(
     appSource,

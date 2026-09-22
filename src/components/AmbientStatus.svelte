@@ -1,7 +1,13 @@
 <script>
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
   import { trackEvent } from "../analytics";
-  import { buildCurrentWeatherUrl, parseCurrentWeather, roundedWeatherCoordinates } from "../weather.mjs";
+  import {
+    buildCitySearchUrl,
+    buildCurrentWeatherUrl,
+    parseCitySearch,
+    parseCurrentWeather,
+    roundedWeatherCoordinates,
+  } from "../weather.mjs";
 
   export let immersive = false;
 
@@ -16,10 +22,13 @@
   let weatherState = "idle";
   let weather;
   let roundedPosition;
+  let locationLabel = "";
+  let usingManualLocation = false;
   let clockTimer;
   let refreshTimer;
   let permissionStatus;
   let abortController;
+  let cityAbortController;
   let destroyed = false;
 
   $: clockText = clockFormatter.format(now);
@@ -43,15 +52,20 @@
       ? "Add local weather using this device's location"
       : weatherText;
 
+  function setWeatherState(nextState) {
+    weatherState = nextState;
+    dispatch("weatherstate", { state: nextState, weather });
+  }
+
   function isLocationContextAvailable(notify = true) {
     const localHost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
     if (!window.isSecureContext && !localHost) {
-      weatherState = "secure";
+      setWeatherState("secure");
       if (notify) dispatch("notice", "Local weather needs HTTPS. Open the secure GitHub Pages site to allow location.");
       return false;
     }
     if (!("geolocation" in navigator)) {
-      weatherState = "unavailable";
+      setWeatherState("unavailable");
       if (notify) dispatch("notice", "Location services are unavailable in this browser.");
       return false;
     }
@@ -65,7 +79,7 @@
 
   async function loadWeather(position, userInitiated) {
     if (!position || destroyed) return;
-    weatherState = "loading";
+    setWeatherState("loading");
     abortController?.abort();
     abortController = new AbortController();
     const abortTimer = window.setTimeout(() => abortController?.abort(), 9000);
@@ -76,8 +90,9 @@
         headers: { Accept: "application/json" },
       });
       if (!response.ok) throw new Error(`Weather request failed with ${response.status}`);
-      weather = parseCurrentWeather(await response.json());
-      weatherState = "ready";
+      weather = parseCurrentWeather(await response.json(), locationLabel);
+      setWeatherState("ready");
+      dispatch("weather", { ...weather, userInitiated });
       trackEvent(userInitiated ? "weather_enable" : "weather_refresh", {
         weather_condition: weather.label.toLowerCase().replaceAll(" ", "_"),
         weather_temperature_c: weather.temperature,
@@ -85,7 +100,7 @@
       scheduleRefresh();
     } catch (error) {
       if (!destroyed) {
-        weatherState = "unavailable";
+        setWeatherState("unavailable");
         if (userInitiated) dispatch("notice", "Weather could not load. Check your connection and try again.");
         trackEvent("weather_unavailable", { failure_stage: error?.name === "AbortError" ? "timeout" : "forecast" });
       }
@@ -94,22 +109,24 @@
     }
   }
 
-  function requestLocalWeather(userInitiated = true) {
+  export function requestLocalWeather(userInitiated = true) {
     if (!isLocationContextAvailable()) return;
-    if (roundedPosition) {
+    if (roundedPosition && !usingManualLocation) {
       loadWeather(roundedPosition, userInitiated);
       return;
     }
 
-    weatherState = "locating";
+    setWeatherState("locating");
     if (userInitiated) trackEvent("weather_permission_request");
     navigator.geolocation.getCurrentPosition(
       (position) => {
         roundedPosition = roundedWeatherCoordinates(position.coords.latitude, position.coords.longitude);
+        locationLabel = "";
+        usingManualLocation = false;
         loadWeather(roundedPosition, userInitiated);
       },
       (error) => {
-        weatherState = error.code === 1 ? "denied" : "unavailable";
+        setWeatherState(error.code === 1 ? "denied" : "unavailable");
         dispatch("notice", error.code === 1
           ? "Location is blocked. Allow it in this site's browser settings and try again."
           : "Your location could not be found. Please try again.");
@@ -119,10 +136,47 @@
     );
   }
 
+  export async function requestCityWeather(query, userInitiated = true) {
+    const normalizedQuery = String(query || "").trim();
+    if (normalizedQuery.length < 2) {
+      dispatch("notice", "Enter a city or region to match its weather.");
+      return false;
+    }
+
+    setWeatherState("loading");
+    cityAbortController?.abort();
+    cityAbortController = new AbortController();
+    const abortTimer = window.setTimeout(() => cityAbortController?.abort(), 9000);
+    if (userInitiated) trackEvent("weather_city_search", { query_length: normalizedQuery.length });
+
+    try {
+      const response = await fetch(buildCitySearchUrl(normalizedQuery), {
+        signal: cityAbortController.signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error(`Location search failed with ${response.status}`);
+      const result = parseCitySearch(await response.json());
+      roundedPosition = { latitude: result.latitude, longitude: result.longitude };
+      locationLabel = result.label;
+      usingManualLocation = true;
+      await loadWeather(roundedPosition, userInitiated);
+      return weatherState === "ready";
+    } catch (error) {
+      if (!destroyed) {
+        setWeatherState("unavailable");
+        dispatch("notice", error?.name === "AbortError" ? "The city search timed out. Try again." : "That location could not be found.");
+        trackEvent("weather_unavailable", { failure_stage: error?.name === "AbortError" ? "city_timeout" : "city_search" });
+      }
+      return false;
+    } finally {
+      window.clearTimeout(abortTimer);
+    }
+  }
+
   function handlePermissionChange() {
-    if (permissionStatus?.state === "granted") requestLocalWeather(false);
-    else if (permissionStatus?.state === "denied") weatherState = "denied";
-    else weatherState = "idle";
+    if (permissionStatus?.state === "granted" && !usingManualLocation) requestLocalWeather(false);
+    else if (permissionStatus?.state === "denied" && !usingManualLocation) setWeatherState("denied");
+    else if (!usingManualLocation) setWeatherState("idle");
   }
 
   async function inspectLocationPermission() {
@@ -146,6 +200,7 @@
     window.clearInterval(clockTimer);
     window.clearTimeout(refreshTimer);
     abortController?.abort();
+    cityAbortController?.abort();
     permissionStatus?.removeEventListener?.("change", handlePermissionChange);
   });
 </script>
