@@ -54,10 +54,11 @@
   let linkedPlayback = true;
   let multiSoundEnabled = false;
   let immersiveMode = false;
-  let recipesOpen = true;
+  let recipesOpen = false;
   let mixDrawerTab = "for-you";
   let mixIntent = "all";
   let mixEditorOpen = false;
+  let playerDetailsOpen = false;
   let analyticsConfigured = false;
   let analyticsConsent = "unset";
   let layerVolumes = {};
@@ -70,6 +71,7 @@
   let favoriteSceneIds = [];
   let libraryQuery = "";
   let libraryCategory = "all";
+  let libraryToolsOpen = false;
   let libraryExpanded = false;
   let localWeather;
   let weatherUiState = "idle";
@@ -1125,8 +1127,19 @@
 
   function toggleRecipes() {
     recipesOpen = !recipesOpen;
-    localStorage.setItem("atmosphere-recipes-open-v2", String(recipesOpen));
+    localStorage.setItem("atmosphere-recipes-open-v3", String(recipesOpen));
     trackEvent(recipesOpen ? "sound_recipes_open" : "sound_recipes_close");
+  }
+
+  function togglePlayerDetails() {
+    playerDetailsOpen = !playerDetailsOpen;
+    if (!playerDetailsOpen) mixEditorOpen = false;
+    trackEvent("player_details_toggle", { expanded: playerDetailsOpen });
+  }
+
+  function toggleLibraryTools() {
+    libraryToolsOpen = !libraryToolsOpen;
+    trackEvent("library_tools_toggle", { expanded: libraryToolsOpen });
   }
 
   function selectMixDrawerTab(tab) {
@@ -1245,7 +1258,7 @@
       .filter((sceneId) => scenes.some((scene) => scene.id === sceneId));
     const firstTrackId = getTrackId(0);
     if (firstTrackId) layerVolumes = { [firstTrackId]: 1 };
-    const savedRecipesOpen = localStorage.getItem("atmosphere-recipes-open-v2");
+    const savedRecipesOpen = localStorage.getItem("atmosphere-recipes-open-v3");
     recipesOpen = savedRecipesOpen === "true";
     initializeAnalytics(getAnalyticsContext);
     const analyticsStatus = getAnalyticsStatus();
@@ -1766,9 +1779,14 @@
             <p class="kicker">Library</p>
             <h2 id="atmosphere-heading">Choose an atmosphere</h2>
           </div>
-          <span>{filteredScenes.length} of {scenes.length}</span>
+          <button class:active={libraryToolsOpen} class="library-tools-toggle" type="button" aria-expanded={libraryToolsOpen} aria-controls="library-tools" on:click={toggleLibraryTools}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" /></svg>
+            <span>{libraryToolsOpen ? "Done" : "Browse"}</span>
+          </button>
         </div>
 
+        {#if libraryToolsOpen}
+        <div id="library-tools" class="library-tools option-grid-enter">
         <div class="library-search-row">
           <label class="scene-search">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.7" cy="10.7" r="6.4" /><path d="m15.4 15.4 4.1 4.1" /></svg>
@@ -1787,6 +1805,9 @@
             </button>
           {/each}
         </div>
+        <span class="library-result-count">{filteredScenes.length} of {scenes.length} atmospheres</span>
+        </div>
+        {/if}
 
         {#if weatherCardVisible}
           <article class:active={weatherMatchActive} class:loading={["locating", "loading"].includes(weatherUiState)} class="live-weather-card">
@@ -1889,6 +1910,17 @@
           <output>{Math.round(volume * 100)}</output>
         </label>
 
+        <button class:active={playerDetailsOpen} class="player-details-toggle" type="button" aria-expanded={playerDetailsOpen} aria-controls="player-details" on:click={togglePlayerDetails}>
+          <span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" /></svg>
+            <strong>Customize</strong>
+          </span>
+          <small>Layers, mixes and video</small>
+          <svg class="disclosure-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
+        </button>
+
+        {#if playerDetailsOpen}
+        <div id="player-details" class="player-details option-grid-enter">
         {#if activeSoundCategories.length}
           <section class="sound-category-browser" aria-labelledby="sound-category-heading">
             <div class="sound-category-heading">
@@ -2024,6 +2056,8 @@
             </div>
           {/key}
         </div>
+        </div>
+        {/if}
       </section>
 
     </div>
@@ -2480,8 +2514,8 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: 40px;
-    min-height: 170px;
-    margin-bottom: 28px;
+    min-height: 145px;
+    margin-bottom: 22px;
     animation: hero-in 580ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
@@ -2506,7 +2540,7 @@
     position: relative;
     display: inline-block;
     margin: 0;
-    font-size: clamp(4.4rem, 8vw, 8.7rem);
+    font-size: clamp(3.8rem, 7vw, 7.4rem);
     font-weight: 390;
     line-height: 0.82;
     letter-spacing: -0.075em;
@@ -2529,7 +2563,7 @@
     width: min(390px, 34vw);
     margin: 0 0 4px;
     color: rgba(255, 255, 255, 0.7);
-    font-size: 0.96rem;
+    font-size: 0.9rem;
     line-height: 1.55;
   }
 
@@ -2633,7 +2667,26 @@
     gap: 8px;
   }
 
-  .mobile-library-more { display: none; }
+  .mobile-library-more {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    border-radius: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    font-size: 0.62rem;
+    font-weight: 560;
+    transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+  .mobile-library-more:hover { color: #fff; border-color: rgba(var(--accent-rgb), 0.25); background: rgba(var(--accent-rgb), 0.055); }
+  .mobile-library-more svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform 260ms ease; }
+  .mobile-library-more svg.expanded { transform: rotate(180deg); }
 
   .scene-card,
   .track-card,
@@ -2677,14 +2730,16 @@
   .video-card:active { transform: scale(0.975); }
 
   .scene-card {
-    min-height: 88px;
+    min-height: 78px;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
-    padding: 14px;
-    border-radius: 19px;
+    padding: 12px;
+    border-radius: 17px;
   }
+
+  .scene-grid:not(.expanded) .scene-card:nth-child(n+13):not(.active) { display: none; }
 
   .scene-card.active {
     color: #111315;
@@ -2910,6 +2965,33 @@
   .volume-row input:active::-moz-range-thumb,
   .layer-volume input:active::-moz-range-thumb { transform: scale(0.92); }
   .volume-row output { color: rgba(255, 255, 255, 0.88); font-variant-numeric: tabular-nums; text-align: right; }
+
+  .player-details-toggle {
+    width: 100%;
+    min-height: 42px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin-top: 11px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    border-radius: 14px;
+    color: rgba(255, 255, 255, 0.48);
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    text-align: left;
+    transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+  .player-details-toggle:hover,
+  .player-details-toggle.active { color: #fff; border-color: rgba(var(--accent-rgb), 0.26); background: rgba(var(--accent-rgb), 0.055); }
+  .player-details-toggle > span { display: inline-flex; align-items: center; gap: 7px; }
+  .player-details-toggle strong { font-size: 0.64rem; font-weight: 580; }
+  .player-details-toggle small { overflow: hidden; color: rgba(255, 255, 255, 0.31); font-size: 0.58rem; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+  .player-details-toggle svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
+  .player-details-toggle .disclosure-arrow { color: rgba(255, 255, 255, 0.32); transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .player-details-toggle.active .disclosure-arrow { transform: rotate(180deg); }
+  .player-details { padding-top: 2px; }
 
   .option-section { margin-top: 24px; }
   .option-heading { align-items: center; margin-bottom: 10px; padding: 0 2px; }
@@ -3399,12 +3481,32 @@
   .scene-favorite-button svg { width: 21px; height: 21px; fill: transparent; stroke: currentColor; stroke-width: 1.55; stroke-linejoin: round; }
   .scene-favorite-button.active svg { fill: currentColor; }
 
+  .library-tools-toggle {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.46);
+    background: rgba(255, 255, 255, 0.025);
+    cursor: pointer;
+    font-size: 0.6rem;
+    transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+  .library-tools-toggle:hover,
+  .library-tools-toggle.active { color: #fff; border-color: rgba(var(--accent-rgb), 0.28); background: rgba(var(--accent-rgb), 0.065); }
+  .library-tools-toggle svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; }
+  .library-tools { display: grid; margin: -5px 0 12px; }
+  .library-result-count { justify-self: end; margin-top: -8px; color: rgba(255, 255, 255, 0.3); font-size: 0.57rem; }
+
   .library-search-row {
     position: relative;
     display: flex;
     align-items: center;
     gap: 7px;
-    margin: -4px 0 10px;
+    margin: 0 0 10px;
   }
 
   .scene-search {
@@ -3474,8 +3576,8 @@
   .live-weather-card.active { border-color: rgba(var(--accent-rgb), 0.54); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11), 0 0 34px rgba(var(--accent-rgb), 0.1); }
   .live-weather-card.loading .live-weather-icon { animation: weather-card-pulse 1.2s ease-in-out infinite; }
   @keyframes weather-card-pulse { 50% { opacity: 0.42; transform: scale(0.92); } }
-  .live-weather-card-main { min-width: 0; min-height: 86px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; padding: 13px 12px 13px 15px; border: 0; color: #fff; background: transparent; cursor: pointer; text-align: left; }
-  .live-weather-icon { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 15px; color: var(--accent); background: rgba(var(--accent-rgb), 0.09); transition: transform 220ms ease, opacity 220ms ease; }
+  .live-weather-card-main { min-width: 0; min-height: 74px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 10px 10px 10px 12px; border: 0; color: #fff; background: transparent; cursor: pointer; text-align: left; }
+  .live-weather-icon { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid rgba(var(--accent-rgb), 0.26); border-radius: 13px; color: var(--accent); background: rgba(var(--accent-rgb), 0.075); transition: transform 220ms ease, opacity 220ms ease; }
   .live-weather-icon svg { width: 24px; height: 24px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   .weather-card-rain { opacity: 0.7; }
   .live-weather-card-copy { min-width: 0; display: grid; gap: 6px; }

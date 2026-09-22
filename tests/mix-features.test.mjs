@@ -95,6 +95,17 @@ test("the primary player is opaque, compact, and progressively reveals layer det
   assert.match(appSource, /\.audio-button \{[\s\S]*width: 76px;[\s\S]*height: 76px;/);
 });
 
+test("the default interface stays calm through progressive disclosure", () => {
+  assert.match(appSource, /let recipesOpen = false;/);
+  assert.match(appSource, /let playerDetailsOpen = false;/);
+  assert.match(appSource, /let libraryToolsOpen = false;/);
+  assert.match(appSource, /\{#if playerDetailsOpen\}[\s\S]*id="player-details"/);
+  assert.match(appSource, /\{#if libraryToolsOpen\}[\s\S]*id="library-tools"/);
+  assert.match(appSource, /\.scene-grid:not\(\.expanded\) \.scene-card:nth-child\(n\+13\):not\(\.active\)/);
+  assert.match(appSource, /\.scene-grid:not\(\.expanded\) \.scene-card:nth-child\(n\+9\):not\(\.active\)/);
+  assert.match(appSource, /atmosphere-recipes-open-v3/);
+});
+
 test("Live Weather is a first-class, privacy-conscious adaptive atmosphere", () => {
   assert.match(appSource, /Current weather/);
   assert.match(appSource, /weatherAtmosphereProfile/);
