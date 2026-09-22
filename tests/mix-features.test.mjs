@@ -87,6 +87,14 @@ test("mobile prioritizes playback and progressively reveals a modern atmosphere 
   assert.match(appSource, /\.recipe-drawer-handle \{ top: -62px;/);
 });
 
+test("the primary player is opaque, compact, and progressively reveals layer detail", () => {
+  assert.match(appSource, /<h2 id="mixer-heading">Player<\/h2>/);
+  assert.match(appSource, /\{#if selectedAudios\.length > 1\}[\s\S]*class="now-mixing-tray"/);
+  assert.match(appSource, /\.mixer-panel \{[\s\S]*rgba\(25, 28, 30, 0\.92\)[\s\S]*rgba\(11, 14, 16, 0\.86\)/);
+  assert.match(appSource, /\.mix-action-row \{[^}]*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(appSource, /\.audio-button \{[\s\S]*width: 76px;[\s\S]*height: 76px;/);
+});
+
 test("Live Weather is a first-class, privacy-conscious adaptive atmosphere", () => {
   assert.match(appSource, /Current weather/);
   assert.match(appSource, /weatherAtmosphereProfile/);

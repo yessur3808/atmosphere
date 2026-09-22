@@ -1838,10 +1838,7 @@
 
       <section class="mixer-panel liquid-panel" aria-labelledby="mixer-heading">
         <div class="section-heading mixer-heading">
-          <div>
-            <p class="kicker">Sound</p>
-            <h2 id="mixer-heading">{mixTitle}</h2>
-          </div>
+          <h2 id="mixer-heading">Player</h2>
           <span>{audioError || (audioLoading ? "Loading" : isAudioPlaying ? "Playing" : audioStarted ? "Paused" : "Ready")}</span>
         </div>
 
@@ -1924,18 +1921,19 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.4" /><circle cx="6" cy="12" r="2.4" /><circle cx="18" cy="19" r="2.4" /><path d="m8.1 10.8 7.8-4.6M8.1 13.2l7.8 4.6" /></svg>
             <span>Share</span>
           </button>
+          <button class:active={mixEditorOpen} type="button" aria-expanded={mixEditorOpen} aria-controls="mix-editor" on:click={() => (mixEditorOpen = !mixEditorOpen)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" /></svg>
+            <span>{mixEditorOpen ? "Done" : "Layers"}</span>
+          </button>
         </div>
 
+        {#if selectedAudios.length > 1}
         <section class="now-mixing-tray" aria-labelledby="now-mixing-heading">
           <div class="now-mixing-heading">
             <div>
               <p class="kicker">Now mixing</p>
-              <h3 id="now-mixing-heading">{selectedAudios.length === 1 ? "One sound" : `${selectedAudios.length} sounds`}</h3>
+              <h3 id="now-mixing-heading">{selectedAudios.length} sounds</h3>
             </div>
-            <button class:active={mixEditorOpen} type="button" aria-expanded={mixEditorOpen} aria-controls="mix-editor" on:click={() => (mixEditorOpen = !mixEditorOpen)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" /></svg>
-              <span>{mixEditorOpen ? "Done" : "Fine tune"}</span>
-            </button>
           </div>
           <div class="layer-chip-row">
             {#each selectedAudios as index (activeScene.audioTracks[index]?.id)}
@@ -1950,6 +1948,7 @@
             {/each}
           </div>
         </section>
+        {/if}
 
         {#if mixEditorOpen}
           <div id="mix-editor" class="option-section mix-editor option-grid-enter">
@@ -2722,33 +2721,45 @@
     70%, 100% { box-shadow: 0 0 0 8px rgba(17, 19, 21, 0); }
   }
 
-  .mixer-panel { animation: panel-rise 650ms 90ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .mixer-panel {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(var(--accent-rgb), 0.1), transparent 43%),
+      linear-gradient(145deg, rgba(25, 28, 30, 0.92), rgba(11, 14, 16, 0.86));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 28px 90px rgba(0, 0, 0, 0.31), 0 0 54px rgba(var(--accent-rgb), 0.045);
+    backdrop-filter: blur(30px) saturate(132%);
+    -webkit-backdrop-filter: blur(30px) saturate(132%);
+    animation: panel-rise 650ms 90ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
   .library-panel { animation: panel-rise 650ms cubic-bezier(0.16, 1, 0.3, 1) both; }
   @keyframes panel-rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
 
-  .mixer-heading { margin-bottom: 14px; }
+  .mixer-heading { align-items: center; margin-bottom: 0; padding-bottom: 11px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+  .mixer-heading h2 { color: rgba(255, 255, 255, 0.5); font-size: 0.63rem; font-weight: 680; letter-spacing: 0.13em; text-transform: uppercase; }
+  .mixer-heading > span { padding: 4px 8px; border-radius: 999px; color: rgba(var(--accent-rgb), 0.88); background: rgba(var(--accent-rgb), 0.075); font-size: 0.57rem; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; }
 
   .main-transport {
     position: relative;
-    min-height: 132px;
+    min-height: 98px;
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
     align-items: center;
-    column-gap: 18px;
-    padding: 10px 0 14px;
+    column-gap: 15px;
+    row-gap: 5px;
+    padding: 13px 0 10px;
   }
 
   .audio-button {
     grid-row: 1 / 3;
-    width: 96px;
-    height: 96px;
+    width: 76px;
+    height: 76px;
     display: grid;
     place-items: center;
     padding: 0;
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.42);
     border-radius: 50%;
     background: rgba(28, 31, 33, 0.82);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.58);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.42);
     backdrop-filter: blur(14px);
     cursor: pointer;
     transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1), background 260ms ease, box-shadow 260ms ease;
@@ -2759,8 +2770,8 @@
   .audio-button.playing { box-shadow: 0 0 0 7px rgba(var(--accent-rgb), 0.1), 0 16px 44px rgba(0, 0, 0, 0.24), 0 0 34px rgba(var(--accent-rgb), 0.16); }
 
   .audio-button-core {
-    width: 70px;
-    height: 70px;
+    width: 56px;
+    height: 56px;
     display: grid;
     place-items: center;
     border-radius: 50%;
@@ -2770,8 +2781,8 @@
   }
 
   .audio-button svg {
-    width: 24px;
-    height: 24px;
+    width: 21px;
+    height: 21px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
@@ -2782,11 +2793,14 @@
   .play-mark { margin-left: 2px; }
 
   .equalizer {
-    height: 38px;
+    grid-column: 2;
+    grid-row: 2;
+    height: 22px;
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding-top: 10px;
+    align-self: start;
+    gap: 3px;
+    padding: 0;
   }
 
   .equalizer i {
@@ -2798,20 +2812,21 @@
     transition: height 70ms linear, opacity 120ms ease, background 480ms ease;
   }
 
-  .now-playing { display: grid; align-self: start; gap: 4px; }
-  .now-playing strong { font-size: 0.9rem; font-weight: 560; }
-  .now-playing span { color: rgba(255, 255, 255, 0.45); font-size: 0.69rem; }
+  .now-playing { min-width: 0; grid-column: 2; grid-row: 1; display: grid; align-self: end; gap: 4px; }
+  .now-playing strong { overflow: hidden; font-size: 0.94rem; font-weight: 570; text-overflow: ellipsis; white-space: nowrap; }
+  .now-playing span { overflow: hidden; color: rgba(255, 255, 255, 0.42); font-size: 0.65rem; text-overflow: ellipsis; white-space: nowrap; }
 
   .volume-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) 28px;
     align-items: center;
     gap: 13px;
-    padding: 12px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    padding: 10px 2px 2px;
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.075);
+    border-radius: 0;
     color: rgba(255, 255, 255, 0.64);
-    background: rgba(22, 25, 27, 0.78);
+    background: transparent;
     font-size: 0.74rem;
   }
 
@@ -3521,18 +3536,15 @@
   .scene-state.favorite { width: auto; height: auto; color: rgba(17, 19, 21, 0.56); background: transparent; font-size: 0.72rem; box-shadow: none; }
   .scene-card:not(.active) .scene-state.favorite { color: var(--accent); }
 
-  .mix-action-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
-  .mix-action-row button { min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 8px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 14px; color: rgba(255, 255, 255, 0.54); background: rgba(19, 22, 24, 0.62); cursor: pointer; font-size: 0.62rem; transition: transform 200ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease; }
-  .mix-action-row button:hover { transform: translateY(-1px); color: #fff; border-color: rgba(var(--accent-rgb), 0.34); }
+  .mix-action-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+  .mix-action-row button { min-height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 8px; border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 13px; color: rgba(255, 255, 255, 0.48); background: rgba(255, 255, 255, 0.025); cursor: pointer; font-size: 0.59rem; transition: transform 200ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease; }
+  .mix-action-row button:hover,
+  .mix-action-row button.active { transform: translateY(-1px); color: #fff; border-color: rgba(var(--accent-rgb), 0.3); background: rgba(var(--accent-rgb), 0.07); }
   .mix-action-row svg { width: 14px; height: 14px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
 
   .now-mixing-tray { display: grid; gap: 11px; margin-top: 14px; padding: 14px; border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 18px; background: rgba(12, 15, 17, 0.34); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035); }
   .now-mixing-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .now-mixing-heading h3 { margin: 3px 0 0; color: rgba(255, 255, 255, 0.82); font-size: 0.78rem; font-weight: 560; }
-  .now-mixing-heading > button { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid rgba(255, 255, 255, 0.085); border-radius: 999px; color: rgba(255, 255, 255, 0.48); background: rgba(255, 255, 255, 0.035); cursor: pointer; font-size: 0.6rem; transition: color 180ms ease, border-color 180ms ease, background 180ms ease; }
-  .now-mixing-heading > button:hover,
-  .now-mixing-heading > button.active { color: #fff; border-color: rgba(var(--accent-rgb), 0.3); background: rgba(var(--accent-rgb), 0.08); }
-  .now-mixing-heading svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
   .layer-chip-row { display: flex; gap: 6px; overflow-x: auto; padding: 1px 0 3px; scrollbar-width: none; }
   .layer-chip-row::-webkit-scrollbar { display: none; }
   .layer-chip { min-width: 126px; max-width: 180px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px; flex: 1 0 auto; padding: 9px 9px 8px; border: 1px solid rgba(var(--accent-rgb), 0.14); border-radius: 13px; color: rgba(255, 255, 255, 0.72); background: rgba(var(--accent-rgb), 0.055); }
@@ -3694,7 +3706,7 @@
     }
     .scene-grid:not(.expanded) .scene-card:nth-child(n+9):not(.active) { display: none; }
     .track-grid, .video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .mix-action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mix-action-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .scene-card { min-height: 86px; padding: 12px; gap: 10px; border-radius: 18px; }
     .scene-card.active { grid-column: 1 / -1; min-height: 92px; }
     .scene-card small { display: block; font-size: 0.61rem; }
@@ -3721,8 +3733,8 @@
     }
     .mobile-library-more svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform 260ms ease; }
     .mobile-library-more svg.expanded { transform: rotate(180deg); }
-    .audio-button { width: 88px; height: 88px; }
-    .audio-button-core { width: 64px; height: 64px; }
+    .audio-button { width: 74px; height: 74px; }
+    .audio-button-core { width: 54px; height: 54px; }
     .track-card:last-child:nth-child(odd) { grid-column: auto; }
     .quiet-view-button { left: 16px; bottom: 16px; width: 46px; height: 46px; border-radius: 15px; }
     .recipe-drawer { top: auto; right: 0; bottom: 0; width: 100%; padding: 0 10px 10px; transform: translateY(0); }
@@ -3759,7 +3771,7 @@
     .scene-grid { gap: 6px; }
     .track-grid { grid-template-columns: 1fr; }
     .track-item:last-child:nth-child(odd) { grid-column: auto; }
-    .mix-action-row button { justify-content: flex-start; padding-inline: 12px; }
+    .mix-action-row button { padding-inline: 8px; }
     .sound-category-browser { padding: 11px; }
     .sound-category-list { grid-template-columns: 1fr; }
     .sound-category-count { display: none; }
