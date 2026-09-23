@@ -435,21 +435,23 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
     return true;
   }
 
-  async function open({ automatic: automaticRequest = false, userInitiated = false } = {}) {
+  async function open({ automatic: automaticRequest = false } = {}) {
     if (opening || isOpen()) return true;
     opening = true;
     automatic = automaticRequest;
     const video = getState().video;
     try {
       if ("documentPictureInPicture" in window && window.isSecureContext) {
-        await openDocumentPip();
-        return true;
+        try {
+          await openDocumentPip();
+          return true;
+        } catch (error) { /* Try the remaining supported PiP modes. */ }
       }
 
       // Never use window.open as a fallback: mobile and embedded browsers
       // commonly turn it into a full tab. Keep the themed controls in a
       // fixed bottom-right corner instead.
-      if ((!automaticRequest || userInitiated) && openInlinePlayer()) return true;
+      if (!automaticRequest && openInlinePlayer()) return true;
 
       // Native PiP remains a last-resort fallback for automatic transitions
       // where browsers refuse a new popup without a user gesture.
@@ -500,15 +502,13 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
     return open({ automatic: false });
   }
 
-  async function handleVisibilityChange() {
+  async function handleEnterPictureInPicture() {
     const state = getState();
-    if (document.hidden && state.pipPreference === "automatic" && state.isAudioPlaying && !isOpen()) {
-      await open({ automatic: true });
-    }
+    if (state.pipPreference === "off" || !state.isAudioPlaying || isOpen()) return;
+    await open({ automatic: state.pipPreference === "automatic" });
   }
 
   function destroy() {
-    document.removeEventListener("visibilitychange", handleVisibilityChange);
     close();
     if (attachedVideo) {
       attachedVideo.removeEventListener("enterpictureinpicture", handleNativeEnter);
@@ -520,14 +520,11 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
     ["play", "pause", "previoustrack", "nexttrack", "enterpictureinpicture"].forEach((action) => setMediaAction(action, null));
   }
 
-  document.addEventListener("visibilitychange", handleVisibilityChange);
   setMediaAction("play", () => setPlaybackPlaying(true));
   setMediaAction("pause", () => setPlaybackPlaying(false));
   setMediaAction("previoustrack", previousTrack);
   setMediaAction("nexttrack", nextTrack);
-  setMediaAction("enterpictureinpicture", () => {
-    if (getState().pipPreference !== "off") open({ automatic: false });
-  });
+  setMediaAction("enterpictureinpicture", handleEnterPictureInPicture);
   sync();
 
   return { open, close, toggle, sync, destroy, isOpen, getMode: () => mode };

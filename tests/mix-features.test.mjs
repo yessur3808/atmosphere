@@ -53,6 +53,15 @@ test("Apple mobile devices do not receive unsupported mini-player controls", () 
   assert.match(appSource, /pipPromptVisible && !immersiveMode && \(!analyticsConfigured \|\| analyticsConsent !== "unset"\)/);
 });
 
+test("automatic PiP waits until the browser reports that the playing tab lost focus", () => {
+  assert.match(appSource, /Automatic mini player is armed for when you leave this tab/);
+  assert.doesNotMatch(appSource, /open\(\{ automatic: true, userInitiated: true \}\)/);
+  assert.match(miniPlayerSource, /async function handleEnterPictureInPicture\(\)/);
+  assert.match(miniPlayerSource, /open\(\{ automatic: state\.pipPreference === "automatic" \}\)/);
+  assert.match(miniPlayerSource, /setMediaAction\("enterpictureinpicture", handleEnterPictureInPicture\)/);
+  assert.doesNotMatch(miniPlayerSource, /addEventListener\("visibilitychange"/);
+});
+
 test("high-density phones and tablets receive full-quality video unless the network is constrained", () => {
   assert.match(backgroundSource, /useAdaptive = forceAdaptive \|\| constrainedNetwork;/);
   assert.doesNotMatch(backgroundSource, /matchMedia\("\(max-width: 720px\)"\)/);

@@ -130,7 +130,7 @@
   ];
 
   const pipPreferences = [
-    { id: "automatic", title: "Automatic", detail: "Use floating PiP when your browser supports it" },
+    { id: "automatic", title: "Automatic", detail: "Open PiP only after you leave this tab while sound is playing" },
     { id: "manual", title: "Manual only", detail: "Open only when you press the button" },
     { id: "off", title: "Off", detail: "Never open the mini player" },
   ];
@@ -1234,18 +1234,10 @@
       if (miniPlayerController?.isOpen()) await miniPlayerController.close();
       miniPlayerStatus = "Mini player turned off";
     } else if (nextPreference === "automatic") {
-      // PiP and popup creation must happen while this user click still owns
-      // browser activation. Waiting until visibilitychange is too late in
-      // every major browser, so enabling Automatic opens the player now and
-      // keeps it ready when the user leaves the tab.
-      miniPlayerStatus = "Opening automatic mini player";
-      const opened = await miniPlayerController?.open({ automatic: true, userInitiated: true });
-      const openedMode = miniPlayerController?.getMode();
-      miniPlayerStatus = !opened
-        ? "Automatic mode is on. Press Open mini once to allow the floating player."
-        : openedMode === "inline"
-          ? "Corner mini player opened. Always-on-top PiP requires a secure browser connection."
-          : "Automatic mini player is on and ready when you leave this tab";
+      // Do not open PiP during the preference click. Supported browsers fire
+      // the Media Session enterpictureinpicture action after this playing tab
+      // loses focus, which is the moment the user actually asked for.
+      miniPlayerStatus = "Automatic mini player is armed for when you leave this tab";
     } else {
       miniPlayerStatus = "Mini player set to manual only";
     }
@@ -1477,11 +1469,11 @@
       </span>
       <div>
         <p class="kicker">Mini player</p>
-        <h2 id="pip-consent-title">{pipPreference === "automatic" ? "Start automatic mini player?" : "Keep Atmosphere visible?"}</h2>
-        <p id="pip-consent-copy">Open a corner player now. On secure supported browsers it can remain visible when you leave this tab.</p>
+        <h2 id="pip-consent-title">{pipPreference === "automatic" ? "Keep automatic PiP on?" : "Keep Atmosphere visible?"}</h2>
+        <p id="pip-consent-copy">When sound is playing, supported desktop browsers open PiP after you switch tabs or apps—not while you are using Atmosphere. It closes when you return.</p>
       </div>
       <div class="pip-consent-actions">
-        <button class="pip-primary" type="button" on:click={() => choosePipPreference("automatic")}>{pipPreference === "automatic" ? "Start automatic player" : "Turn on automatic"}</button>
+        <button class="pip-primary" type="button" on:click={() => choosePipPreference("automatic")}>{pipPreference === "automatic" ? "Keep automatic on" : "Turn on automatic"}</button>
         <button type="button" on:click={() => choosePipPreference("manual")}>Manual only</button>
         <button type="button" on:click={() => choosePipPreference("off")}>Turn off</button>
       </div>
