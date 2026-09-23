@@ -91,6 +91,9 @@
   let persistenceTimer;
   let hydrated = false;
   let desktopRuntimeCleanup;
+  let settingsPageLocked = false;
+  let settingsPageScrollY = 0;
+  let settingsBodyStyles;
 
   const preferencesStorageKey = "atmosphere-preferences-v2";
   const legacyPreferencesStorageKey = "atmosphere-preferences-v1";
@@ -1080,14 +1083,47 @@
     trackEvent("linked_playback_preference", { enabled });
   }
 
+  function lockSettingsPageScroll() {
+    if (settingsPageLocked || typeof window === "undefined") return;
+    settingsPageScrollY = window.scrollY;
+    settingsBodyStyles = {
+      position: document.body.style.position,
+      top: document.body.style.top,
+      left: document.body.style.left,
+      right: document.body.style.right,
+      width: document.body.style.width,
+      overflow: document.body.style.overflow,
+    };
+    Object.assign(document.body.style, {
+      position: "fixed",
+      top: `-${settingsPageScrollY}px`,
+      left: "0",
+      right: "0",
+      width: "100%",
+      overflow: "hidden",
+    });
+    document.documentElement.classList.add("settings-scroll-locked");
+    settingsPageLocked = true;
+  }
+
+  function unlockSettingsPageScroll() {
+    if (!settingsPageLocked || typeof window === "undefined") return;
+    Object.assign(document.body.style, settingsBodyStyles);
+    document.documentElement.classList.remove("settings-scroll-locked");
+    settingsPageLocked = false;
+    window.scrollTo(0, settingsPageScrollY);
+  }
+
   function openSettings(tab = "playback") {
     settingsTab = tab;
+    lockSettingsPageScroll();
     settingsOpen = true;
     trackEvent("settings_open", { settings_tab: tab });
   }
 
   function closeSettings() {
     settingsOpen = false;
+    unlockSettingsPageScroll();
     trackEvent("settings_close", { settings_tab: settingsTab });
   }
 
@@ -1116,6 +1152,7 @@
 
   function enterImmersiveMode() {
     settingsOpen = false;
+    unlockSettingsPageScroll();
     immersiveMode = true;
     trackEvent("quiet_view_enter", { audio_playing: isAudioPlaying });
   }
@@ -1327,6 +1364,7 @@
     destroyAnalytics();
     miniPlayerController?.destroy();
     desktopRuntimeCleanup?.();
+    unlockSettingsPageScroll();
   });
 </script>
 
@@ -3260,15 +3298,20 @@
     display: grid;
     place-items: center;
     padding: 24px;
+    overflow: hidden;
     background: rgba(3, 5, 7, 0.45);
     backdrop-filter: blur(16px) saturate(115%);
     -webkit-backdrop-filter: blur(16px) saturate(115%);
+    overscroll-behavior: none;
     animation: settings-backdrop-in 220ms ease both;
   }
 
   .settings-modal {
     width: min(900px, 100%);
-    max-height: min(720px, calc(100svh - 48px));
+    height: min(720px, calc(100svh - 48px));
+    height: min(720px, calc(100dvh - 48px));
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 34px;
@@ -3312,7 +3355,7 @@
   .settings-close:hover { transform: rotate(5deg) scale(1.05); color: #fff; background: rgba(255, 255, 255, 0.1); }
   .settings-close svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
 
-  .settings-layout { min-height: 445px; display: grid; grid-template-columns: 190px minmax(0, 1fr); }
+  .settings-layout { min-height: 0; display: grid; grid-template-columns: 190px minmax(0, 1fr); overflow: hidden; }
   .settings-tabs { display: grid; align-content: start; gap: 6px; padding: 20px 14px 22px 20px; border-right: 1px solid rgba(255, 255, 255, 0.08); }
   .settings-tabs button {
     min-height: 46px;
@@ -3335,7 +3378,17 @@
   .settings-tabs i { width: 5px; height: 5px; border-radius: 50%; background: transparent; box-shadow: 0 0 0 4px transparent; }
   .settings-tabs button.active i { background: var(--accent); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.11); }
 
-  .settings-content { min-width: 0; overflow: auto; padding: 28px; }
+  .settings-content {
+    min-width: 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 28px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    scrollbar-gutter: stable;
+  }
   .settings-pane { display: grid; align-content: start; gap: 11px; animation: settings-pane-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
   @keyframes settings-pane-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
   .settings-pane-heading { margin-bottom: 9px; }
@@ -3848,14 +3901,14 @@
     .recipe-list,
     .mix-personal-list { grid-template-columns: 1fr; gap: 8px; }
     .settings-backdrop { align-items: end; padding: 0; }
-    .settings-modal { width: 100%; max-height: calc(100svh - 18px); border-radius: 28px 28px 0 0; }
+    .settings-modal { width: 100%; height: calc(100svh - 18px); height: calc(100dvh - 18px); border-radius: 28px 28px 0 0; }
     .settings-header { padding: 21px 19px 17px; }
-    .settings-layout { min-height: 0; max-height: calc(100svh - 116px); display: block; overflow: auto; }
-    .settings-tabs { position: sticky; z-index: 2; top: 0; grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; padding: 12px 14px; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(15, 18, 20, 0.82); backdrop-filter: blur(22px); scrollbar-width: none; }
+    .settings-layout { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: 1fr; overflow: hidden; }
+    .settings-tabs { position: relative; z-index: 2; grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; padding: 12px 14px; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(15, 18, 20, 0.82); backdrop-filter: blur(22px); overscroll-behavior-x: contain; touch-action: pan-x; scrollbar-width: none; }
     .settings-tabs::-webkit-scrollbar { display: none; }
     .settings-tabs button { min-height: 40px; padding: 9px 12px; }
     .settings-tabs button:hover { transform: none; }
-    .settings-content { overflow: visible; padding: 20px 17px 28px; }
+    .settings-content { overflow-x: hidden; overflow-y: auto; padding: 20px 17px 28px; }
     .weather-mode-choices { grid-template-columns: 1fr; }
     .recent-settings-list { grid-template-columns: 1fr; }
     .preference-row { min-height: 74px; gap: 14px; padding: 14px; }

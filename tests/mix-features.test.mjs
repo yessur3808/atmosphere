@@ -106,6 +106,14 @@ test("the default interface stays calm through progressive disclosure", () => {
   assert.match(appSource, /atmosphere-recipes-open-v3/);
 });
 
+test("Settings owns its scrolling while the page behind it stays fixed", () => {
+  assert.match(appSource, /function lockSettingsPageScroll\(\)[\s\S]*?document\.body\.style[\s\S]*?position: "fixed"/);
+  assert.match(appSource, /function unlockSettingsPageScroll\(\)[\s\S]*?window\.scrollTo\(0, settingsPageScrollY\)/);
+  assert.match(appSource, /\.settings-backdrop \{[\s\S]*?overscroll-behavior: none;/);
+  assert.match(appSource, /\.settings-content \{[\s\S]*?overflow-y: auto;[\s\S]*?overscroll-behavior: contain;[\s\S]*?touch-action: pan-y;/);
+  assert.match(appSource, /\.settings-layout \{ min-height: 0; display: grid; grid-template-rows: auto minmax\(0, 1fr\); grid-template-columns: 1fr; overflow: hidden; \}/);
+});
+
 test("Live Weather is a first-class, privacy-conscious adaptive atmosphere", () => {
   assert.match(appSource, /Current weather/);
   assert.match(appSource, /weatherAtmosphereProfile/);
