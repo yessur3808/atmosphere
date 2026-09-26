@@ -13,6 +13,8 @@ const indexedPages = [
   { file: "install.html", route: "install.html" },
   { file: "legal.html", route: "legal.html" },
   { file: "privacy.html", route: "privacy.html" },
+  { file: "cookies.html", route: "cookies.html" },
+  { file: "analytics.html", route: "analytics.html" },
   { file: "terms.html", route: "terms.html" },
   { file: "security.html", route: "security.html" },
   { file: "licenses.html", route: "licenses.html" },
@@ -126,8 +128,8 @@ test("homepage has useful non-JavaScript fallback content", async () => {
 
   assert.match(fallback, /<h1>Atmosphere ambient sound mixer<\/h1>/i);
   assert.match(fallback, /155 ambient tracks/i);
-  assert.match(fallback, /126 cinematic video loops/i);
-  assert.match(fallback, /href=["'](?:install|legal|audio-credits|video-credits)\.html["']/i);
+  assert.match(fallback, /123 cinematic video loops/i);
+  assert.match(fallback, /href=["'](?:install|privacy|cookies|legal|audio-credits|video-credits)\.html["']/i);
 });
 
 test("manifest and static entry points use project-relative paths", async () => {

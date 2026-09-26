@@ -1,6 +1,6 @@
 # Atmosphere analytics setup and measurement plan
 
-Atmosphere includes a consent-gated Google Analytics 4 integration in `src/analytics.js`. The Google tag is not requested and no Atmosphere events are sent until a visitor selects **Allow anonymous analytics**.
+Atmosphere includes a consent-gated Google Analytics 4 integration in `src/analytics.js`. The Google tag is not requested and no Atmosphere events are sent until a visitor selects **Allow analytics**.
 
 ## Production GA4 stream
 
@@ -16,7 +16,7 @@ The production Measurement ID is configured once in `public/index.html`:
 <meta name="google-analytics-id" content="G-EMR3SRND40">
 ```
 
-After a deployment, open Settings → Privacy and confirm the status reads **GA4 ready**. Grant analytics in a test browser and use GA4 Realtime and DebugView to confirm `page_view`, `atmosphere_view`, and interaction events.
+After a deployment, open Settings → Privacy & cookies and confirm the status reads **GA4 ready**. Grant analytics in a test browser and use GA4 Realtime and DebugView to confirm `page_view`, `atmosphere_view`, and interaction events.
 
 The ID is intentionally kept in one meta tag. A GA4 Measurement ID is public configuration, not a secret, and does not grant access to the Analytics property.
 
@@ -24,13 +24,14 @@ The ID is intentionally kept in one meta tag. A GA4 Measurement ID is public con
 
 - Analytics storage defaults to `denied` before any configuration or event command.
 - The Google tag is loaded only after consent.
+- Global Privacy Control or Do Not Track defaults analytics to denied if no prior choice exists.
 - Advertising storage, advertising user data, ad personalization, Google Signals, and ad-personalization signals remain disabled.
-- Visitors can change their choice under Settings → Privacy.
+- Visitors can change their choice under Settings → Privacy & cookies. Withdrawal activates the GA disable flag and attempts to remove accessible `_ga`, `_gid`, and `_gat*` cookies for the current origin and application path.
 - Analytics never requests browser geolocation. GA4 provides approximate country/region/city reporting from the network connection and discards the IP before it is logged.
 - The separate, optional header weather feature requests browser location only after a visitor chooses **Add local weather**. Coordinates are rounded to two decimals, kept only in memory, sent only to Open-Meteo, and never added to analytics events. Open-Meteo may retain API logs containing coordinates for up to 90 days under its published terms.
 - Do not add names, email addresses, user-entered text, full media URLs, or other personal data to event parameters.
 
-Before enabling production collection, publish a privacy policy naming Google Analytics, the purposes of collection, the retention period, and the visitor's withdrawal controls. Review consent requirements for every market where the site is offered.
+The public `privacy.html`, `cookies.html`, and `analytics.html` pages name Google Analytics, measurement purposes, retention, exclusions, and withdrawal controls. Review consent requirements whenever the offered markets or analytics configuration changes.
 
 ## Event inventory
 
@@ -49,6 +50,7 @@ GA4 automatically provides acquisition, device, approximate region, `first_visit
 | `multi_sound_preference` | Multi-layer preference usage |
 | `smart_mix_preference` | Slowly evolving layer-volume preference usage |
 | `data_saver_preference` | Audio-only mode adoption |
+| `media_quality_preference`, `media_quality_auto_change` | Manual quality choice and network-driven delivery changes |
 | `linked_playback_preference` | Unified versus separate transport preference |
 | `sound_recipe_apply` | Recipe name and chosen layer combination |
 | `mix_save`, `mix_load`, `mix_favorite`, `mix_delete`, `mix_share` | Local mix-library and privacy-safe share-link adoption |
@@ -69,7 +71,7 @@ GA4 automatically provides acquisition, device, approximate region, `first_visit
 | `weather_enable`, `weather_refresh` | Weather availability and coarse condition, without coordinates or place names |
 | `weather_unavailable` | Permission, location, timeout, or forecast failure stage |
 
-Every custom interaction also receives the current `scene_id`, `scene_title`, `track_id`, `active_sound_count`, `video_id`, `playback_mode`, `quiet_view`, and `viewport_bucket` when available.
+Every custom interaction also receives the current `scene_id`, `scene_title`, `track_id`, `active_sound_count`, `video_id`, `playback_mode`, `quiet_view`, `viewport_bucket`, `media_quality_preference`, `video_quality`, `audio_quality`, `connection_type`, and browser Save-Data state when available. Values are categorical; network speed samples or full media URLs are not sent.
 
 ## Register these GA4 custom definitions
 
@@ -81,6 +83,11 @@ Create event-scoped custom dimensions for:
 - `video_id`
 - `playback_mode`
 - `viewport_bucket`
+- `media_quality_preference`
+- `video_quality`
+- `audio_quality`
+- `connection_type`
+- `save_data`
 - `control_source`
 - `recipe_id`
 - `settings_tab`

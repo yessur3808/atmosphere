@@ -1,0 +1,22 @@
+{
+  "videoWebm": {
+    "assets/videos/loops/onsen/winter-rotenburo.mp4": "assets/videos/webm/onsen/winter-rotenburo.webm",
+    "assets/videos/loops/brown-noise/brown-liquid.mp4": "assets/videos/webm/brown-noise/brown-liquid.webm",
+    "assets/videos/loops/onsen/kusatsu-yubatake.mp4": "assets/videos/webm/onsen/kusatsu-yubatake.webm",
+    "assets/videos/loops/cat-window/window-watchers.mp4": "assets/videos/webm/cat-window/window-watchers.webm",
+    "assets/videos/loops/elevator/endless-glass-ride.mp4": "assets/videos/webm/elevator/endless-glass-ride.webm",
+    "assets/videos/loops/space-observation/earth-orbit.mp4": "assets/videos/webm/space-observation/earth-orbit.webm",
+    "assets/videos/loops/space-observation/observation-window.mp4": "assets/videos/webm/space-observation/observation-window.webm",
+    "assets/videos/loops/space-observation/interstellar-passage.mp4": "assets/videos/webm/space-observation/interstellar-passage.webm",
+    "assets/videos/loops/space-observation/deep-starfield.mp4": "assets/videos/webm/space-observation/deep-starfield.webm",
+    "assets/videos/loops/night-drive/rainy-downtown.mp4": "assets/videos/webm/night-drive/rainy-downtown.webm",
+    "assets/videos/loops/night-drive/city-light-trails.mp4": "assets/videos/webm/night-drive/city-light-trails.webm",
+    "assets/videos/loops/night-drive/dubai-expressway.mp4": "assets/videos/webm/night-drive/dubai-expressway.webm",
+    "assets/videos/loops/night-drive/los-angeles-freeway.mp4": "assets/videos/webm/night-drive/los-angeles-freeway.webm",
+    "assets/videos/loops/night-drive/shenzhen-tunnel.mp4": "assets/videos/webm/night-drive/shenzhen-tunnel.webm",
+    "assets/videos/loops/night-drive/rural-midnight-road.mp4": "assets/videos/webm/night-drive/rural-midnight-road.webm",
+    "assets/videos/loops/night-drive/winter-night-road.mp4": "assets/videos/webm/night-drive/winter-night-road.webm",
+    "assets/videos/loops/night-drive/cyprus-coast.mp4": "assets/videos/webm/night-drive/cyprus-coast.webm",
+    "assets/videos/loops/night-drive/vibrant-city-pov.mp4": "assets/videos/webm/night-drive/vibrant-city-pov.webm"
+  }
+}

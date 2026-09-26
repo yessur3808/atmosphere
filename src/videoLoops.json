@@ -2,62 +2,74 @@
   "tab_rain": [
     { "title": "Window droplets", "file": "rain/window-droplets.mp4", "source": "https://coverr.co/videos/raindrops-on-the-window-amlapwfzyf" },
     { "title": "Rainy street", "file": "rain/rainy-street.mp4", "source": "https://coverr.co/videos/a-street-on-a-rainy-day-pf4ct9hqiy" },
-    { "title": "Garden rain", "file": "rain/garden-rain.mp4", "source": "https://coverr.co/videos/rain-in-a-palm-tree-garden-q62yegeyfw" }
+    { "title": "Garden rain", "file": "rain/garden-rain.mp4", "source": "https://coverr.co/videos/rain-in-a-palm-tree-garden-q62yegeyfw" },
+    { "title": "Rain on the windshield", "file": "rain/rain-windshield.mp4", "source": "https://coverr.co/videos/rain-falling-on-windshield-fs8uwlp7tr" }
   ],
   "tab_coffee_shop": [
     { "title": "Steamed milk", "file": "coffee-shop/steamed-milk.mp4", "source": "https://coverr.co/videos/barista-adds-steamed-milk-and-foam-to-espresso-eczocyhka6" },
     { "title": "Fresh cup", "file": "coffee-shop/fresh-cup.mp4", "source": "https://coverr.co/videos/coffee-machine-filling-a-cup-xzgzbips5r" },
-    { "title": "Coffee swirl", "file": "coffee-shop/coffee-swirl.mp4", "source": "https://coverr.co/videos/close-up-of-a-coffee-stirring-process-5sczlisi2k" }
+    { "title": "Coffee swirl", "file": "coffee-shop/coffee-swirl.mp4", "source": "https://coverr.co/videos/close-up-of-a-coffee-stirring-process-5sczlisi2k" },
+    { "title": "Counter order", "file": "coffee-shop/counter-order.mp4", "source": "https://coverr.co/videos/a-man-orders-coffee-at-the-cafe-xhxqdbt1jr" }
   ],
   "tab_waterfall": [
     { "title": "Forest cascade", "file": "waterfall/forest-cascade.mp4", "source": "https://coverr.co/videos/mini-waterfall-in-estoril-portugal-rbeh2vhdsg" },
     { "title": "Rocky falls", "file": "waterfall/rocky-falls.mp4", "source": "https://coverr.co/videos/rocky-waterfall-3kzyghjzsf" },
-    { "title": "Rainforest falls", "file": "waterfall/rainforest-falls.mp4", "source": "https://coverr.co/videos/waterfall-in-a-rainforest-qyive2hmwg" }
+    { "title": "Rainforest falls", "file": "waterfall/rainforest-falls.mp4", "source": "https://coverr.co/videos/waterfall-in-a-rainforest-qyive2hmwg" },
+    { "title": "Rainbow cascade", "file": "waterfall/rainbow-cascade.mp4", "source": "https://coverr.co/videos/waterfall-near-a-rainbow-jon9zcmkgh" }
   ],
   "tab_lightning": [
     { "title": "City storm", "file": "lightning/city-storm.mp4", "source": "https://coverr.co/videos/storm-in-vilnius-lithuania-xkxvteeugs" },
     { "title": "Stormy pier", "file": "lightning/stormy-pier.mp4", "source": "https://coverr.co/videos/stormy-sea-waves-crashing-on-pier" },
-    { "title": "Charged horizon", "file": "lightning/charged-horizon.mp4", "source": "https://coverr.co/videos/rain-in-the-city-faijm4k8kf" }
+    { "title": "Charged horizon", "file": "lightning/charged-horizon.mp4", "source": "https://coverr.co/videos/rain-in-the-city-faijm4k8kf" },
+    { "title": "Storm front", "file": "lightning/storm-front.mp4", "source": "https://coverr.co/videos/cloud-timelapse-tqssvpvok7" }
   ],
   "tab_wind": [
     { "title": "Maple branches", "file": "wind/maple-branches.mp4", "source": "https://coverr.co/videos/branches-of-yellow-maple-leaves-blowing-in-the-wind-m4yd4sl0fr" },
     { "title": "Field breeze", "file": "wind/field-breeze.mp4", "source": "https://coverr.co/videos/plant-swaying-in-the-wind-9olgftopus" },
-    { "title": "Forest gusts", "file": "wind/forest-gusts.mp4", "source": "https://coverr.co/videos/trees-blowing-in-the-wind-h7wrxamjdv" }
+    { "title": "Forest gusts", "file": "wind/forest-gusts.mp4", "source": "https://coverr.co/videos/trees-blowing-in-the-wind-h7wrxamjdv" },
+    { "title": "Autumn canopy", "file": "wind/autumn-canopy.mp4", "source": "https://coverr.co/videos/the-wind-moving-through-some-yellow-autumn-trees-i5jmrsloiv" }
   ],
   "tab_fire": [
     { "title": "Bonfire", "file": "fire/bonfire.mp4", "source": "https://coverr.co/videos/bonfire-ktpugcueqb" },
     { "title": "Candle glow", "file": "fire/candle-glow.mp4", "source": "https://coverr.co/videos/burning-church-candles-v1y9sfoo09" },
-    { "title": "Kindling", "file": "fire/kindling.mp4", "source": "https://coverr.co/videos/lighting-a-fire-with-a-gas-lighter-qf8nqknyb7" }
+    { "title": "Kindling", "file": "fire/kindling.mp4", "source": "https://coverr.co/videos/lighting-a-fire-with-a-gas-lighter-qf8nqknyb7" },
+    { "title": "Roaring hearth", "file": "fire/roaring-hearth.mp4", "source": "https://coverr.co/videos/a-roaring-fire-whvghgknu6" }
   ],
   "tab_snow": [
     { "title": "Forest snowfall", "file": "snow/forest-snowfall.mp4", "source": "https://coverr.co/videos/snow-falling-in-a-forest-fssnjipogi" },
     { "title": "Winter wonderland", "file": "snow/winter-wonderland.mp4", "source": "https://coverr.co/videos/snow-in-a-winter-wonderland-ska8xmo3rd" },
-    { "title": "Snowy trees", "file": "snow/snowy-trees.mp4", "source": "https://coverr.co/videos/snow-falling-by-the-trees-sf3avbh4tq" }
+    { "title": "Snowy trees", "file": "snow/snowy-trees.mp4", "source": "https://coverr.co/videos/snow-falling-by-the-trees-sf3avbh4tq" },
+    { "title": "Winter onsen", "file": "snow/winter-onsen.mp4", "source": "https://commons.wikimedia.org/wiki/File:Onsen-rotenburo-winter2014.ogv", "high": "assets/videos/loops/onsen/winter-rotenburo.mp4", "adaptive": "assets/videos/adaptive/loops/onsen/winter-rotenburo.mp4" }
   ],
   "tab_street": [
     { "title": "Passing lights", "file": "street/passing-lights.mp4", "source": "https://coverr.co/videos/driving-past-a-building-at-night-ugzaaghmau" },
     { "title": "Gloomy city", "file": "street/gloomy-city.mp4", "source": "https://coverr.co/videos/gloomy-city-at-night-kglm0yzad1" },
-    { "title": "Rainy drive", "file": "street/rainy-drive.mp4", "source": "https://coverr.co/videos/windshield-wipers-viewed-from-the-inside-of-the-car-hcwvtthx0i" }
+    { "title": "Rainy drive", "file": "street/rainy-drive.mp4", "source": "https://coverr.co/videos/windshield-wipers-viewed-from-the-inside-of-the-car-hcwvtthx0i" },
+    { "title": "Night lanes", "file": "street/night-lanes.mp4", "source": "https://coverr.co/videos/cars-in-the-city-at-night-hwww4ekcvq" }
   ],
   "tab_leaves": [
     { "title": "Maple canopy", "file": "leaves/maple-canopy.mp4", "source": "https://coverr.co/videos/colorful-maple-leaves-rustling-with-the-wind-a9gpcrrhha" },
     { "title": "Tall canopy", "file": "leaves/tall-canopy.mp4", "source": "https://coverr.co/videos/low-angle-shot-of-a-tall-tree-x0bprs3acf" },
-    { "title": "Autumn movement", "file": "leaves/autumn-movement.mp4", "source": "https://coverr.co/videos/the-wind-moving-through-some-yellow-autumn-trees-i5jmrsloiv" }
+    { "title": "Autumn movement", "file": "leaves/autumn-movement.mp4", "source": "https://coverr.co/videos/the-wind-moving-through-some-yellow-autumn-trees-i5jmrsloiv" },
+    { "title": "Mossy branch", "file": "leaves/mossy-branch.mp4", "source": "https://coverr.co/videos/branch-covered-in-moss-qnzw1we2og" }
   ],
   "tab_ocean_waves": [
     { "title": "Open shoreline", "file": "ocean/open-shoreline.mp4", "source": "https://coverr.co/videos/panoramic-view-of-serene-beach-landscape-on-a-sunny-day" },
     { "title": "Sunlit ocean", "file": "ocean/sunlit-ocean.mp4", "source": "https://coverr.co/videos/sun-shining-over-the-ocean-piplgoew3c" },
-    { "title": "Cloudy coast", "file": "ocean/cloudy-coast.mp4", "source": "https://coverr.co/videos/cloudy-beach-wteji3b4ev" }
+    { "title": "Cloudy coast", "file": "ocean/cloudy-coast.mp4", "source": "https://coverr.co/videos/cloudy-beach-wteji3b4ev" },
+    { "title": "Coastline above", "file": "ocean/coastline-above.mp4", "source": "https://coverr.co/videos/drone-footage-of-waves-at-a-beach-q4pfnks6up" }
   ],
   "tab_train": [
     { "title": "Platform calm", "file": "train/platform-calm.mp4", "source": "https://coverr.co/videos/a-train-station-in-buenos-aires-sbg6saq1ic" },
     { "title": "Into the tunnel", "file": "train/into-the-tunnel.mp4", "source": "https://coverr.co/videos/train-going-through-a-tunnel-xvosm7n7jz" },
-    { "title": "Leaving the tunnel", "file": "train/leaving-the-tunnel.mp4", "source": "https://coverr.co/videos/train-leaving-a-tunnel-p063gte1xl" }
+    { "title": "Leaving the tunnel", "file": "train/leaving-the-tunnel.mp4", "source": "https://coverr.co/videos/train-leaving-a-tunnel-p063gte1xl" },
+    { "title": "Passing train", "file": "train/passing-train.mp4", "source": "https://coverr.co/videos/a-moving-train-cg9wxifyjm" }
   ],
   "tab_typing": [
     { "title": "Focused keys", "file": "typing/focused-keys.mp4", "source": "https://coverr.co/videos/person-typing-on-a-keyboard-crgmq4mjyy" },
     { "title": "Morning desk", "file": "typing/morning-desk.mp4", "source": "https://coverr.co/videos/a-productive-morning-bj7kvec5or" },
-    { "title": "Slow-motion keys", "file": "typing/slow-motion-keys.mp4", "source": "https://coverr.co/videos/slow-motion-typing-on-a-laptop-0tkutov6g2" }
+    { "title": "Slow-motion keys", "file": "typing/slow-motion-keys.mp4", "source": "https://coverr.co/videos/slow-motion-typing-on-a-laptop-0tkutov6g2" },
+    { "title": "Close keyboard", "file": "typing/close-keyboard.mp4", "source": "https://coverr.co/videos/typing-on-a-keyboard-yt0bfusilq" }
   ],
   "tab_foot_steps": [
     { "title": "Evening walk", "file": "footsteps/evening-walk.mp4", "source": "https://coverr.co/videos/calm-evening-walk-listening-to-music" },
@@ -68,12 +80,14 @@
   "tab_birds": [
     { "title": "Open sky", "file": "birds/open-sky.mp4", "source": "https://coverr.co/videos/bird-flying-in-the-sky-robvdcw5l4" },
     { "title": "Lakeside branches", "file": "birds/lakeside-branches.mp4", "source": "https://coverr.co/videos/bird-flying-onto-branches-in-the-lake-kjgbfzj8um" },
-    { "title": "Quiet swans", "file": "birds/quiet-swans.mp4", "source": "https://coverr.co/videos/swans-at-salote-lake-in-vilnius-hhycbk2s4w" }
+    { "title": "Quiet swans", "file": "birds/quiet-swans.mp4", "source": "https://coverr.co/videos/swans-at-salote-lake-in-vilnius-hhycbk2s4w" },
+    { "title": "Birds overhead", "file": "birds/birds-overhead.mp4", "source": "https://coverr.co/videos/birds-in-the-sky-yncisz4g8t" }
   ],
   "tab_white_noise": [
     { "title": "Liquid grain", "file": "white-noise/liquid-grain.mp4", "source": "https://coverr.co/videos/green-liquid-with-black-particles-6xjzaarjrz" },
     { "title": "Soft fog", "file": "white-noise/soft-fog.mp4", "source": "https://coverr.co/videos/foggy-forest-06yshrbpk8" },
-    { "title": "Misty field", "file": "white-noise/misty-field.mp4", "source": "https://coverr.co/videos/tree-in-the-mist-jl07anu9ty" }
+    { "title": "Misty field", "file": "white-noise/misty-field.mp4", "source": "https://coverr.co/videos/tree-in-the-mist-jl07anu9ty" },
+    { "title": "Brown liquid", "file": "white-noise/brown-liquid.mp4", "source": "https://www.pexels.com/video/video-of-brown-liquid-4219852/", "high": "assets/videos/loops/brown-noise/brown-liquid.mp4", "adaptive": "assets/videos/adaptive/loops/brown-noise/brown-liquid.mp4" }
   ],
   "tab_onsen": [
     { "title": "Thermal steam", "file": "onsen/thermal-steam.mp4", "source": "https://coverr.co/videos/steam-from-the-hot-springs-bliadwwrrw" },

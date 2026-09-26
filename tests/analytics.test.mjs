@@ -58,6 +58,11 @@ test("analytics reports content usage with decision-ready dimensions", () => {
     "video_id",
     "playback_mode",
     "data_saver",
+    "media_quality_preference",
+    "video_quality",
+    "audio_quality",
+    "connection_type",
+    "save_data",
     "smart_mix",
     "live_weather",
     "quiet_view",
@@ -89,6 +94,15 @@ test("analytics strips private mix payloads from page URLs", () => {
   assert.match(analyticsSource, /searchParams\.set\("mix",\s*"shared"\)/);
   assert.doesNotMatch(appSource, /trackEvent\([^\n]*weatherCityQuery/);
   assert.doesNotMatch(appSource, /trackEvent\([^\n]*saveMixName/);
+});
+
+test("withdrawal deletes accessible analytics cookies and honors browser privacy signals", () => {
+  assert.match(analyticsSource, /function clearAnalyticsCookies\(\)/);
+  assert.match(analyticsSource, /\^_\(\?:ga\|gid\|gat\)/);
+  assert.match(analyticsSource, /window\[`ga-disable-\$\{measurementId\}`\] = consent !== "granted"/);
+  assert.match(analyticsSource, /navigator\.globalPrivacyControl === true/);
+  assert.match(analyticsSource, /navigator\.doNotTrack === "1"/);
+  assert.match(analyticsSource, /consent === "unset" && privacySignal/);
 });
 
 test("feature action totals exclude passive page and atmosphere views", () => {

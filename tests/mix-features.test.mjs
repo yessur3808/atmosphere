@@ -68,8 +68,14 @@ test("settings and city lookup suspend automatic PiP instead of treating modal f
   assert.match(miniPlayerSource, /state\.pipPreference === "automatic" && !state\.automaticEligible/);
 });
 
-test("high-density phones and tablets receive full-quality video unless the network is constrained", () => {
-  assert.match(backgroundSource, /useAdaptive = forceAdaptive \|\| constrainedNetwork;/);
+test("media quality follows an explicit preference and browser connection hints", () => {
+  assert.match(backgroundSource, /effectiveMediaQuality\(qualityPreference, connection, false\)/);
+  assert.match(backgroundSource, /preferredQuality === "balanced"/);
+  assert.match(backgroundSource, /selectedUsesWebm = Boolean\(useAdaptive && webmPlayable && webmBackground\)/);
+  assert.match(appSource, /efficientAudioRequested\(mediaQualityPreference, connectionInfo, dataSaverMode\)/);
+  assert.match(appSource, /src=\{efficientAudio && track\.efficientSrc \? track\.efficientSrc : track\.src\}/);
+  assert.match(appSource, /function syncAudioElementSources\(\)/);
+  assert.match(appSource, /element\.src = nextSource/);
   assert.doesNotMatch(backgroundSource, /matchMedia\("\(max-width: 720px\)"\)/);
 });
 

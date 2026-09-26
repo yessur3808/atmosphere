@@ -1,9 +1,12 @@
 <script>
   import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
   import { mediaUrl } from "../siteUrl.mjs";
+  import { effectiveMediaQuality } from "../mediaQuality.mjs";
 
   export let background = "";
   export let adaptiveBackground = "";
+  export let webmBackground = "";
+  export let qualityPreference = "auto";
   export let poster = "";
   export let paused = false;
   export let playbackRate = 1;
@@ -26,6 +29,9 @@
   let activeView = "";
   let useAdaptive = false;
   let forceAdaptive = false;
+  let webmPlayable = false;
+  let selectedUsesWebm = false;
+  let selectedQuality = "full";
   let mediaReady = false;
   let loading = true;
   let failed = false;
@@ -44,11 +50,16 @@
   }
 
   function updateMediaPreference() {
-    const constrainedNetwork = connection?.saveData || /(2g|3g)$/.test(connection?.effectiveType || "");
-    // Modern phones and tablets have high-density displays, so viewport width
-    // is not a useful quality signal. Prefer the 1080p source unless the user
-    // or browser has explicitly indicated a constrained connection.
-    useAdaptive = forceAdaptive || constrainedNetwork;
+    // Device dimensions are intentionally not used as a proxy for bandwidth.
+    // Auto follows explicit browser network hints; manual Full/Balanced choices
+    // remain stable until a source error requires the lighter fallback.
+    const preferredQuality = effectiveMediaQuality(qualityPreference, connection, false);
+    useAdaptive = forceAdaptive || preferredQuality === "balanced";
+    const nextQuality = useAdaptive ? "balanced" : "full";
+    if (nextQuality !== selectedQuality) {
+      selectedQuality = nextQuality;
+      dispatch("qualitychange", { quality: selectedQuality, reason: forceAdaptive ? "fallback" : qualityPreference === "auto" ? "network" : "preference" });
+    }
   }
 
   function resolveVideoSource(source) {
@@ -58,12 +69,21 @@
 
   onMount(() => {
     connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    webmPlayable = Boolean(document.createElement("video").canPlayType('video/webm; codecs="vp9"'));
     updateMediaPreference();
     mediaReady = true;
     connection?.addEventListener?.("change", updateMediaPreference);
   });
 
-  $: selectedBackground = mediaReady && !disabled ? (useAdaptive && adaptiveBackground ? adaptiveBackground : background) : "";
+  $: if (mediaReady) updateMediaPreference(qualityPreference);
+  $: selectedUsesWebm = Boolean(useAdaptive && webmPlayable && webmBackground);
+  $: selectedBackground = mediaReady && !disabled
+    ? selectedUsesWebm
+      ? webmBackground
+      : useAdaptive && adaptiveBackground
+        ? adaptiveBackground
+        : background
+    : "";
   $: nextSource = resolveVideoSource(selectedBackground);
   $: posterSource = poster ? mediaUrl(`assets/videos/${poster}`) : "";
   $: requestSource(nextSource);
@@ -158,6 +178,11 @@
 
   function handleError(slot) {
     if (slotSources[slot] !== desiredSource) return;
+    if (selectedUsesWebm) {
+      webmPlayable = false;
+      updateMediaPreference();
+      return;
+    }
     if (!useAdaptive && adaptiveBackground) {
       forceAdaptive = true;
       updateMediaPreference();

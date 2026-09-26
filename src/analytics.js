@@ -88,6 +88,11 @@ function sharedParameters() {
     video_id: context.videoId,
     playback_mode: context.linkedPlayback ? "unified" : "separate",
     data_saver: context.dataSaverMode,
+    media_quality_preference: context.mediaQualityPreference,
+    video_quality: context.effectiveVideoQuality,
+    audio_quality: context.effectiveAudioQuality,
+    connection_type: context.connectionType,
+    save_data: context.saveData,
     smart_mix: context.smartMixEnabled,
     live_weather: context.weatherMatchActive,
     quiet_view: context.immersiveMode,
@@ -137,6 +142,8 @@ function noteEvent(name, parameters) {
     "data_saver_preference",
     "library_tools_toggle",
     "linked_playback_preference",
+    "media_quality_preference",
+    "media_quality_auto_change",
     "mini_player_preference",
     "multi_sound_preference",
     "player_details_toggle",
@@ -196,8 +203,30 @@ function loadGoogleTag() {
     send_page_view: false,
     allow_google_signals: false,
     allow_ad_personalization_signals: false,
+    anonymize_ip: true,
+    cookie_expires: 34128000,
+    cookie_flags: window.location.protocol === "https:" ? "SameSite=Lax;Secure" : "SameSite=Lax",
     transport_type: "beacon",
   });
+}
+
+function clearAnalyticsCookies() {
+  const names = document.cookie.split(";")
+    .map((cookie) => cookie.split("=")[0].trim())
+    .filter((name) => /^_(?:ga|gid|gat)(?:_|$)/i.test(name));
+  const basePath = new URL(".", document.baseURI).pathname || "/";
+  const currentPath = window.location.pathname.replace(/[^/]*$/, "") || "/";
+  const paths = [...new Set(["/", basePath, currentPath])];
+  const hostname = window.location.hostname;
+  const domains = hostname && hostname.includes(".") ? ["", hostname, `.${hostname}`] : [""];
+  names.forEach((name) => {
+    paths.forEach((path) => {
+      domains.forEach((domain) => {
+        document.cookie = `${name}=; Max-Age=0; path=${path};${domain ? ` domain=${domain};` : ""} SameSite=Lax`;
+      });
+    });
+  });
+  return names.length;
 }
 
 function sendPageView() {
@@ -369,6 +398,14 @@ export function initializeAnalytics(getContext = () => ({})) {
   configured = measurementIdPattern.test(measurementId) && !measurementId.includes("XXXX");
   consent = localStorage.getItem(consentStorageKey) || "unset";
   if (!["granted", "denied", "unset"].includes(consent)) consent = "unset";
+  const privacySignal = navigator.globalPrivacyControl === true
+    || navigator.doNotTrack === "1"
+    || window.doNotTrack === "1";
+  if (consent === "unset" && privacySignal) {
+    consent = "denied";
+    localStorage.setItem(consentStorageKey, consent);
+  }
+  if (configured) window[`ga-disable-${measurementId}`] = consent !== "granted";
 
   window.dataLayer = window.dataLayer || [];
   window.gtag = window.gtag || gtag;
@@ -382,6 +419,7 @@ export function initializeAnalytics(getContext = () => ({})) {
 
   installLifecycleTracking();
   if (configured && consent === "granted") {
+    window[`ga-disable-${measurementId}`] = false;
     gtag("consent", "update", { analytics_storage: "granted" });
     loadGoogleTag();
     resetClocks();
@@ -394,6 +432,7 @@ export function initializeAnalytics(getContext = () => ({})) {
 export function setAnalyticsConsent(nextConsent) {
   consent = nextConsent === "granted" ? "granted" : "denied";
   localStorage.setItem(consentStorageKey, consent);
+  if (configured) window[`ga-disable-${measurementId}`] = consent !== "granted";
   gtag("consent", "update", {
     analytics_storage: consent,
     ad_storage: "denied",
@@ -407,6 +446,8 @@ export function setAnalyticsConsent(nextConsent) {
     beginPerformanceTracking();
     sendPageView();
     trackEvent("analytics_consent_update", { analytics_consent: "granted" });
+  } else {
+    clearAnalyticsCookies();
   }
   return getAnalyticsStatus();
 }

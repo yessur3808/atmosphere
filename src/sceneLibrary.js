@@ -1,6 +1,7 @@
 import tabsData from "./tabsData.json";
 import audioSources from "../audio-sources.json";
 import videoSources from "./videoLoops.resolved.json";
+import mediaVariants from "./mediaVariants.json";
 import { mediaUrl } from "./siteUrl.mjs";
 
 const meta = {
@@ -47,23 +48,10 @@ const sceneSubcategories = {
   ],
 };
 
-const remoteFirstScenes = new Set([
-  "tab_foot_steps",
-  "tab_onsen",
-  "tab_cat_window",
-  "tab_library",
-  "tab_forest",
-  "tab_jungle",
-  "tab_beach_shore",
-  "tab_traffic",
-  "tab_elevator_music",
-  "tab_rainy_bedroom",
-  "tab_brown_noise",
-  "tab_space_observation",
-  "tab_night_drive",
-  "tab_city_apartment",
-  "tab_farm",
-]);
+// Every active background now comes from the source-tracked video catalog.
+// Legacy root videos remain outside the runtime mapping and can be removed
+// without reducing the four-view collection for standard atmospheres.
+const remoteFirstScenes = new Set(tabsData.map(({ id }) => id));
 
 function withoutExtension(filename) {
   return filename.replace(/\.[^.]+$/, "");
@@ -86,18 +74,28 @@ export const scenes = tabsData.map((scene) => {
     accent,
     accentRgb,
     subcategories,
-    audioTracks: audioSources[scene.id].map((track, index) => ({
-      ...track,
-      id: `${scene.id}-audio-${index}`,
-      src: mediaUrl(track.src || `assets/audio/${scene.id.replace(/^tab_/, "")}/${track.file}`),
-      subcategory: subcategoryFor(index, "trackIndices"),
-    })),
+    audioTracks: audioSources[scene.id].map((track, index) => {
+      const relativeSource = String(track.src || `assets/audio/${scene.id.replace(/^tab_/, "")}/${track.file}`).replace(/^\//, "");
+      const efficientSource = relativeSource
+        .replace(/^assets\/audio\//, "assets/audio-low/")
+        .replace(/\.[^.]+$/, ".mp3");
+      return {
+        ...track,
+        id: `${scene.id}-audio-${index}`,
+        src: mediaUrl(relativeSource),
+        efficientSrc: mediaUrl(efficientSource),
+        subcategory: subcategoryFor(index, "trackIndices"),
+      };
+    }),
     videoLoops: [
       {
         id: `${scene.id}-video-0`,
         title: originalSource?.title || "Original scene",
         background: originalSource ? mediaUrl(originalSource.high) : scene.background,
         adaptiveBackground: originalSource ? mediaUrl(originalSource.adaptive) : `adaptive/${mediaName}-720.mp4`,
+        webmBackground: originalSource && mediaVariants.videoWebm[originalSource.high]
+          ? mediaUrl(mediaVariants.videoWebm[originalSource.high])
+          : "",
         poster: `posters/${mediaName}.jpg`,
         source: originalSource?.source,
         start: 0,
@@ -111,6 +109,9 @@ export const scenes = tabsData.map((scene) => {
         title: loop.title,
         background: mediaUrl(loop.high),
         adaptiveBackground: mediaUrl(loop.adaptive),
+        webmBackground: mediaVariants.videoWebm[loop.high]
+          ? mediaUrl(mediaVariants.videoWebm[loop.high])
+          : "",
         poster: `posters/${mediaName}.jpg`,
         source: loop.source,
         start: 0,

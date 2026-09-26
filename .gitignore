@@ -3,15 +3,4 @@
 /desktop-dist/
 /src-tauri/target/
 /src-tauri/gen/
-/public/assets/audio/cat_window/01-sleepy-purr.mp3
-/public/assets/audio/leaves/01-canopy-rustle.mp3
-/public/assets/audio/library/01-turning-pages.mp3
-/public/assets/videos/posters/beach-shore.jpg
-/public/assets/videos/posters/cat-window.jpg
-/public/assets/videos/posters/forest.jpg
-/public/assets/videos/posters/jungle.jpg
-/public/assets/videos/posters/onsen.jpg
-/public/assets/videos/posters/quiet-library.jpg
-/public/assets/videos/posters/traffic.jpg
-
 .DS_Store

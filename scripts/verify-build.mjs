@@ -15,6 +15,8 @@ const requiredFiles = [
   "legal.css",
   "legal.html",
   "privacy.html",
+  "cookies.html",
+  "analytics.html",
   "terms.html",
   "install.html",
   "security.html",

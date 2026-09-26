@@ -20,6 +20,13 @@
       "source": "https://coverr.co/videos/rain-in-a-palm-tree-garden-q62yegeyfw",
       "high": "https://cdn.coverr.co/videos/coverr-rain-in-a-palm-tree-garden-1143/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-rain-in-a-palm-tree-garden-1143/720p.mp4"
+    },
+    {
+      "title": "Rain on the windshield",
+      "file": "rain/rain-windshield.mp4",
+      "source": "https://coverr.co/videos/rain-falling-on-windshield-fs8uwlp7tr",
+      "high": "https://cdn.coverr.co/videos/coverr-rain-falling-on-windshield-6625/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-rain-falling-on-windshield-6625/720p.mp4"
     }
   ],
   "tab_coffee_shop": [
@@ -43,6 +50,13 @@
       "source": "https://coverr.co/videos/close-up-of-a-coffee-stirring-process-5sczlisi2k",
       "high": "https://cdn.coverr.co/videos/coverr-close-up-of-a-coffee-stirring-process-9584/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-close-up-of-a-coffee-stirring-process-9584/720p.mp4"
+    },
+    {
+      "title": "Counter order",
+      "file": "coffee-shop/counter-order.mp4",
+      "source": "https://coverr.co/videos/a-man-orders-coffee-at-the-cafe-xhxqdbt1jr",
+      "high": "https://cdn.coverr.co/videos/coverr-premium-a-man-orders-at-the-café-3200/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-premium-a-man-orders-at-the-café-3200/720p.mp4"
     }
   ],
   "tab_waterfall": [
@@ -66,6 +80,13 @@
       "source": "https://coverr.co/videos/waterfall-in-a-rainforest-qyive2hmwg",
       "high": "https://cdn.coverr.co/videos/coverr-waterfall-in-a-rainforest-8763/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-waterfall-in-a-rainforest-8763/720p.mp4"
+    },
+    {
+      "title": "Rainbow cascade",
+      "file": "waterfall/rainbow-cascade.mp4",
+      "source": "https://coverr.co/videos/waterfall-near-a-rainbow-jon9zcmkgh",
+      "high": "https://cdn.coverr.co/videos/coverr-waterfall-near-a-rainbow-9900/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-waterfall-near-a-rainbow-9900/720p.mp4"
     }
   ],
   "tab_lightning": [
@@ -89,6 +110,13 @@
       "source": "https://coverr.co/videos/rain-in-the-city-faijm4k8kf",
       "high": "https://cdn.coverr.co/videos/coverr-rain-in-the-city-430/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-rain-in-the-city-430/720p.mp4"
+    },
+    {
+      "title": "Storm front",
+      "file": "lightning/storm-front.mp4",
+      "source": "https://coverr.co/videos/cloud-timelapse-tqssvpvok7",
+      "high": "https://cdn.coverr.co/videos/coverr-cloud-timelapse-8383/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-cloud-timelapse-8383/720p.mp4"
     }
   ],
   "tab_wind": [
@@ -112,6 +140,13 @@
       "source": "https://coverr.co/videos/trees-blowing-in-the-wind-h7wrxamjdv",
       "high": "https://cdn.coverr.co/videos/coverr-trees-blowing-in-the-wind-1487/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-trees-blowing-in-the-wind-1487/720p.mp4"
+    },
+    {
+      "title": "Autumn canopy",
+      "file": "wind/autumn-canopy.mp4",
+      "source": "https://coverr.co/videos/the-wind-moving-through-some-yellow-autumn-trees-i5jmrsloiv",
+      "high": "https://cdn.coverr.co/videos/coverr-the-wind-moving-through-some-yellow-autumn-trees-2056/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-the-wind-moving-through-some-yellow-autumn-trees-2056/720p.mp4"
     }
   ],
   "tab_fire": [
@@ -135,6 +170,13 @@
       "source": "https://coverr.co/videos/lighting-a-fire-with-a-gas-lighter-qf8nqknyb7",
       "high": "https://cdn.coverr.co/videos/coverr-lighting-a-fire-with-a-gas-lighter-104/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-lighting-a-fire-with-a-gas-lighter-104/720p.mp4"
+    },
+    {
+      "title": "Roaring hearth",
+      "file": "fire/roaring-hearth.mp4",
+      "source": "https://coverr.co/videos/a-roaring-fire-whvghgknu6",
+      "high": "https://cdn.coverr.co/videos/coverr-a-roaring-fire-6465/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-a-roaring-fire-6465/720p.mp4"
     }
   ],
   "tab_snow": [
@@ -158,6 +200,13 @@
       "source": "https://coverr.co/videos/snow-falling-by-the-trees-sf3avbh4tq",
       "high": "https://cdn.coverr.co/videos/coverr-snow-falling-by-the-trees-1832/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-snow-falling-by-the-trees-1832/720p.mp4"
+    },
+    {
+      "title": "Winter onsen",
+      "file": "snow/winter-onsen.mp4",
+      "source": "https://commons.wikimedia.org/wiki/File:Onsen-rotenburo-winter2014.ogv",
+      "high": "assets/videos/loops/onsen/winter-rotenburo.mp4",
+      "adaptive": "assets/videos/adaptive/loops/onsen/winter-rotenburo.mp4"
     }
   ],
   "tab_street": [
@@ -181,6 +230,13 @@
       "source": "https://coverr.co/videos/windshield-wipers-viewed-from-the-inside-of-the-car-hcwvtthx0i",
       "high": "https://cdn.coverr.co/videos/coverr-windshield-wipers-viewed-from-the-inside-of-the-car-1493/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-windshield-wipers-viewed-from-the-inside-of-the-car-1493/720p.mp4"
+    },
+    {
+      "title": "Night lanes",
+      "file": "street/night-lanes.mp4",
+      "source": "https://coverr.co/videos/cars-in-the-city-at-night-hwww4ekcvq",
+      "high": "https://cdn.coverr.co/videos/coverr-cars-in-the-city-at-night-5837/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-cars-in-the-city-at-night-5837/720p.mp4"
     }
   ],
   "tab_leaves": [
@@ -204,6 +260,13 @@
       "source": "https://coverr.co/videos/the-wind-moving-through-some-yellow-autumn-trees-i5jmrsloiv",
       "high": "https://cdn.coverr.co/videos/coverr-the-wind-moving-through-some-yellow-autumn-trees-2056/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-the-wind-moving-through-some-yellow-autumn-trees-2056/720p.mp4"
+    },
+    {
+      "title": "Mossy branch",
+      "file": "leaves/mossy-branch.mp4",
+      "source": "https://coverr.co/videos/branch-covered-in-moss-qnzw1we2og",
+      "high": "https://cdn.coverr.co/videos/coverr-branch-covered-in-moss-5495/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-branch-covered-in-moss-5495/720p.mp4"
     }
   ],
   "tab_ocean_waves": [
@@ -227,6 +290,13 @@
       "source": "https://coverr.co/videos/cloudy-beach-wteji3b4ev",
       "high": "https://cdn.coverr.co/videos/coverr-cloudy-beach-2120/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-cloudy-beach-2120/720p.mp4"
+    },
+    {
+      "title": "Coastline above",
+      "file": "ocean/coastline-above.mp4",
+      "source": "https://coverr.co/videos/drone-footage-of-waves-at-a-beach-q4pfnks6up",
+      "high": "https://cdn.coverr.co/videos/coverr-drone-footage-of-waves-at-a-beach-5600/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-drone-footage-of-waves-at-a-beach-5600/720p.mp4"
     }
   ],
   "tab_train": [
@@ -250,6 +320,13 @@
       "source": "https://coverr.co/videos/train-leaving-a-tunnel-p063gte1xl",
       "high": "https://cdn.coverr.co/videos/coverr-train-leaving-a-tunnel-4251/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-train-leaving-a-tunnel-4251/720p.mp4"
+    },
+    {
+      "title": "Passing train",
+      "file": "train/passing-train.mp4",
+      "source": "https://coverr.co/videos/a-moving-train-cg9wxifyjm",
+      "high": "https://cdn.coverr.co/videos/coverr-a-moving-train-6272/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-a-moving-train-6272/720p.mp4"
     }
   ],
   "tab_typing": [
@@ -273,6 +350,13 @@
       "source": "https://coverr.co/videos/slow-motion-typing-on-a-laptop-0tkutov6g2",
       "high": "https://cdn.coverr.co/videos/coverr-slow-motion-typing-on-a-laptop-7199/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-slow-motion-typing-on-a-laptop-7199/720p.mp4"
+    },
+    {
+      "title": "Close keyboard",
+      "file": "typing/close-keyboard.mp4",
+      "source": "https://coverr.co/videos/typing-on-a-keyboard-yt0bfusilq",
+      "high": "https://cdn.coverr.co/videos/coverr-typing-on-a-keyboard-866/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-typing-on-a-keyboard-866/720p.mp4"
     }
   ],
   "tab_foot_steps": [
@@ -326,6 +410,13 @@
       "source": "https://coverr.co/videos/swans-at-salote-lake-in-vilnius-hhycbk2s4w",
       "high": "https://cdn.coverr.co/videos/coverr-swans-at-salote-lake-in-vilnius-505/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-swans-at-salote-lake-in-vilnius-505/720p.mp4"
+    },
+    {
+      "title": "Birds overhead",
+      "file": "birds/birds-overhead.mp4",
+      "source": "https://coverr.co/videos/birds-in-the-sky-yncisz4g8t",
+      "high": "https://cdn.coverr.co/videos/coverr-birds-in-the-sky-219/1080p.mp4",
+      "adaptive": "https://cdn.coverr.co/videos/coverr-birds-in-the-sky-219/720p.mp4"
     }
   ],
   "tab_white_noise": [
@@ -349,6 +440,13 @@
       "source": "https://coverr.co/videos/tree-in-the-mist-jl07anu9ty",
       "high": "https://cdn.coverr.co/videos/coverr-tree-in-the-mist-4598/1080p.mp4",
       "adaptive": "https://cdn.coverr.co/videos/coverr-tree-in-the-mist-4598/720p.mp4"
+    },
+    {
+      "title": "Brown liquid",
+      "file": "white-noise/brown-liquid.mp4",
+      "source": "https://www.pexels.com/video/video-of-brown-liquid-4219852/",
+      "high": "assets/videos/loops/brown-noise/brown-liquid.mp4",
+      "adaptive": "assets/videos/adaptive/loops/brown-noise/brown-liquid.mp4"
     }
   ],
   "tab_onsen": [

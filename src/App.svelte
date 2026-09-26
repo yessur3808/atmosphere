@@ -17,6 +17,7 @@
   import { scenes } from "./sceneLibrary";
   import { mediaUrl, siteUrl } from "./siteUrl.mjs";
   import { weatherAtmosphereProfile } from "./weather.mjs";
+  import { connectionSnapshot, efficientAudioRequested, effectiveMediaQuality, normalizeMediaQuality } from "./mediaQuality.mjs";
 
   let audioElements = [];
   let backgroundComponent;
@@ -66,6 +67,10 @@
   let smartMixEnabled = false;
   let smartMixTimer;
   let dataSaverMode = false;
+  let mediaQualityPreference = "auto";
+  let connectionInfo = {};
+  let networkConnection;
+  let effectiveVideoQuality = "full";
   let activeRecipeId = "";
   let activeRecipeTitle = "";
   let activeMixSource = "";
@@ -112,13 +117,18 @@
   const smartMixIntervalMilliseconds = 12000;
   const nativeVolumeFrames = new WeakMap();
   const mixIntents = ["all", "focus", "relax", "sleep", "nature"];
+  const mediaQualityChoices = [
+    { id: "auto", title: "Automatic", detail: "Use network and Data Saver signals to balance clarity and loading." },
+    { id: "full", title: "Full quality", detail: "Prefer 1080p video and full-quality audio on reliable connections." },
+    { id: "balanced", title: "Balanced", detail: "Use efficient audio and 720p/WebM video where available." },
+  ];
   const settingsTabs = [
     { id: "playback", title: "Playback" },
     { id: "mixes", title: "My mixes" },
     { id: "weather", title: "Live weather" },
     { id: "display", title: "Display" },
     { id: "mini-player", title: "Mini player" },
-    { id: "privacy", title: "Privacy" },
+    { id: "privacy", title: "Privacy & cookies" },
     { id: "about", title: "About" },
   ];
   const recipeBlueprints = [
@@ -153,6 +163,8 @@
   const videoCreditsHref = siteUrl("video-credits.html");
   const installHref = siteUrl("install.html");
   const privacyHref = siteUrl("privacy.html");
+  const cookiesHref = siteUrl("cookies.html");
+  const analyticsHref = siteUrl("analytics.html");
   const termsHref = siteUrl("terms.html");
   const securityHref = siteUrl("security.html");
   const licensesHref = siteUrl("licenses.html");
@@ -194,6 +206,8 @@
     ? settingsTabs
     : settingsTabs.filter((tab) => tab.id !== "mini-player");
   $: transportMediaLabel = dataSaverMode || !linkedPlayback ? "audio" : "audio and video";
+  $: efficientAudio = efficientAudioRequested(mediaQualityPreference, connectionInfo, dataSaverMode);
+  $: effectiveAudioQuality = efficientAudio ? "efficient" : "full";
   $: miniPlayerSnapshot = {
     sceneTitle: activeScene.title,
     category: activeScene.category,
@@ -233,6 +247,11 @@
       videoId: activeVideo?.id,
       linkedPlayback,
       dataSaverMode,
+      mediaQualityPreference,
+      effectiveVideoQuality,
+      effectiveAudioQuality,
+      connectionType: connectionInfo.effectiveType || "unknown",
+      saveData: Boolean(connectionInfo.saveData),
       smartMixEnabled,
       weatherMatchActive,
       immersiveMode,
@@ -244,6 +263,61 @@
     const status = setAnalyticsConsent(nextConsent);
     analyticsConfigured = status.configured;
     analyticsConsent = status.consent;
+    showToast(nextConsent === "granted" ? "Anonymous analytics enabled" : "Analytics disabled · GA cookies removed");
+  }
+
+  function syncAudioElementSources() {
+    audioElements.forEach((element, index) => {
+      const track = activeScene?.audioTracks[index];
+      if (!element || !track) return;
+      const nextSource = efficientAudio && track.efficientSrc ? track.efficientSrc : track.src;
+      if (element.src === nextSource) return;
+      element.src = nextSource;
+      element.load();
+    });
+  }
+
+  async function setMediaQualityPreference(nextPreference) {
+    const next = normalizeMediaQuality(nextPreference);
+    if (next === mediaQualityPreference) return;
+    const continuePlaying = isAudioPlaying;
+    if (continuePlaying) {
+      checkpointAnalytics("media_quality_change");
+      await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2, "media_quality_change");
+    }
+    mediaQualityPreference = next;
+    effectiveVideoQuality = effectiveMediaQuality(next, connectionInfo, dataSaverMode);
+    await tick();
+    syncAudioElementSources();
+    if (continuePlaying) await playSelectedTracks(selectedAudios, "media_quality_change");
+    savePreferences();
+    showToast(next === "auto" ? "Media quality now adapts to your connection" : next === "full" ? "Full media quality selected" : "Balanced media quality selected");
+    trackEvent("media_quality_preference", {
+      media_quality_preference: next,
+      video_quality: effectiveMediaQuality(next, connectionInfo, dataSaverMode),
+      audio_quality: effectiveAudioQuality,
+    });
+  }
+
+  async function handleConnectionChange() {
+    const previousAudioQuality = effectiveAudioQuality;
+    connectionInfo = connectionSnapshot(networkConnection);
+    if (!dataSaverMode) effectiveVideoQuality = effectiveMediaQuality(mediaQualityPreference, connectionInfo, false);
+    await tick();
+    syncAudioElementSources();
+    if (mediaQualityPreference === "auto" && previousAudioQuality !== effectiveAudioQuality && isAudioPlaying) {
+      checkpointAnalytics("network_quality_change");
+      await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2, "network_quality_change");
+      await tick();
+      await playSelectedTracks(selectedAudios, "network_quality_change");
+    }
+    trackEvent("media_quality_auto_change", {
+      media_quality_preference: mediaQualityPreference,
+      video_quality: effectiveMediaQuality(mediaQualityPreference, connectionInfo, dataSaverMode),
+      audio_quality: effectiveAudioQuality,
+      connection_type: connectionInfo.effectiveType || "unknown",
+      save_data: Boolean(connectionInfo.saveData),
+    });
   }
 
   function handleAudioError(track) {
@@ -911,10 +985,20 @@
     trackEvent("smart_mix_preference", { enabled, active_sound_count: selectedAudios.length });
   }
 
-  function setDataSaverMode(enabled) {
+  async function setDataSaverMode(enabled) {
     if (isAudioPlaying) checkpointAnalytics("data_saver_change");
+    const continuePlaying = isAudioPlaying;
+    const audioQualityWillChange = efficientAudioRequested(mediaQualityPreference, connectionInfo, dataSaverMode)
+      !== efficientAudioRequested(mediaQualityPreference, connectionInfo, enabled);
+    if (continuePlaying && audioQualityWillChange) {
+      await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2, "data_saver_change");
+    }
     dataSaverMode = enabled;
-    isVideoPlaying = isAudioPlaying && !enabled;
+    effectiveVideoQuality = effectiveMediaQuality(mediaQualityPreference, connectionInfo, enabled);
+    await tick();
+    syncAudioElementSources();
+    if (continuePlaying && audioQualityWillChange) await playSelectedTracks(selectedAudios, "data_saver_change");
+    isVideoPlaying = continuePlaying && !enabled;
     backgroundComponent?.setAutoPictureInPicture(
       !enabled && isAudioPlaying && pipPreference === "automatic" && !settingsOpen && !saveMixOpen && !pipPromptVisible && !weatherCityBusy && !immersiveMode,
     );
@@ -942,6 +1026,7 @@
       multiSoundEnabled,
       linkedPlayback,
       dataSaverMode,
+      mediaQualityPreference,
       ...overrides,
     }, scenes);
   }
@@ -1150,6 +1235,7 @@
       multiSoundEnabled,
       smartMixEnabled,
       dataSaverMode,
+      mediaQualityPreference,
       volume,
       weatherMode,
       weatherSoundStrength,
@@ -1382,6 +1468,12 @@
     if (typeof savedPreferences.multiSoundEnabled === "boolean") multiSoundEnabled = savedPreferences.multiSoundEnabled;
     if (typeof savedPreferences.smartMixEnabled === "boolean") smartMixEnabled = savedPreferences.smartMixEnabled;
     if (typeof savedPreferences.dataSaverMode === "boolean") dataSaverMode = savedPreferences.dataSaverMode;
+    mediaQualityPreference = normalizeMediaQuality(savedPreferences.mediaQualityPreference);
+    networkConnection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    connectionInfo = connectionSnapshot(networkConnection);
+    effectiveVideoQuality = effectiveMediaQuality(mediaQualityPreference, connectionInfo, dataSaverMode);
+    networkConnection?.addEventListener?.("change", handleConnectionChange);
+    tick().then(syncAudioElementSources);
     if (Number.isFinite(Number(savedPreferences.volume))) volume = Math.max(0, Math.min(1, Number(savedPreferences.volume)));
     if (["match", "comfort"].includes(savedPreferences.weatherMode)) weatherMode = savedPreferences.weatherMode;
     if (["subtle", "realistic", "immersive"].includes(savedPreferences.weatherSoundStrength)) weatherSoundStrength = savedPreferences.weatherSoundStrength;
@@ -1457,6 +1549,7 @@
     window.clearTimeout(toastTimer);
     window.clearTimeout(persistenceTimer);
     window.clearTimeout(weatherCitySearchTimer);
+    networkConnection?.removeEventListener?.("change", handleConnectionChange);
     mediaSources.forEach((source) => source.disconnect());
     layerGainNodes.forEach((gainNode) => gainNode?.disconnect());
     masterGainNode?.disconnect();
@@ -1477,6 +1570,8 @@
     bind:this={backgroundComponent}
     background={activeVideo.background}
     adaptiveBackground={activeVideo.adaptiveBackground}
+    webmBackground={activeVideo.webmBackground}
+    qualityPreference={mediaQualityPreference}
     poster={activeVideo.poster}
     paused={!isVideoPlaying}
     playbackRate={activeVideo.playbackRate}
@@ -1486,11 +1581,14 @@
     viewKey={activeVideo.id}
     disabled={dataSaverMode}
     immersive={immersiveMode}
+    on:qualitychange={(event) => (effectiveVideoQuality = event.detail.quality)}
   />
   {#each activeScene.audioTracks as track, index (index)}
     <audio
       bind:this={audioElements[index]}
-      src={track.src}
+      src={efficientAudio && track.efficientSrc ? track.efficientSrc : track.src}
+      data-media-quality={efficientAudio ? "balanced" : "full"}
+      data-efficient-src={track.efficientSrc}
       crossorigin="anonymous"
       preload={selectedAudios.includes(index) ? "metadata" : "none"}
       loop
@@ -1613,8 +1711,8 @@
       </div>
       <div class="analytics-consent-actions">
         <button class="analytics-allow" type="button" on:click={() => updateAnalyticsPreference("granted")}>Allow analytics</button>
-        <button type="button" on:click={() => updateAnalyticsPreference("denied")}>Not now</button>
-        <button type="button" on:click={() => openSettings("privacy")}>Details</button>
+        <button type="button" on:click={() => updateAnalyticsPreference("denied")}>Reject analytics</button>
+        <button type="button" on:click={() => openSettings("privacy")}>Manage choices</button>
       </div>
     </section>
   {/if}
@@ -1687,6 +1785,20 @@
                   <span><strong>Smart Mix</strong><small>Let active layers slowly rise and settle so the soundscape feels less repetitive.</small></span>
                   <i class:active={smartMixEnabled} class="preference-switch" aria-hidden="true"><b></b></i>
                 </button>
+                <div class="quality-settings" aria-labelledby="media-quality-label">
+                  <div>
+                    <strong id="media-quality-label">Media quality</strong>
+                    <small>{dataSaverMode ? "Audio only is active" : `Using ${effectiveVideoQuality} video and ${effectiveAudioQuality} audio`}</small>
+                  </div>
+                  <div class="preference-choice-list quality-choices">
+                    {#each mediaQualityChoices as choice}
+                      <button class:active={mediaQualityPreference === choice.id} type="button" aria-pressed={mediaQualityPreference === choice.id} on:click={() => setMediaQualityPreference(choice.id)}>
+                        <i aria-hidden="true"></i>
+                        <span><strong>{choice.title}</strong><small>{choice.detail}</small></span>
+                      </button>
+                    {/each}
+                  </div>
+                </div>
                 <label class="volume-row settings-volume">
                   <span>Master volume</span>
                   <input type="range" min="0" max="1" step="0.01" value={volume} style={`--volume-percent: ${Math.round(volume * 100)}%`} aria-label="Master audio volume" aria-valuetext={`${Math.round(volume * 100)} percent`} on:input={updateVolume} on:change={commitVolume} />
@@ -1871,7 +1983,16 @@
                   <p>Analytics never requests GPS. If you choose Add local weather, your browser asks permission, Atmosphere rounds the coordinates to roughly one kilometre, and sends them only to Open-Meteo. Coordinates stay in memory, are never stored by Atmosphere, and are never attached to GA4 events.</p>
                   <span>Open-Meteo may retain API logs for up to 90 days. Advertising storage, Google Signals, and ad personalization remain disabled.</span>
                 </div>
-                <a class="settings-action secondary" href={privacyHref} target="_blank" rel="noreferrer">Read the full privacy policy</a>
+                <div class="privacy-summary storage-summary">
+                  <strong>Essential local storage</strong>
+                  <p>Atmosphere stores your consent choice, settings, favorites, saved mixes, and recent playback only on this device. These functional records are necessary for the choices you request and are never sent to Atmosphere.</p>
+                  <span>Google Analytics cookies are optional and are removed when you reject or withdraw analytics consent.</span>
+                </div>
+                <div class="settings-legal-links">
+                  <a class="settings-action secondary" href={privacyHref} target="_blank" rel="noreferrer">Privacy policy</a>
+                  <a class="settings-action secondary" href={cookiesHref} target="_blank" rel="noreferrer">Cookie policy</a>
+                  <a class="settings-action secondary" href={analyticsHref} target="_blank" rel="noreferrer">Analytics disclosure</a>
+                </div>
                 {#if !analyticsConfigured}
                   <div class="analytics-setup-note">
                     <strong>Finish setup with one value</strong>
@@ -3594,6 +3715,12 @@
   .preference-switch.active { border-color: rgba(var(--accent-rgb), 0.42); background: rgba(var(--accent-rgb), 0.62); }
   .preference-switch.active b { transform: translateX(18px); background: #fff; }
   .settings-volume { margin-top: 6px; background: rgba(18, 21, 23, 0.49); }
+  .quality-settings { display: grid; gap: 10px; padding: 13px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px; background: rgba(18, 21, 23, 0.44); }
+  .quality-settings > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .quality-settings > div:first-child strong { font-size: 0.76rem; font-weight: 570; }
+  .quality-settings > div:first-child small { color: rgba(255, 255, 255, 0.42); font-size: 0.64rem; text-align: right; }
+  .quality-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .quality-choices button { min-width: 0; align-items: flex-start; }
 
   .quiet-view-preview {
     position: relative;
@@ -3682,6 +3809,9 @@
   .privacy-summary p,
   .analytics-setup-note p { margin: 0; color: rgba(255, 255, 255, 0.46); font-size: 0.69rem; line-height: 1.55; }
   .privacy-summary > span { color: rgba(var(--accent-rgb), 0.78); font-size: 0.64rem; line-height: 1.45; }
+  .storage-summary { border-color: rgba(255, 255, 255, 0.09); background: rgba(255, 255, 255, 0.035); }
+  .settings-legal-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .settings-legal-links .settings-action { min-width: 0; text-align: center; }
   .analytics-setup-note { border-color: rgba(var(--accent-rgb), 0.18); background: rgba(var(--accent-rgb), 0.055); }
   .analytics-setup-note code { padding: 2px 5px; border-radius: 5px; color: rgba(255, 255, 255, 0.72); background: rgba(255, 255, 255, 0.07); font-size: 0.64rem; }
 
@@ -4013,6 +4143,10 @@
     .analytics-consent-actions { display: grid; grid-template-columns: 1fr 1fr; }
     .analytics-consent-actions .analytics-allow { grid-column: 1 / -1; }
     .analytics-consent-actions button { width: 100%; }
+    .quality-choices { grid-template-columns: 1fr; }
+    .quality-settings > div:first-child { align-items: flex-start; flex-direction: column; gap: 4px; }
+    .quality-settings > div:first-child small { text-align: left; }
+    .settings-legal-links { grid-template-columns: 1fr; }
     main { padding: 88px 12px 28px; }
     .scene-hero { min-height: 140px; display: block; margin: 0 8px 24px; }
     .live-weather-hero { min-height: 0; display: grid; grid-template-columns: 1fr; gap: 24px; padding-top: 28px; }

@@ -9,24 +9,8 @@ const publicRoot = path.join(projectRoot, "public");
 const tabs = JSON.parse(await readFile(path.join(projectRoot, "src/tabsData.json"), "utf8"));
 const audioSources = JSON.parse(await readFile(path.join(projectRoot, "audio-sources.json"), "utf8"));
 const videoSources = JSON.parse(await readFile(path.join(projectRoot, "src/videoLoops.resolved.json"), "utf8"));
+const mediaVariants = JSON.parse(await readFile(path.join(projectRoot, "src/mediaVariants.json"), "utf8"));
 const sceneLibrarySource = await readFile(path.join(projectRoot, "src/sceneLibrary.js"), "utf8");
-const remoteFirstScenes = new Set([
-  "tab_foot_steps",
-  "tab_onsen",
-  "tab_cat_window",
-  "tab_library",
-  "tab_forest",
-  "tab_jungle",
-  "tab_beach_shore",
-  "tab_traffic",
-  "tab_elevator_music",
-  "tab_rainy_bedroom",
-  "tab_brown_noise",
-  "tab_space_observation",
-  "tab_night_drive",
-  "tab_city_apartment",
-  "tab_farm",
-]);
 
 function publicPath(urlPath) {
   return path.join(publicRoot, urlPath.replace(/^\/+/, ""));
@@ -60,6 +44,7 @@ test("every atmosphere exposes five to eight playable audio choices", async () =
       assert.ok(!/^https?:/i.test(source), `${scene.id}/${track.title} should use locally controlled audio`);
       uniqueFiles.add(source.replace(/^\/+/, ""));
       await access(publicPath(source));
+      await access(publicPath(source.replace(/^\/?assets\/audio\//, "assets/audio-low/")));
     }
   }
 
@@ -86,7 +71,7 @@ test("every atmosphere exposes its intended distinct video collection and a loca
 
   for (const scene of tabs) {
     const loops = videoSources[scene.id];
-    const renderedLoopCount = loops.length + (remoteFirstScenes.has(scene.id) ? 0 : 1);
+    const renderedLoopCount = loops.length;
     const expectedLoopCount = scene.id === "tab_night_drive"
       ? 13
       : ["tab_onsen", "tab_elevator_music"].includes(scene.id)
@@ -107,18 +92,17 @@ test("every atmosphere exposes its intended distinct video collection and a loca
         assert.match(loop.source, /^https:\/\/(?:commons\.wikimedia\.org\/wiki\/File:|www\.pexels\.com\/video\/)/);
         await access(publicPath(loop.high));
         await access(publicPath(loop.adaptive));
+        assert.match(mediaVariants.videoWebm[loop.high] || "", /^assets\/videos\/webm\/.+\.webm$/);
+        await access(publicPath(mediaVariants.videoWebm[loop.high]));
       }
     }
 
     const mediaName = scene.background.replace(/\.[^.]+$/, "");
     await access(path.join(publicRoot, "assets/videos/posters", `${mediaName}.jpg`));
-    if (!remoteFirstScenes.has(scene.id)) {
-      await access(path.join(publicRoot, "assets/videos", scene.background));
-      await access(path.join(publicRoot, "assets/videos/adaptive", `${mediaName}-720.mp4`));
-    }
   }
 
   assert.equal(loopCount, 123);
+  assert.match(sceneLibrarySource, /new Set\(tabsData\.map\(\(\{ id \}\) => id\)\)/);
 });
 
 test("audited atmosphere mappings reject known semantic mismatches", () => {
@@ -149,7 +133,7 @@ test("audited atmosphere mappings reject known semantic mismatches", () => {
   );
 
   for (const loop of videoSources.tab_snow) {
-    assert.match(loop.source, /snow/i);
+    assert.match(loop.source, /snow|winter/i);
   }
   assert.equal(videoSources.tab_onsen.filter(({ source }) => source.includes("commons.wikimedia.org")).length, 2);
   assert.equal(videoSources.tab_cat_window.filter(({ source }) => source.includes("Cat_body_language")).length, 1);
