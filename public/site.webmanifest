@@ -1,14 +1,16 @@
 {
   "name": "Atmosphere — Ambient Sounds",
   "short_name": "Atmosphere",
-  "description": "High-quality ambient soundscapes and cinematic nature videos for focus, sleep, study and relaxation.",
+  "description": "Mix 155 ambient tracks with 126 cinematic video loops and Live Weather for focus, sleep, study and relaxation.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
 	"lang": "en-US",
 	"dir": "ltr",
-	"categories": ["lifestyle", "productivity", "music"],
+  "categories": ["lifestyle", "productivity", "music"],
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "prefer_related_applications": false,
   "background_color": "#090b0d",
   "theme_color": "#0a0c0d",
   "icons": [
