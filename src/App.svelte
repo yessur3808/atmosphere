@@ -3,7 +3,7 @@
   import AmbientStatus from "./components/AmbientStatus.svelte";
   import Background from "./components/Background.svelte";
   import AtmosphereIcon from "./components/AtmosphereIcon.svelte";
-  import { destroyAnalytics, getAnalyticsStatus, initializeAnalytics, setAnalyticsConsent, trackEvent } from "./analytics";
+  import { checkpointAnalytics, destroyAnalytics, getAnalyticsStatus, initializeAnalytics, setAnalyticsConsent, trackEvent } from "./analytics";
   import {
     decodeMixSnapshot,
     encodeMixSnapshot,
@@ -66,6 +66,9 @@
   let smartMixEnabled = false;
   let smartMixTimer;
   let dataSaverMode = false;
+  let activeRecipeId = "";
+  let activeRecipeTitle = "";
+  let activeMixSource = "";
   let savedMixes = [];
   let recentMixes = [];
   let favoriteSceneIds = [];
@@ -219,11 +222,19 @@
     return {
       sceneId: activeScene?.id,
       sceneTitle: activeScene?.title,
+      sceneCategory: activeScene?.category,
       trackId: selectedAudios.map((index) => activeScene?.audioTracks[index]?.id).filter(Boolean).join(","),
+      trackType: selectedAudios.length > 1 ? "mixed" : activeTrack?.kind,
       activeSoundCount: selectedAudios.length,
       soundCategory: selectedSoundCategory || undefined,
+      recipeId: activeRecipeId || undefined,
+      recipeTitle: activeRecipeTitle || undefined,
+      mixSource: activeMixSource || undefined,
       videoId: activeVideo?.id,
       linkedPlayback,
+      dataSaverMode,
+      smartMixEnabled,
+      weatherMatchActive,
       immersiveMode,
       isAudioPlaying,
     };
@@ -409,8 +420,9 @@
     refreshSmartMixSchedule();
   }
 
-  async function fadeAndPauseAllAudio(duration = 260) {
+  async function fadeAndPauseAllAudio(duration = 260, checkpointReason = "playback_pause") {
     if (!isAudioPlaying) return pauseAllAudio();
+    checkpointAnalytics(checkpointReason);
     await fadeMasterTo(0, duration);
     pauseAllAudio();
   }
@@ -528,10 +540,13 @@
   async function selectScene(index, selectionSource = "library", resumeWithDefault = true) {
     const continuePlaying = isAudioPlaying;
     const previousScene = activeScene;
-    if (selectionSource !== "weather_match") weatherMatchActive = false;
-    if (continuePlaying) await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2);
+    if (continuePlaying) await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2, "atmosphere_change");
     else pauseAllAudio();
+    if (selectionSource !== "weather_match") weatherMatchActive = false;
     activeIndex = index;
+    activeRecipeId = "";
+    activeRecipeTitle = "";
+    activeMixSource = "";
     selectedAudio = 0;
     selectedAudios = [0];
     selectedVideo = 0;
@@ -548,6 +563,10 @@
       selected_scene_title: scenes[index].title,
       continued_playback: continuePlaying,
       selection_source: selectionSource,
+    });
+    trackEvent("select_content", {
+      content_type: "atmosphere",
+      content_id: scenes[index].id,
     });
     await tick();
     if (continuePlaying && resumeWithDefault) {
@@ -704,6 +723,10 @@
 
   async function selectTrack(index, replaceSelection = false) {
     const continuePlaying = isAudioPlaying;
+    if (continuePlaying) checkpointAnalytics("audio_layer_change");
+    activeRecipeId = "";
+    activeRecipeTitle = "";
+    activeMixSource = "";
     selectedAudio = index;
     audioError = "";
 
@@ -759,6 +782,10 @@
     if (Number.isInteger(recipe.sceneIndex) && recipe.sceneIndex >= 0 && recipe.sceneIndex !== activeIndex) {
       await selectScene(recipe.sceneIndex);
     }
+    if (isAudioPlaying) checkpointAnalytics("sound_recipe_change");
+    activeRecipeId = recipe.id;
+    activeRecipeTitle = recipe.title;
+    activeMixSource = "";
     multiSoundEnabled = true;
     selectedAudios = recipe.indices.filter((index) => activeScene.audioTracks[index]);
     selectedAudio = selectedAudios[0];
@@ -776,6 +803,10 @@
       recipe_title: recipe.title,
       recipe_track_ids: selectedAudios.map((index) => activeScene.audioTracks[index]?.id).filter(Boolean).join(","),
     });
+    trackEvent("select_content", {
+      content_type: "sound_recipe",
+      content_id: recipe.id,
+    });
     await playSelectedTracks(selectedAudios, "sound_recipe");
     mixEditorOpen = false;
     if (window.matchMedia("(max-width: 760px)").matches) toggleRecipes();
@@ -783,6 +814,10 @@
 
   async function removeSelectedLayer(index) {
     if (selectedAudios.length <= 1 || !selectedAudios.includes(index)) return;
+    if (isAudioPlaying) checkpointAnalytics("audio_layer_remove");
+    activeRecipeId = "";
+    activeRecipeTitle = "";
+    activeMixSource = "";
     const removedTrack = activeScene.audioTracks[index];
     selectedAudios = selectedAudios.filter((trackIndex) => trackIndex !== index);
     selectedAudio = selectedAudios[0];
@@ -795,6 +830,7 @@
   }
 
   function selectVideo(index) {
+    if (isAudioPlaying) checkpointAnalytics("video_loop_change");
     selectedVideo = index;
     isVideoPlaying = isAudioPlaying && !dataSaverMode;
     trackEvent("video_loop_select", {
@@ -859,6 +895,7 @@
   }
 
   function setSmartMixEnabled(enabled) {
+    if (isAudioPlaying) checkpointAnalytics("smart_mix_change");
     smartMixEnabled = enabled;
     if (enabled) {
       updateSmartMixTargets();
@@ -875,6 +912,7 @@
   }
 
   function setDataSaverMode(enabled) {
+    if (isAudioPlaying) checkpointAnalytics("data_saver_change");
     dataSaverMode = enabled;
     isVideoPlaying = isAudioPlaying && !enabled;
     backgroundComponent?.setAutoPictureInPicture(
@@ -999,11 +1037,14 @@
       return;
     }
     const continuePlaying = isAudioPlaying;
-    if (continuePlaying) await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2);
+    if (continuePlaying) await fadeAndPauseAllAudio(audioCrossfadeMilliseconds / 2, "mix_change");
     else pauseAllAudio();
 
     const sceneIndex = scenes.findIndex((scene) => scene.id === snapshot.sceneId);
     activeIndex = Math.max(0, sceneIndex);
+    activeRecipeId = "";
+    activeRecipeTitle = "";
+    activeMixSource = source;
     await tick();
     selectedAudios = snapshot.trackIds
       .map((trackId) => activeScene.audioTracks.findIndex((track) => track.id === trackId))
@@ -1071,6 +1112,11 @@
       showToast("Share link copied");
     }
     trackEvent("mix_share", { share_method: sharedWithSystem ? "system" : "clipboard", active_sound_count: selectedAudios.length });
+    trackEvent("share", {
+      method: sharedWithSystem ? "system" : "clipboard",
+      content_type: "ambient_mix",
+      item_id: snapshot.sceneId,
+    });
   }
 
   function setLibraryCategory(category) {
@@ -1113,6 +1159,12 @@
   }
 
   async function setMultiSoundEnabled(enabled) {
+    if (isAudioPlaying) checkpointAnalytics("multi_sound_change");
+    if (!enabled) {
+      activeRecipeId = "";
+      activeRecipeTitle = "";
+      activeMixSource = "";
+    }
     multiSoundEnabled = enabled;
     if (!enabled && selectedAudios.length > 1) {
       const keepIndex = selectedAudios.includes(selectedAudio) ? selectedAudio : selectedAudios[0];
@@ -1130,6 +1182,7 @@
   }
 
   function setLinkedPlayback(enabled) {
+    if (isAudioPlaying) checkpointAnalytics("playback_mode_change");
     linkedPlayback = enabled;
     if (enabled && isAudioPlaying) isVideoPlaying = !dataSaverMode;
     savePreferences();
@@ -1205,6 +1258,7 @@
   }
 
   function enterImmersiveMode() {
+    if (isAudioPlaying) checkpointAnalytics("quiet_view_enter");
     settingsOpen = false;
     unlockSettingsPageScroll();
     immersiveMode = true;
@@ -1212,6 +1266,7 @@
   }
 
   function exitImmersiveMode() {
+    if (isAudioPlaying) checkpointAnalytics("quiet_view_exit");
     immersiveMode = false;
     trackEvent("quiet_view_exit", { audio_playing: isAudioPlaying });
   }
