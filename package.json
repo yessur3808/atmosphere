@@ -47,7 +47,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
-    "sirv": "^2.0.4",
+    "sirv": "^3.0.2",
     "sirv-cli": "^2.0.0"
   }
 }
