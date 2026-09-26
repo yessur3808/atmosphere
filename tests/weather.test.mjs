@@ -3,7 +3,10 @@ import test from "node:test";
 import {
   buildCitySearchUrl,
   buildCurrentWeatherUrl,
+  cityNameSimilarity,
+  citySearchFallbackQuery,
   parseCitySearch,
+  parseCitySuggestions,
   parseCurrentWeather,
   roundedWeatherCoordinates,
   weatherAtmosphereProfile,
@@ -36,6 +39,7 @@ test("manual city lookup stays on Open-Meteo and returns rounded coordinates", (
   const url = new URL(buildCitySearchUrl("Hong Kong"));
   assert.equal(url.origin, "https://geocoding-api.open-meteo.com");
   assert.equal(url.searchParams.get("name"), "Hong Kong");
+  assert.equal(url.searchParams.get("count"), "8");
   assert.deepEqual(parseCitySearch({ results: [{ name: "Hong Kong", country: "Hong Kong", latitude: 22.3193, longitude: 114.1694 }] }), {
     latitude: 22.32,
     longitude: 114.17,
@@ -43,6 +47,22 @@ test("manual city lookup stays on Open-Meteo and returns rounded coordinates", (
   });
   assert.throws(() => buildCitySearchUrl(" "), RangeError);
   assert.throws(() => parseCitySearch({ results: [] }), TypeError);
+});
+
+test("manual city lookup ranks close spellings and preserves distinct location choices", () => {
+  assert.ok(cityNameSimilarity("Londno", "London") >= 0.6);
+  assert.equal(cityNameSimilarity("São Paulo", "Sao Paulo"), 1);
+  assert.equal(citySearchFallbackQuery("Londno, United Kingdom"), "lon");
+
+  const suggestions = parseCitySuggestions({ results: [
+    { id: 1, name: "London", admin1: "England", country: "United Kingdom", latitude: 51.5074, longitude: -0.1278, population: 8961989 },
+    { id: 2, name: "Londonderry", admin1: "Northern Ireland", country: "United Kingdom", latitude: 54.9972, longitude: -7.3092, population: 83652 },
+  ] }, "Londno");
+
+  assert.equal(suggestions[0].name, "London");
+  assert.equal(suggestions[0].label, "London, England, United Kingdom");
+  assert.ok(suggestions[0].similarity >= 0.6);
+  assert.equal(suggestions.length, 2);
 });
 
 test("current weather responses become concise display data", () => {

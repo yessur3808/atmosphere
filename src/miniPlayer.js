@@ -349,7 +349,7 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
     attachVideoListeners();
     updateMediaSession(state);
     if (attachedVideo && "autoPictureInPicture" in attachedVideo) {
-      attachedVideo.autoPictureInPicture = Boolean(state.isAudioPlaying && state.pipPreference === "automatic");
+      attachedVideo.autoPictureInPicture = Boolean(state.automaticEligible && state.isAudioPlaying && state.pipPreference === "automatic");
     }
     if (!floatingDocument || (mode !== "inline" && floatingWindow?.closed)) {
       if (mode !== "inline" && floatingWindow?.closed) handleFloatingWindowClosed();
@@ -505,6 +505,7 @@ export function createMiniPlayer({ getState, setPlaybackPlaying, setVolume, prev
   async function handleEnterPictureInPicture() {
     const state = getState();
     if (state.pipPreference === "off" || !state.isAudioPlaying || isOpen()) return;
+    if (state.pipPreference === "automatic" && !state.automaticEligible) return;
     await open({ automatic: state.pipPreference === "automatic" });
   }
 

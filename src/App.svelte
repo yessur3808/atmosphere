@@ -83,6 +83,10 @@
   let weatherFollowTime = true;
   let weatherCityQuery = "";
   let weatherCityBusy = false;
+  let weatherCitySuggestions = [];
+  let weatherCitySuggestionQuery = "";
+  let weatherCitySearchTimer;
+  let weatherCitySearchVersion = 0;
   let activeWeatherProfile;
   let saveMixOpen = false;
   let saveMixName = "";
@@ -204,9 +208,10 @@
     video: dataSaverMode ? undefined : backgroundComponent?.getVideoElement(),
     pipPreference,
     dataSaverMode,
+    automaticEligible: !settingsOpen && !saveMixOpen && !pipPromptVisible && !weatherCityBusy && !immersiveMode,
   };
   $: if (miniPlayerController && miniPlayerSnapshot) {
-    backgroundComponent?.setAutoPictureInPicture(!dataSaverMode && isAudioPlaying && pipPreference === "automatic");
+    backgroundComponent?.setAutoPictureInPicture(!dataSaverMode && isAudioPlaying && pipPreference === "automatic" && miniPlayerSnapshot.automaticEligible);
     miniPlayerController.sync(miniPlayerSnapshot);
   }
 
@@ -612,14 +617,61 @@
     ambientStatusComponent?.requestLocalWeather(true);
   }
 
+  function clearCitySuggestions() {
+    weatherCitySuggestions = [];
+    weatherCitySuggestionQuery = "";
+  }
+
+  function handleCityQueryInput() {
+    window.clearTimeout(weatherCitySearchTimer);
+    weatherCitySearchVersion += 1;
+    weatherCityBusy = false;
+    clearCitySuggestions();
+    const query = weatherCityQuery.trim();
+    if (query.length < 2) return;
+    weatherCitySearchTimer = window.setTimeout(() => loadCitySuggestions(query, false), 320);
+  }
+
+  async function loadCitySuggestions(query = weatherCityQuery, announce = false) {
+    const normalizedQuery = String(query || "").trim();
+    if (normalizedQuery.length < 2) {
+      if (announce) showToast("Enter at least two characters to find a city");
+      clearCitySuggestions();
+      return [];
+    }
+    const searchVersion = ++weatherCitySearchVersion;
+    weatherCityBusy = true;
+    const suggestions = await ambientStatusComponent?.searchCitySuggestions(normalizedQuery, announce) || [];
+    if (searchVersion !== weatherCitySearchVersion) return [];
+    weatherCityBusy = false;
+    if (weatherCityQuery.trim() === normalizedQuery) {
+      weatherCitySuggestions = suggestions;
+      weatherCitySuggestionQuery = normalizedQuery;
+    }
+    return suggestions;
+  }
+
   async function requestCityWeather() {
-    if (weatherCityBusy) return;
+    window.clearTimeout(weatherCitySearchTimer);
+    const suggestions = await loadCitySuggestions(weatherCityQuery, true);
+    const exactMatch = suggestions.find((suggestion) => suggestion.similarity >= 0.98);
+    if (exactMatch) await selectCitySuggestion(exactMatch);
+    else if (!suggestions.length) showToast("No close city matches found · add a country or region");
+  }
+
+  async function selectCitySuggestion(suggestion) {
+    window.clearTimeout(weatherCitySearchTimer);
+    weatherCitySearchVersion += 1;
     weatherMatchRequested = true;
     weatherCityBusy = true;
-    const matched = await ambientStatusComponent?.requestCityWeather(weatherCityQuery, true);
+    const matched = await ambientStatusComponent?.requestCityWeather(suggestion, true);
     weatherCityBusy = false;
-    if (matched) weatherCityQuery = "";
-    else weatherMatchRequested = false;
+    if (matched) {
+      weatherCityQuery = "";
+      clearCitySuggestions();
+    } else {
+      weatherMatchRequested = false;
+    }
   }
 
   async function setWeatherMode(nextMode) {
@@ -825,7 +877,9 @@
   function setDataSaverMode(enabled) {
     dataSaverMode = enabled;
     isVideoPlaying = isAudioPlaying && !enabled;
-    backgroundComponent?.setAutoPictureInPicture(!enabled && isAudioPlaying && pipPreference === "automatic");
+    backgroundComponent?.setAutoPictureInPicture(
+      !enabled && isAudioPlaying && pipPreference === "automatic" && !settingsOpen && !saveMixOpen && !pipPromptVisible && !weatherCityBusy && !immersiveMode,
+    );
     savePreferences();
     queuePersistSession();
     miniPlayerController?.sync(getMiniPlayerState());
@@ -1347,6 +1401,7 @@
     window.clearInterval(smartMixTimer);
     window.clearTimeout(toastTimer);
     window.clearTimeout(persistenceTimer);
+    window.clearTimeout(weatherCitySearchTimer);
     mediaSources.forEach((source) => source.disconnect());
     layerGainNodes.forEach((gainNode) => gainNode?.disconnect());
     masterGainNode?.disconnect();
@@ -1375,6 +1430,7 @@
     position={activeVideo.position}
     viewKey={activeVideo.id}
     disabled={dataSaverMode}
+    immersive={immersiveMode}
   />
   {#each activeScene.audioTracks as track, index (index)}
     <audio
@@ -1395,13 +1451,15 @@
       <img class="brand-icon" src={faviconHref} width="30" height="30" alt="" aria-hidden="true" decoding="async" />
       <span class="wordmark-copy"><span>ATMO</span><i></i><span>SPHERE</span></span>
     </a>
-    <AmbientStatus
-      bind:this={ambientStatusComponent}
-      immersive={immersiveMode}
-      on:notice={(event) => showToast(event.detail)}
-      on:weatherstate={handleWeatherState}
-      on:weather={handleWeatherUpdate}
-    />
+    <div class="ambient-status-slot">
+      <AmbientStatus
+        bind:this={ambientStatusComponent}
+        immersive={immersiveMode}
+        on:notice={(event) => showToast(event.detail)}
+        on:weatherstate={handleWeatherState}
+        on:weather={handleWeatherUpdate}
+      />
+    </div>
     {#if !immersiveMode}
       <div class="topbar-actions">
       {#if pipControlsAvailable}
@@ -1446,6 +1504,14 @@
         <span>Settings</span>
       </button>
       </div>
+    {:else}
+      <button class="immersive-exit" type="button" aria-label="Exit quiet view and return to controls" on:click={exitImmersiveMode}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 9H5V5M15 9h4V5M9 15H5v4M15 15h4v4" />
+          <path d="m9 9-4-4m10 4 4-4m-10 10-4 4m10-4 4 4" />
+        </svg>
+        <span>Exit quiet view</span>
+      </button>
     {/if}
     <p class="sr-only" aria-live="polite">{miniPlayerStatus}</p>
   </header>
@@ -1647,10 +1713,44 @@
                 </button>
                 <form class="weather-city-form" on:submit|preventDefault={requestCityWeather}>
                   <label for="weather-city-input">Use another city</label>
-                  <div>
-                    <input id="weather-city-input" bind:value={weatherCityQuery} type="search" minlength="2" autocomplete="address-level2" placeholder="City or region" />
-                    <button type="submit" disabled={weatherCityBusy || weatherCityQuery.trim().length < 2}>{weatherCityBusy ? "Finding…" : "Match"}</button>
+                  <div class="weather-city-entry">
+                    <input
+                      id="weather-city-input"
+                      bind:value={weatherCityQuery}
+                      type="search"
+                      minlength="2"
+                      autocomplete="off"
+                      spellcheck="false"
+                      placeholder="City or region"
+                      aria-controls="weather-city-suggestions"
+                      on:input={handleCityQueryInput}
+                    />
+                    <button class="weather-city-submit" type="submit" disabled={weatherCityQuery.trim().length < 2}>{weatherCityBusy ? "Finding…" : "Find"}</button>
                   </div>
+                  {#if weatherCitySuggestions.length}
+                    <div id="weather-city-suggestions" class="weather-city-suggestions" role="list" aria-label="Suggested cities">
+                      <p aria-live="polite">
+                        {#if weatherCitySuggestions[0].similarity >= 0.6 && weatherCitySuggestions[0].similarity < 0.98}
+                          Did you mean <strong>{weatherCitySuggestions[0].label}</strong>?
+                        {:else}
+                          Choose a location
+                        {/if}
+                      </p>
+                      {#each weatherCitySuggestions as suggestion (suggestion.id)}
+                        <div role="listitem">
+                          <button type="button" on:click={() => selectCitySuggestion(suggestion)}>
+                            <span>
+                              <strong>{suggestion.name}</strong>
+                              <small>{[suggestion.region, suggestion.country].filter(Boolean).join(", ") || "Open‑Meteo location"}</small>
+                            </span>
+                            <em>{suggestion.similarity >= 0.6 && suggestion.similarity < 0.98 ? `${Math.round(suggestion.similarity * 100)}% match` : "Use"}</em>
+                          </button>
+                        </div>
+                      {/each}
+                    </div>
+                  {:else if weatherCitySuggestionQuery && !weatherCityBusy}
+                    <p class="weather-city-empty" aria-live="polite">No close matches. Try adding a country or region.</p>
+                  {/if}
                   <small>The search term and rounded coordinates go only to Open‑Meteo and are not saved.</small>
                 </form>
                 <button class="settings-action secondary" type="button" on:click={requestLiveWeather}>Use this device’s location</button>
@@ -1755,7 +1855,6 @@
 
   {#if immersiveMode}
     <div class:playing={isAudioPlaying} class="immersive-visualizer" role="img" aria-label={isAudioPlaying ? `Live audio level for ${mixTitle}` : `${mixTitle} is paused`}>
-      <div class="immersive-glow"></div>
       <div class="immersive-bars">
         {#each visualLevels as level}
           <i style={`height: ${Math.max(7, level * 1.8)}px; opacity: ${isAudioPlaying ? 0.7 + level / 120 : 0.34}`}></i>
@@ -2223,6 +2322,7 @@
 
   .topbar.immersive {
     right: 0;
+    display: block;
     padding: 22px clamp(18px, 3.5vw, 52px);
     border: 0;
     background: transparent;
@@ -2232,7 +2332,35 @@
   }
 
   .topbar.immersive .wordmark-copy { display: none; }
-  .topbar.immersive .brand-icon { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 8px 28px rgba(0, 0, 0, 0.32), 0 0 28px rgba(var(--accent-rgb), 0.18); }
+  .topbar.immersive .brand-icon { box-shadow: none; filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px rgba(var(--accent-rgb), 0.16)); }
+  .ambient-status-slot { display: flex; }
+  .topbar.immersive .ambient-status-slot { position: absolute; top: 22px; right: clamp(18px, 3.5vw, 52px); }
+
+  .immersive-exit {
+    position: fixed;
+    right: clamp(18px, 3.5vw, 52px);
+    bottom: clamp(18px, 3.5vw, 42px);
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.92);
+    background: rgba(7, 10, 12, 0.34);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(8px) saturate(120%);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    cursor: pointer;
+    font-size: 0.68rem;
+    font-weight: 620;
+    letter-spacing: 0.015em;
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms ease, background 180ms ease;
+  }
+  .immersive-exit:hover { transform: translateY(-2px); border-color: rgba(var(--accent-rgb), 0.62); background: rgba(8, 11, 13, 0.52); }
+  .immersive-exit:active { transform: scale(0.97); }
+  .immersive-exit svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
 
   .topbar-actions {
     display: flex;
@@ -3470,11 +3598,22 @@
   .weather-strength-control button.active { color: #121416; border-color: transparent; background: rgba(var(--accent-rgb), 0.92); }
   .weather-city-form { display: grid; gap: 8px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 18px; background: rgba(18, 21, 23, 0.46); }
   .weather-city-form > label { color: rgba(255, 255, 255, 0.75); font-size: 0.74rem; font-weight: 560; }
-  .weather-city-form > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+  .weather-city-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
   .weather-city-form input { min-width: 0; min-height: 42px; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 13px; outline: 0; color: #fff; background: rgba(8, 11, 13, 0.48); font: inherit; font-size: 0.72rem; }
   .weather-city-form input:focus { border-color: rgba(var(--accent-rgb), 0.46); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.07); }
-  .weather-city-form button { min-width: 88px; padding: 9px 14px; border: 0; border-radius: 13px; color: #111315; background: rgba(var(--accent-rgb), 0.94); cursor: pointer; font-size: 0.67rem; font-weight: 640; }
-  .weather-city-form button:disabled { opacity: 0.42; cursor: not-allowed; }
+  .weather-city-submit { min-width: 88px; padding: 9px 14px; border: 0; border-radius: 13px; color: #111315; background: rgba(var(--accent-rgb), 0.94); cursor: pointer; font-size: 0.67rem; font-weight: 640; }
+  .weather-city-submit:disabled { opacity: 0.42; cursor: not-allowed; }
+  .weather-city-suggestions { display: grid; gap: 3px; overflow: hidden; padding: 6px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 15px; background: rgba(7, 10, 12, 0.54); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045); }
+  .weather-city-suggestions > p { margin: 0; padding: 7px 8px 5px; color: rgba(255, 255, 255, 0.48); font-size: 0.61rem; }
+  .weather-city-suggestions > p strong { color: rgba(var(--accent-rgb), 0.92); font-weight: 620; }
+  .weather-city-suggestions > div > button { width: 100%; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 9px 10px; border: 0; border-radius: 11px; color: rgba(255, 255, 255, 0.84); background: transparent; cursor: pointer; text-align: left; transition: color 160ms ease, background 160ms ease; }
+  .weather-city-suggestions > div > button:hover,
+  .weather-city-suggestions > div > button:focus-visible { color: #fff; outline: 0; background: rgba(var(--accent-rgb), 0.09); }
+  .weather-city-suggestions > div > button span { min-width: 0; display: grid; gap: 2px; }
+  .weather-city-suggestions > div > button strong { overflow: hidden; font-size: 0.7rem; font-weight: 570; text-overflow: ellipsis; white-space: nowrap; }
+  .weather-city-suggestions > div > button small { overflow: hidden; color: rgba(255, 255, 255, 0.38); font-size: 0.58rem; text-overflow: ellipsis; white-space: nowrap; }
+  .weather-city-suggestions > div > button em { flex: 0 0 auto; color: rgba(var(--accent-rgb), 0.76); font-size: 0.54rem; font-style: normal; }
+  .weather-city-empty { margin: 0; padding: 2px 3px; color: rgba(255, 255, 255, 0.43); font-size: 0.61rem; }
   .weather-city-form > small { color: rgba(255, 255, 255, 0.36); font-size: 0.61rem; line-height: 1.45; }
 
   .privacy-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
@@ -3768,25 +3907,18 @@
     z-index: 4;
     top: 50%;
     left: 50%;
-    width: clamp(132px, 15vw, 190px);
-    aspect-ratio: 1;
+    width: clamp(150px, 18vw, 230px);
+    height: 76px;
     display: grid;
     place-items: center;
+    pointer-events: none;
     transform: translate(-50%, -50%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(16, 19, 21, 0.26), rgba(10, 12, 14, 0.08) 66%, transparent 69%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 70px rgba(var(--accent-rgb), 0.08);
-    backdrop-filter: blur(7px);
-    -webkit-backdrop-filter: blur(7px);
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.42)) drop-shadow(0 0 18px rgba(var(--accent-rgb), 0.2));
     animation: immersive-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-  @keyframes immersive-in { from { opacity: 0; transform: translate(-50%, -46%) scale(0.88); filter: blur(10px); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: none; } }
-  .immersive-glow { position: absolute; inset: 24%; border-radius: 50%; background: rgba(var(--accent-rgb), 0.16); filter: blur(22px); transition: opacity 300ms ease, transform 300ms ease; }
-  .immersive-visualizer.playing .immersive-glow { opacity: 0.85; transform: scale(1.25); animation: immersive-pulse 4s ease-in-out infinite; }
-  @keyframes immersive-pulse { 50% { transform: scale(1.55); opacity: 0.58; } }
+  @keyframes immersive-in { from { opacity: 0; transform: translate(-50%, -46%) scale(0.88); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
   .immersive-bars { position: relative; height: 68px; }
-  .immersive-bars i { width: 4px; min-height: 7px; border-radius: 999px; background: linear-gradient(to top, rgba(255, 255, 255, 0.48), var(--accent)); box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.2); transition: height 70ms linear, opacity 140ms ease; }
+  .immersive-bars i { width: 3px; min-height: 7px; border-radius: 999px; background: linear-gradient(to top, rgba(255, 255, 255, 0.54), var(--accent)); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.28); transition: height 70ms linear, opacity 140ms ease; }
 
   @media (min-width: 1121px) {
     .library-panel {
@@ -3808,6 +3940,8 @@
 
   @media (max-width: 760px) {
     .topbar { padding: 18px 16px; }
+    .topbar.immersive .ambient-status-slot { top: 68px; right: 16px; }
+    .immersive-exit { right: 16px; bottom: 16px; }
     .wordmark-copy { display: none; }
     .video-toggle span,
     .pip-toggle span,

@@ -12,6 +12,7 @@
   export let position = "50% 50%";
   export let viewKey = "";
   export let disabled = false;
+  export let immersive = false;
 
   const dispatch = createEventDispatcher();
   const slots = [0, 1];
@@ -181,6 +182,7 @@
   class:loading
   class:failed
   class:audio-only={disabled}
+  class:immersive
   class="backdrop"
   aria-hidden="true"
   style={`--video-scale: ${scale}; --video-position: ${position}; --poster: url('${posterSource}')`}
@@ -278,6 +280,19 @@
     pointer-events: none;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
     mix-blend-mode: soft-light;
+  }
+
+  .backdrop.immersive video,
+  .backdrop.immersive .poster,
+  .backdrop.immersive.failed .poster,
+  .backdrop.immersive.audio-only .poster {
+    filter: none;
+  }
+
+  .backdrop.immersive .wash,
+  .backdrop.immersive .grain {
+    opacity: 0;
+    visibility: hidden;
   }
 
   @media (max-width: 600px) {

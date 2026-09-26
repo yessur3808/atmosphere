@@ -4,7 +4,8 @@
   import {
     buildCitySearchUrl,
     buildCurrentWeatherUrl,
-    parseCitySearch,
+    citySearchFallbackQuery,
+    parseCitySuggestions,
     parseCurrentWeather,
     roundedWeatherCoordinates,
   } from "../weather.mjs";
@@ -136,41 +137,74 @@
     );
   }
 
-  export async function requestCityWeather(query, userInitiated = true) {
+  async function fetchCitySuggestionPayload(query, signal) {
+    const response = await fetch(buildCitySearchUrl(query), {
+      signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`Location search failed with ${response.status}`);
+    return response.json();
+  }
+
+  export async function searchCitySuggestions(query, userInitiated = false) {
     const normalizedQuery = String(query || "").trim();
     if (normalizedQuery.length < 2) {
-      dispatch("notice", "Enter a city or region to match its weather.");
-      return false;
+      if (userInitiated) dispatch("notice", "Enter a city or region to match its weather.");
+      return [];
     }
 
-    setWeatherState("loading");
     cityAbortController?.abort();
-    cityAbortController = new AbortController();
-    const abortTimer = window.setTimeout(() => cityAbortController?.abort(), 9000);
+    const searchController = new AbortController();
+    cityAbortController = searchController;
+    const abortTimer = window.setTimeout(() => searchController.abort(), 9000);
     if (userInitiated) trackEvent("weather_city_search", { query_length: normalizedQuery.length });
 
     try {
-      const response = await fetch(buildCitySearchUrl(normalizedQuery), {
-        signal: cityAbortController.signal,
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) throw new Error(`Location search failed with ${response.status}`);
-      const result = parseCitySearch(await response.json());
-      roundedPosition = { latitude: result.latitude, longitude: result.longitude };
-      locationLabel = result.label;
-      usingManualLocation = true;
-      await loadWeather(roundedPosition, userInitiated);
-      return weatherState === "ready";
+      const payload = await fetchCitySuggestionPayload(normalizedQuery, searchController.signal);
+      const directSuggestions = parseCitySuggestions(payload, normalizedQuery);
+      if (directSuggestions.some((suggestion) => suggestion.similarity >= 0.6)) return directSuggestions;
+
+      // Open-Meteo uses prefix matching rather than typo correction. A short
+      // prefix retry gives us candidates that can then be ranked locally.
+      const fallbackQuery = citySearchFallbackQuery(normalizedQuery);
+      if (!fallbackQuery || fallbackQuery.toLowerCase() === normalizedQuery.toLowerCase()) return directSuggestions;
+      const fallbackPayload = await fetchCitySuggestionPayload(fallbackQuery, searchController.signal);
+      const fuzzySuggestions = parseCitySuggestions(fallbackPayload, normalizedQuery)
+        .filter((suggestion) => suggestion.similarity >= 0.6);
+      const directKeys = new Set(directSuggestions.map((suggestion) => suggestion.id));
+      return [...directSuggestions, ...fuzzySuggestions.filter((suggestion) => !directKeys.has(suggestion.id))]
+        .sort((left, right) => right.similarity - left.similarity || right.population - left.population)
+        .slice(0, 6);
     } catch (error) {
       if (!destroyed) {
-        setWeatherState("unavailable");
-        dispatch("notice", error?.name === "AbortError" ? "The city search timed out. Try again." : "That location could not be found.");
-        trackEvent("weather_unavailable", { failure_stage: error?.name === "AbortError" ? "city_timeout" : "city_search" });
+        if (userInitiated) {
+          dispatch("notice", error?.name === "AbortError" ? "The city search timed out. Try again." : "That location could not be found.");
+          trackEvent("weather_unavailable", { failure_stage: error?.name === "AbortError" ? "city_timeout" : "city_search" });
+        }
       }
-      return false;
+      return [];
     } finally {
       window.clearTimeout(abortTimer);
     }
+  }
+
+  export async function requestCityWeather(location, userInitiated = true) {
+    let selectedLocation = location;
+    if (typeof selectedLocation === "string") {
+      const suggestions = await searchCitySuggestions(selectedLocation, userInitiated);
+      selectedLocation = suggestions[0];
+    }
+    if (!selectedLocation || !Number.isFinite(Number(selectedLocation.latitude)) || !Number.isFinite(Number(selectedLocation.longitude))) {
+      if (userInitiated) dispatch("notice", "Choose one of the suggested locations to match its weather.");
+      return false;
+    }
+
+    roundedPosition = roundedWeatherCoordinates(selectedLocation.latitude, selectedLocation.longitude);
+    locationLabel = selectedLocation.label || selectedLocation.name || "Selected location";
+    usingManualLocation = true;
+    if (userInitiated) trackEvent("weather_city_select", { suggestion_similarity: selectedLocation.similarity ?? 1 });
+    await loadWeather(roundedPosition, userInitiated);
+    return weatherState === "ready";
   }
 
   function handlePermissionChange() {
@@ -277,7 +311,8 @@
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.44);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.92), 0 4px 22px rgba(0, 0, 0, 0.72);
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.34));
     animation: status-settle 600ms 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 

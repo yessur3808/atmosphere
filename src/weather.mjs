@@ -49,8 +49,79 @@ export function buildCitySearchUrl(query) {
   const normalizedQuery = String(query || "").trim();
   if (normalizedQuery.length < 2) throw new RangeError("Enter at least two characters");
   const url = new URL(geocodingEndpoint);
-  url.search = new URLSearchParams({ name: normalizedQuery, count: "1", language: "en", format: "json" }).toString();
+  url.search = new URLSearchParams({ name: normalizedQuery, count: "8", language: "en", format: "json" }).toString();
   return url.toString();
+}
+
+export function normalizeCityName(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function editDistance(left, right) {
+  if (!left.length) return right.length;
+  if (!right.length) return left.length;
+  let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const substitutionCost = left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1;
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] + substitutionCost,
+      );
+    }
+    previous = current;
+  }
+  return previous[right.length];
+}
+
+export function cityNameSimilarity(query, cityName) {
+  const normalizedQuery = normalizeCityName(String(query || "").split(",")[0]);
+  const normalizedCity = normalizeCityName(cityName);
+  if (!normalizedQuery || !normalizedCity) return 0;
+  const longestLength = Math.max(normalizedQuery.length, normalizedCity.length);
+  return Math.round((1 - editDistance(normalizedQuery, normalizedCity) / longestLength) * 100) / 100;
+}
+
+export function citySearchFallbackQuery(query) {
+  const cityPart = normalizeCityName(String(query || "").split(",")[0]);
+  const firstWord = cityPart.split(" ")[0] || "";
+  return firstWord.length > 3 ? firstWord.slice(0, 3) : "";
+}
+
+export function parseCitySuggestions(payload, query) {
+  const seen = new Set();
+  return (Array.isArray(payload?.results) ? payload.results : [])
+    .map((result) => {
+      const coordinates = roundedWeatherCoordinates(result.latitude, result.longitude);
+      const region = result.admin1 && result.admin1 !== result.name ? result.admin1 : "";
+      const country = result.country && result.country !== region ? result.country : "";
+      const label = [result.name, region, country].filter(Boolean).join(", ");
+      return {
+        ...coordinates,
+        id: String(result.id || `${result.name}-${coordinates.latitude}-${coordinates.longitude}`),
+        name: result.name,
+        region,
+        country,
+        label,
+        similarity: cityNameSimilarity(query, result.name),
+        population: Number(result.population) || 0,
+      };
+    })
+    .filter((result) => {
+      const key = `${result.name}|${result.region}|${result.country}|${result.latitude}|${result.longitude}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => right.similarity - left.similarity || right.population - left.population)
+    .slice(0, 6);
 }
 
 export function parseCitySearch(payload) {

@@ -62,6 +62,12 @@ test("automatic PiP waits until the browser reports that the playing tab lost fo
   assert.doesNotMatch(miniPlayerSource, /addEventListener\("visibilitychange"/);
 });
 
+test("settings and city lookup suspend automatic PiP instead of treating modal focus as leaving", () => {
+  assert.match(appSource, /automaticEligible: !settingsOpen && !saveMixOpen && !pipPromptVisible && !weatherCityBusy && !immersiveMode/);
+  assert.match(miniPlayerSource, /state\.automaticEligible && state\.isAudioPlaying && state\.pipPreference === "automatic"/);
+  assert.match(miniPlayerSource, /state\.pipPreference === "automatic" && !state\.automaticEligible/);
+});
+
 test("high-density phones and tablets receive full-quality video unless the network is constrained", () => {
   assert.match(backgroundSource, /useAdaptive = forceAdaptive \|\| constrainedNetwork;/);
   assert.doesNotMatch(backgroundSource, /matchMedia\("\(max-width: 720px\)"\)/);
@@ -132,6 +138,22 @@ test("Live Weather is a first-class, privacy-conscious adaptive atmosphere", () 
   assert.match(appSource, /Use another city/);
   assert.match(appSource, /bind:this=\{ambientStatusComponent\}/);
   assert.doesNotMatch(appSource, /weather_(?:match|mode|strength)[^\n]*locationLabel/);
+});
+
+test("city weather search offers typo-aware choices before changing the atmosphere", () => {
+  assert.match(appSource, /searchCitySuggestions/);
+  assert.match(appSource, /Did you mean/);
+  assert.match(appSource, /suggestion\.similarity >= 0\.6/);
+  assert.match(appSource, /selectCitySuggestion/);
+});
+
+test("quiet view exposes a clear exit and removes decorative video and visualizer overlays", () => {
+  assert.match(appSource, /class="immersive-exit"/);
+  assert.match(appSource, />Exit quiet view</);
+  assert.doesNotMatch(appSource, /class="immersive-glow"/);
+  assert.match(backgroundSource, /export let immersive = false/);
+  assert.match(backgroundSource, /\.backdrop\.immersive \.wash/);
+  assert.match(backgroundSource, /\.backdrop\.immersive \.grain/);
 });
 
 test("City Sounds exposes Traffic as a searchable sound subcategory", () => {
