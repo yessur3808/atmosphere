@@ -36,6 +36,30 @@ npm run build
 npm start -- --port 4173
 ```
 
+## Cloudflare Pages
+
+Atmosphere includes a Cloudflare Pages build that keeps every deployed file below
+Cloudflare's 25 MiB asset limit. The application shell is deployed to Pages while
+the audited media library continues to stream from the existing public HTTPS
+origin. This also keeps Pages builds fast; the media redirect can later be moved
+to an R2 custom domain without changing application routes.
+
+Use these Cloudflare build settings:
+
+- Build command: `npm run cloudflare:build`
+- Build output directory: `.cloudflare-pages`
+- Node.js version: `22`
+- Production branch: `main`
+- Environment variable: `CLOUDFLARE_SITE_URL=https://your-domain.example/`
+
+For a preview build, omit `CLOUDFLARE_SITE_URL` and the generated metadata uses
+`https://atmosphere-soundscapes.pages.dev/`.
+
+```sh
+npm ci
+CLOUDFLARE_SITE_URL=https://your-domain.example/ npm run cloudflare:build
+```
+
 ## Desktop development
 
 Install the platform prerequisites listed by Tauri, then run:
