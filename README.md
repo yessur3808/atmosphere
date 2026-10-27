@@ -4,9 +4,9 @@ Atmosphere is an ambient sound and cinematic video player for focus, reading, re
 
 ## Use Atmosphere
 
-- [Launch the web app](https://yessur3808.github.io/atmosphere/)
+- [Launch the web app](https://youratmosphere.app/)
 - [Download Atmosphere desktop v1.0.0](https://github.com/yessur3808/atmosphere/releases/tag/desktop-v1.0.0)
-- [Desktop installation guide](https://yessur3808.github.io/atmosphere/install.html)
+- [Desktop installation guide](https://youratmosphere.app/install.html)
 - [Report a problem](https://github.com/yessur3808/atmosphere/issues)
 
 Desktop installers are generated from tagged commits by GitHub Actions. Read [INSTALL.md](INSTALL.md) before installing an unsigned preview build.
@@ -50,14 +50,14 @@ Use these Cloudflare build settings:
 - Build output directory: `.cloudflare-pages`
 - Node.js version: `22`
 - Production branch: `main`
-- Environment variable: `CLOUDFLARE_SITE_URL=https://your-domain.example/`
+- Environment variable: `CLOUDFLARE_SITE_URL=https://youratmosphere.app/`
 
 For a preview build, omit `CLOUDFLARE_SITE_URL` and the generated metadata uses
 `https://atmosphere-soundscapes.pages.dev/`.
 
 ```sh
 npm ci
-CLOUDFLARE_SITE_URL=https://your-domain.example/ npm run cloudflare:build
+CLOUDFLARE_SITE_URL=https://youratmosphere.app/ npm run cloudflare:build
 ```
 
 ## Desktop development
@@ -88,7 +88,7 @@ The repository also runs CodeQL, dependency review, npm and Rust vulnerability a
 - [Accessibility statement](ACCESSIBILITY.md)
 - [Software license](LICENSE)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)
-- [Audio credits](https://yessur3808.github.io/atmosphere/audio-credits.html)
-- [Video credits](https://yessur3808.github.io/atmosphere/video-credits.html)
+- [Audio credits](https://youratmosphere.app/audio-credits.html)
+- [Video credits](https://youratmosphere.app/video-credits.html)
 
 Atmosphere's original source code and brand assets are source-available and all rights reserved unless a file says otherwise. Third-party software and media remain under their respective licenses.
