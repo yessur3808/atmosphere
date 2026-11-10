@@ -7,6 +7,8 @@ const publicRoot = path.join(projectRoot, "public");
 const outputRoot = path.join(projectRoot, ".cloudflare-pages");
 const currentPublicRoot = "https://yessur3808.github.io/atmosphere/";
 const defaultCloudflareRoot = "https://atmosphere-soundscapes.pages.dev/";
+const cloudflareWebAnalyticsToken = "c219499324d44a1eaae6d0a689627ddb";
+const cloudflareWebAnalyticsSnippet = `<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${cloudflareWebAnalyticsToken}"}'></script><!-- End Cloudflare Web Analytics -->`;
 
 function normalizedSiteRoot(value) {
   const url = new URL(value || defaultCloudflareRoot);
@@ -37,9 +39,14 @@ await cp(publicRoot, outputRoot, {
 
 const textExtensions = new Set([".html", ".xml", ".txt", ".webmanifest"]);
 for (const filePath of await walk(outputRoot)) {
-  if (!textExtensions.has(path.extname(filePath))) continue;
+  const extension = path.extname(filePath);
+  if (!textExtensions.has(extension)) continue;
   const source = await readFile(filePath, "utf8");
-  const updated = source.replaceAll(currentPublicRoot, siteRoot);
+  let updated = source.replaceAll(currentPublicRoot, siteRoot);
+  if (extension === ".html" && !updated.includes("static.cloudflareinsights.com/beacon.min.js")) {
+    if (!updated.includes("</head>")) throw new Error(`${path.relative(outputRoot, filePath)} is missing </head>`);
+    updated = updated.replace("</head>", `  ${cloudflareWebAnalyticsSnippet}\n</head>`);
+  }
   if (updated !== source) await writeFile(filePath, updated);
 }
 

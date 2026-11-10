@@ -22,7 +22,7 @@ The ID is intentionally kept in one meta tag. A GA4 Measurement ID is public con
 
 ## Privacy-first reach baseline
 
-The production Cloudflare zone also has **Cloudflare Web Analytics** enabled with automatic installation. It supplies aggregate page-view, visit, referrer and real-user performance reporting without adding a Cloudflare analytics cookie. The current Cloudflare rule uses its reduced-data mode, which excludes beacon collection for visitors in the EU.
+The production Cloudflare build inserts the public **Cloudflare Web Analytics** site token into HTML pages. It supplies aggregate page-view, visit, referrer and real-user performance reporting without adding a Cloudflare analytics cookie. The token is public configuration, while Cloudflare account access remains private.
 
 Cloudflare Web Analytics and GA4 answer different questions:
 

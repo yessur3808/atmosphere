@@ -76,7 +76,10 @@ const [index, discoveryPage, sitemap, robots, redirects] = await Promise.all([
 ]);
 
 assert.match(index, new RegExp(`<link\\s+rel="canonical"\\s+href="${siteRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+assert.ok(index.includes("static.cloudflareinsights.com/beacon.min.js"), "homepage is missing the Cloudflare Web Analytics beacon");
+assert.ok(index.includes("c219499324d44a1eaae6d0a689627ddb"), "homepage uses the wrong Cloudflare Web Analytics token");
 assert.ok(discoveryPage.includes(`${siteRoot}rain-sounds.html`), "discovery canonical does not use the Cloudflare production origin");
+assert.ok(discoveryPage.includes("static.cloudflareinsights.com/beacon.min.js"), "discovery page is missing the Cloudflare Web Analytics beacon");
 assert.ok(sitemap.includes(`<loc>${siteRoot}</loc>`), "sitemap does not use the Cloudflare production origin");
 for (const file of discoveryGuideFiles) assert.ok(sitemap.includes(`<loc>${siteRoot}${file}</loc>`), `sitemap is missing ${file}`);
 assert.ok(robots.includes(`${siteRoot}sitemap.xml`), "robots.txt does not advertise the Cloudflare sitemap");

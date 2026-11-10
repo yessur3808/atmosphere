@@ -16,7 +16,7 @@ Browser or WebView local storage keeps consent, settings, saved and recent mixes
 
 ### Cookie-free website measurement
 
-Cloudflare Web Analytics is enabled on the production website to provide aggregate page, referrer, visit and real-user performance information without a Cloudflare analytics cookie. Cloudflare states that Web Analytics does not collect or use visitors' personal data. The current reduced-data rule excludes its beacon for visitors in the EU. Cloudflare edge security and delivery logs are separate from Web Analytics and can include request IP addresses under Cloudflare's terms.
+Cloudflare Web Analytics is enabled on the production website to provide aggregate page, referrer, visit and real-user performance information without a Cloudflare analytics cookie. Cloudflare states that Web Analytics does not collect or use visitors' personal data. Cloudflare edge security and delivery logs are separate from Web Analytics and can include request IP addresses under Cloudflare's terms.
 
 ### Optional analytics
 
