@@ -44,6 +44,7 @@ const requiredFiles = [
   "discover.css",
   "llms.txt",
   "global.css",
+  "cloudflare-web-analytics-loader.js",
   "site.webmanifest",
   "robots.txt",
   "sitemap.xml",
@@ -67,19 +68,22 @@ for (const filePath of files) {
 }
 
 const siteRoot = normalizedSiteRoot(process.env.CLOUDFLARE_SITE_URL);
-const [index, discoveryPage, sitemap, robots, redirects] = await Promise.all([
+const [index, discoveryPage, analyticsLoader, sitemap, robots, redirects] = await Promise.all([
   readFile(path.join(outputRoot, "index.html"), "utf8"),
   readFile(path.join(outputRoot, discoveryGuideFiles[0]), "utf8"),
+  readFile(path.join(outputRoot, "cloudflare-web-analytics-loader.js"), "utf8"),
   readFile(path.join(outputRoot, "sitemap.xml"), "utf8"),
   readFile(path.join(outputRoot, "robots.txt"), "utf8"),
   readFile(path.join(outputRoot, "_redirects"), "utf8"),
 ]);
 
 assert.match(index, new RegExp(`<link\\s+rel="canonical"\\s+href="${siteRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
-assert.ok(index.includes("static.cloudflareinsights.com/beacon.min.js"), "homepage is missing the Cloudflare Web Analytics beacon");
-assert.ok(index.includes("c219499324d44a1eaae6d0a689627ddb"), "homepage uses the wrong Cloudflare Web Analytics token");
+assert.ok(index.includes("cloudflare-web-analytics-loader.js"), "homepage is missing the regional Cloudflare Web Analytics loader");
 assert.ok(discoveryPage.includes(`${siteRoot}rain-sounds.html`), "discovery canonical does not use the Cloudflare production origin");
-assert.ok(discoveryPage.includes("static.cloudflareinsights.com/beacon.min.js"), "discovery page is missing the Cloudflare Web Analytics beacon");
+assert.ok(discoveryPage.includes("cloudflare-web-analytics-loader.js"), "discovery page is missing the regional Cloudflare Web Analytics loader");
+assert.ok(analyticsLoader.includes("/cdn-cgi/trace"), "analytics loader is missing its regional privacy gate");
+assert.ok(analyticsLoader.includes("c219499324d44a1eaae6d0a689627ddb"), "analytics loader uses the wrong Cloudflare Web Analytics token");
+assert.match(analyticsLoader, /if \(!country \|\| excludedRegions\.has\(country\)/, "analytics loader must fail closed in excluded regions");
 assert.ok(sitemap.includes(`<loc>${siteRoot}</loc>`), "sitemap does not use the Cloudflare production origin");
 for (const file of discoveryGuideFiles) assert.ok(sitemap.includes(`<loc>${siteRoot}${file}</loc>`), `sitemap is missing ${file}`);
 assert.ok(robots.includes(`${siteRoot}sitemap.xml`), "robots.txt does not advertise the Cloudflare sitemap");

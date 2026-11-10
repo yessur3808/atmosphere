@@ -48,7 +48,7 @@ test("Cloudflare production preparation retains every discovery page", async () 
   assert.match(prepare, /\.html/);
   assert.match(verify, /discover\.html/);
   assert.match(verify, /discoveryGuideFiles/);
-  assert.match(prepare, /static\.cloudflareinsights\.com\/beacon\.min\.js/);
-  assert.match(verify, /Cloudflare Web Analytics beacon/);
-  assert.match(prepare, /c219499324d44a1eaae6d0a689627ddb/);
+  assert.match(prepare, /cloudflare-web-analytics-loader\.js/);
+  assert.match(verify, /regional Cloudflare Web Analytics loader/);
+  assert.match(verify, /c219499324d44a1eaae6d0a689627ddb/);
 });
