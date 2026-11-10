@@ -60,6 +60,17 @@ npm ci
 CLOUDFLARE_SITE_URL=https://youratmosphere.app/ npm run cloudflare:build
 ```
 
+## Search discovery
+
+Atmosphere publishes a static discovery hub and ten intent-focused sound guides alongside the interactive player. They provide crawlable content, unique metadata, structured data, internal links, and direct scene deep links without loading audio or video automatically.
+
+```sh
+npm run seo:generate  # rebuild committed discovery pages
+npm run seo:check     # fail when generated pages are stale
+```
+
+The Cloudflare build rewrites canonical, sitemap, social-image, and structured-data URLs to `CLOUDFLARE_SITE_URL`. See `docs/SEARCH_CONSOLE.md` for the one-time Domain property and sitemap submission checklist.
+
 ## Desktop development
 
 Install the platform prerequisites listed by Tauri, then run:

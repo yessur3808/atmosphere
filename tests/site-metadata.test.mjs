@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { discoveryGuides } from "../src/discoveryGuides.mjs";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const read = (file) => readFile(path.join(projectRoot, file), "utf8");
@@ -10,6 +11,8 @@ const publicBase = "https://yessur3808.github.io/atmosphere/";
 const socialImage = `${publicBase}assets/videos/posters/space-observation.jpg`;
 const indexedPages = [
   { file: "index.html", route: "" },
+  { file: "discover.html", route: "discover.html" },
+  ...discoveryGuides.map(({ slug, poster }) => ({ file: `${slug}.html`, route: `${slug}.html`, image: `${publicBase}assets/videos/posters/${poster}.jpg` })),
   { file: "install.html", route: "install.html" },
   { file: "legal.html", route: "legal.html" },
   { file: "privacy.html", route: "privacy.html" },
@@ -39,9 +42,10 @@ test("every indexed page exposes complete, consistent search and social metadata
   const sitemap = await read("public/sitemap.xml");
   const robots = await read("public/robots.txt");
   const pages = await Promise.all(
-    indexedPages.map(async ({ file, route }) => ({
+    indexedPages.map(async ({ file, route, image }) => ({
       file,
       route,
+      image,
       html: await read(`public/${file}`),
     })),
   );
@@ -52,8 +56,9 @@ test("every indexed page exposes complete, consistent search and social metadata
   assert.doesNotMatch(sitemap, /<priority>|<changefreq>/i);
   assert.doesNotMatch(sitemap, /mini-player\.html/i);
 
-  for (const { file, route, html } of pages) {
+  for (const { file, route, image, html } of pages) {
     const canonical = `${publicBase}${route}`;
+    const expectedSocialImage = image || socialImage;
     const title = titleValue(html);
     const description = metaValue(html, "description");
 
@@ -71,7 +76,7 @@ test("every indexed page exposes complete, consistent search and social metadata
     assert.ok(metaValue(html, "og:title"), `${file} is missing an Open Graph title`);
     assert.ok(metaValue(html, "og:description"), `${file} is missing an Open Graph description`);
     assert.equal(metaValue(html, "og:url"), canonical, `${file} Open Graph URL is incorrect`);
-    assert.equal(metaValue(html, "og:image"), socialImage, `${file} uses the wrong social image`);
+    assert.equal(metaValue(html, "og:image"), expectedSocialImage, `${file} uses the wrong social image`);
     assert.equal(metaValue(html, "og:image:width"), "1280", `${file} has the wrong image width`);
     assert.equal(metaValue(html, "og:image:height"), "720", `${file} has the wrong image height`);
     assert.ok(metaValue(html, "og:image:alt"), `${file} is missing social image alt text`);
@@ -79,7 +84,7 @@ test("every indexed page exposes complete, consistent search and social metadata
     assert.equal(metaValue(html, "twitter:card"), "summary_large_image", `${file} uses the wrong card type`);
     assert.ok(metaValue(html, "twitter:title"), `${file} is missing a Twitter title`);
     assert.ok(metaValue(html, "twitter:description"), `${file} is missing a Twitter description`);
-    assert.equal(metaValue(html, "twitter:image"), socialImage, `${file} uses the wrong Twitter image`);
+    assert.equal(metaValue(html, "twitter:image"), expectedSocialImage, `${file} uses the wrong Twitter image`);
     assert.ok(metaValue(html, "twitter:image:alt"), `${file} is missing Twitter image alt text`);
 
     assert.match(

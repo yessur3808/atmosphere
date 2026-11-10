@@ -1,18 +1,22 @@
 # Privacy policy
 
-Effective: 27 September 2026
+Effective: 10 November 2026
 
 This policy explains how the maintainers of the Atmosphere project ("Atmosphere", "we", or "us") handle information in the web and desktop applications. Contact is available through <https://github.com/yessur3808/atmosphere/issues>; do not post sensitive information and request a private channel when needed.
 
 ## Summary
 
-Atmosphere has no account system, advertising SDK, payment processor, or project-operated user database. Preferences and mixes remain on the device. Google Analytics 4 loads only after affirmative consent. Rejecting or withdrawing consent blocks Atmosphere analytics events and removes accessible Google Analytics cookies. Precise weather coordinates and city-search text are never sent to Google Analytics.
+Atmosphere has no account system, advertising SDK, payment processor, or project-operated user database. Preferences and mixes remain on the device. Cloudflare Web Analytics supplies a cookie-free aggregate reach and performance baseline on the production website. Google Analytics 4 loads only after affirmative consent. Rejecting or withdrawing consent blocks Atmosphere GA4 events and removes accessible Google Analytics cookies. Precise weather coordinates and city-search text are never sent to analytics.
 
 ## Information and purposes
 
 ### Essential device storage
 
 Browser or WebView local storage keeps consent, settings, saved and recent mixes, favorites, playback state, and resume information. This provides requested functionality and is not synchronized to an Atmosphere server. Records remain until the user removes them, clears site/application data, or uninstalls the app. Shared mixes are encoded in the generated URL; anyone with the link can read its playback configuration.
+
+### Cookie-free website measurement
+
+Cloudflare Web Analytics is enabled on the production website to provide aggregate page, referrer, visit and real-user performance information without a Cloudflare analytics cookie. Cloudflare states that Web Analytics does not collect or use visitors' personal data. The current reduced-data rule excludes its beacon for visitors in the EU. Cloudflare edge security and delivery logs are separate from Web Analytics and can include request IP addresses under Cloudflare's terms.
 
 ### Optional analytics
 
@@ -28,7 +32,8 @@ Weather stays off until the user selects local weather or searches for a place. 
 
 ## Providers and international processing
 
-- **GitHub** hosts the website, source, releases, and installation files and may keep security and request logs.
+- **GitHub** hosts the source, releases, installation files, and media library and may keep security and request logs.
+- **Cloudflare** delivers the custom production domain, provides security and edge request logs, and supplies cookie-free Web Analytics where enabled.
 - **Google Analytics** processes consented usage measurement as a service provider.
 - **Open-Meteo** processes requested weather and place-search requests.
 - **Coverr, Pexels, and Wikimedia Commons** provide or document credited media. Some video may be requested from a provider CDN.

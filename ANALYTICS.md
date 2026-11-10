@@ -20,6 +20,18 @@ After a deployment, open Settings → Privacy & cookies and confirm the status r
 
 The ID is intentionally kept in one meta tag. A GA4 Measurement ID is public configuration, not a secret, and does not grant access to the Analytics property.
 
+## Privacy-first reach baseline
+
+The production Cloudflare zone also has **Cloudflare Web Analytics** enabled with automatic installation. It supplies aggregate page-view, visit, referrer and real-user performance reporting without adding a Cloudflare analytics cookie. The current Cloudflare rule uses its reduced-data mode, which excludes beacon collection for visitors in the EU.
+
+Cloudflare Web Analytics and GA4 answer different questions:
+
+- Cloudflare provides a privacy-first baseline for public page reach and performance, including visitors who do not opt in to GA4.
+- GA4 remains optional and consent-gated, and supplies the detailed feature, atmosphere, sound-layer and listening events listed below.
+- Cloudflare edge request totals include bots and assets; Web Analytics RUM, edge analytics and GA4 must remain separate in reports.
+
+See Cloudflare's [Web Analytics documentation](https://developers.cloudflare.com/web-analytics/about/) and the public `analytics.html` disclosure. Account-side configuration is not stored in this repository.
+
 ## Privacy behavior
 
 - Analytics storage defaults to `denied` before any configuration or event command.

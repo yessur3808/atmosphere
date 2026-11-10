@@ -25,8 +25,24 @@ async function walk(directory) {
   return nested.flat();
 }
 
+const discoveryGuideFiles = [
+  "rain-sounds.html",
+  "brown-noise.html",
+  "sleep-sounds.html",
+  "focus-sounds.html",
+  "forest-sounds.html",
+  "night-drive.html",
+  "city-sounds.html",
+  "weather-sounds.html",
+  "quiet-library.html",
+  "beach-sounds.html",
+];
 const requiredFiles = [
   "index.html",
+  "discover.html",
+  ...discoveryGuideFiles,
+  "discover.css",
+  "llms.txt",
   "global.css",
   "site.webmanifest",
   "robots.txt",
@@ -51,15 +67,18 @@ for (const filePath of files) {
 }
 
 const siteRoot = normalizedSiteRoot(process.env.CLOUDFLARE_SITE_URL);
-const [index, sitemap, robots, redirects] = await Promise.all([
+const [index, discoveryPage, sitemap, robots, redirects] = await Promise.all([
   readFile(path.join(outputRoot, "index.html"), "utf8"),
+  readFile(path.join(outputRoot, discoveryGuideFiles[0]), "utf8"),
   readFile(path.join(outputRoot, "sitemap.xml"), "utf8"),
   readFile(path.join(outputRoot, "robots.txt"), "utf8"),
   readFile(path.join(outputRoot, "_redirects"), "utf8"),
 ]);
 
 assert.match(index, new RegExp(`<link\\s+rel="canonical"\\s+href="${siteRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+assert.ok(discoveryPage.includes(`${siteRoot}rain-sounds.html`), "discovery canonical does not use the Cloudflare production origin");
 assert.ok(sitemap.includes(`<loc>${siteRoot}</loc>`), "sitemap does not use the Cloudflare production origin");
+for (const file of discoveryGuideFiles) assert.ok(sitemap.includes(`<loc>${siteRoot}${file}</loc>`), `sitemap is missing ${file}`);
 assert.ok(robots.includes(`${siteRoot}sitemap.xml`), "robots.txt does not advertise the Cloudflare sitemap");
 assert.match(redirects, /^\/assets\/\* https:\/\/yessur3808\.github\.io\/atmosphere\/assets\/:splat 302/m);
 

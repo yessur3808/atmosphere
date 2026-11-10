@@ -159,6 +159,7 @@
   }
   const homeHref = siteUrl("");
   const faviconHref = siteUrl("favicon-v2.png");
+  const discoverHref = siteUrl("discover.html");
   const creditsHref = siteUrl("audio-credits.html");
   const videoCreditsHref = siteUrl("video-credits.html");
   const installHref = siteUrl("install.html");
@@ -1460,6 +1461,9 @@
 
   onMount(() => {
     pipControlsAvailable = !isAppleMobileDevice();
+    const requestedSceneId = new URL(window.location.href).searchParams.get("scene") || "";
+    const requestedSceneIndex = scenes.findIndex((scene) => scene.id === requestedSceneId);
+    if (requestedSceneIndex >= 0) activeIndex = requestedSceneIndex;
     const savedPreferences = readStoredJson(
       preferencesStorageKey,
       readStoredJson(legacyPreferencesStorageKey, {}),
@@ -1534,6 +1538,13 @@
     const resumeMix = normalizeMixSnapshot(readStoredJson(resumeStorageKey, null), scenes);
     if (sharedMix) {
       applyMixSnapshot(sharedMix, "shared_mix");
+    } else if (requestedSceneIndex >= 0) {
+      selectedAudio = 0;
+      selectedAudios = [0];
+      selectedVideo = 0;
+      isVideoPlaying = false;
+      trackEvent("discovery_scene_open", { requested_scene_id: requestedSceneId });
+      queuePersistSession();
     } else if (resumeMix) {
       applyMixSnapshot(resumeMix, "resume");
     } else {
@@ -2008,6 +2019,7 @@
                 </div>
                 <div class="credits-card">
                   <span>Desktop &amp; policies</span>
+                  <a href={discoverHref} target="_blank" rel="noreferrer">Explore sound guides <b aria-hidden="true">↗</b></a>
                   <a href={installHref} target="_blank" rel="noreferrer">Download desktop app <b aria-hidden="true">↗</b></a>
                   <a href={privacyHref} target="_blank" rel="noreferrer">Privacy policy <b aria-hidden="true">↗</b></a>
                   <a href={termsHref} target="_blank" rel="noreferrer">Terms of use <b aria-hidden="true">↗</b></a>

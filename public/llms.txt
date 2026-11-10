@@ -1,0 +1,26 @@
+# Atmosphere
+
+> Atmosphere is a free ambient sound and cinematic video mixer for focus, sleep, study and relaxation. It has no account requirement and offers individual sound-layer volume, saved and shareable mixes, Live Weather matching, Audio only, Quiet View and a desktop package.
+
+## Primary pages
+
+- [Open Atmosphere](https://yessur3808.github.io/atmosphere/): Interactive ambient sound player
+- [Explore sound guides](https://yessur3808.github.io/atmosphere/discover.html): Index of intent- and atmosphere-specific guides
+- [Install](https://yessur3808.github.io/atmosphere/install.html): Desktop application downloads and verification
+- [Privacy](https://yessur3808.github.io/atmosphere/privacy.html): Data-handling and provider disclosure
+- [Analytics](https://yessur3808.github.io/atmosphere/analytics.html): Measurement choices and exclusions
+- [Audio credits](https://yessur3808.github.io/atmosphere/audio-credits.html): Recording sources and licenses
+- [Video credits](https://yessur3808.github.io/atmosphere/video-credits.html): Video sources and licenses
+
+## Sound guides
+
+- [Rain sounds](https://yessur3808.github.io/atmosphere/rain-sounds.html)
+- [Brown noise](https://yessur3808.github.io/atmosphere/brown-noise.html)
+- [Sleep sounds](https://yessur3808.github.io/atmosphere/sleep-sounds.html)
+- [Focus sounds](https://yessur3808.github.io/atmosphere/focus-sounds.html)
+- [Forest sounds](https://yessur3808.github.io/atmosphere/forest-sounds.html)
+- [Night drive](https://yessur3808.github.io/atmosphere/night-drive.html)
+- [City sounds](https://yessur3808.github.io/atmosphere/city-sounds.html)
+- [Live Weather sounds](https://yessur3808.github.io/atmosphere/weather-sounds.html)
+- [Quiet library](https://yessur3808.github.io/atmosphere/quiet-library.html)
+- [Beach and ocean sounds](https://yessur3808.github.io/atmosphere/beach-sounds.html)
