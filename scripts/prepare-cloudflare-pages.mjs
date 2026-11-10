@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,12 +37,20 @@ await cp(publicRoot, outputRoot, {
   filter: (source) => source !== path.join(publicRoot, "assets"),
 });
 
+const [bundleJavaScript, bundleStyles] = await Promise.all([
+  readFile(path.join(outputRoot, "build/bundle.js")),
+  readFile(path.join(outputRoot, "build/bundle.css")),
+]);
+const bundleRevision = createHash("sha256").update(bundleJavaScript).update(bundleStyles).digest("hex").slice(0, 12);
 const textExtensions = new Set([".html", ".xml", ".txt", ".webmanifest"]);
 for (const filePath of await walk(outputRoot)) {
   const extension = path.extname(filePath);
   if (!textExtensions.has(extension)) continue;
   const source = await readFile(filePath, "utf8");
   let updated = source.replaceAll(currentPublicRoot, siteRoot);
+  if (extension === ".html") {
+    updated = updated.replace(/build\/bundle\.(js|css)(?:\?v=[^"' ]+)?/g, (_, assetType) => `build/bundle.${assetType}?v=${bundleRevision}`);
+  }
   if (extension === ".html" && !updated.includes("cloudflare-web-analytics-loader.js")) {
     if (!updated.includes("</head>")) throw new Error(`${path.relative(outputRoot, filePath)} is missing </head>`);
     updated = updated.replace("</head>", `  ${cloudflareWebAnalyticsLoader}\n</head>`);
@@ -77,4 +86,5 @@ console.log(JSON.stringify({
   files: files.length,
   totalBytes,
   mediaOrigin: currentPublicRoot,
+  bundleRevision,
 }, null, 2));

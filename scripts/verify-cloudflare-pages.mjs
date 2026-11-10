@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { access, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -68,16 +69,21 @@ for (const filePath of files) {
 }
 
 const siteRoot = normalizedSiteRoot(process.env.CLOUDFLARE_SITE_URL);
-const [index, discoveryPage, analyticsLoader, sitemap, robots, redirects] = await Promise.all([
+const [index, discoveryPage, analyticsLoader, sitemap, robots, redirects, bundleJavaScript, bundleStyles] = await Promise.all([
   readFile(path.join(outputRoot, "index.html"), "utf8"),
   readFile(path.join(outputRoot, discoveryGuideFiles[0]), "utf8"),
   readFile(path.join(outputRoot, "cloudflare-web-analytics-loader.js"), "utf8"),
   readFile(path.join(outputRoot, "sitemap.xml"), "utf8"),
   readFile(path.join(outputRoot, "robots.txt"), "utf8"),
   readFile(path.join(outputRoot, "_redirects"), "utf8"),
+  readFile(path.join(outputRoot, "build/bundle.js")),
+  readFile(path.join(outputRoot, "build/bundle.css")),
 ]);
+const bundleRevision = createHash("sha256").update(bundleJavaScript).update(bundleStyles).digest("hex").slice(0, 12);
 
 assert.match(index, new RegExp(`<link\\s+rel="canonical"\\s+href="${siteRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+assert.ok(index.includes(`build/bundle.js?v=${bundleRevision}`), "homepage JavaScript cache key is stale");
+assert.ok(index.includes(`build/bundle.css?v=${bundleRevision}`), "homepage stylesheet cache key is stale");
 assert.ok(index.includes("cloudflare-web-analytics-loader.js"), "homepage is missing the regional Cloudflare Web Analytics loader");
 assert.ok(discoveryPage.includes(`${siteRoot}rain-sounds.html`), "discovery canonical does not use the Cloudflare production origin");
 assert.ok(discoveryPage.includes("cloudflare-web-analytics-loader.js"), "discovery page is missing the regional Cloudflare Web Analytics loader");
