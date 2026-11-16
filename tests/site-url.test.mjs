@@ -17,6 +17,21 @@ test("resolves the same assets from the local server root", () => {
   );
 });
 
+test("uses Cloudflare clean URLs for production pages without changing GitHub Pages paths", () => {
+  assert.equal(
+    resolveSiteUrl("privacy.html", "https://youratmosphere.app/"),
+    "https://youratmosphere.app/privacy",
+  );
+  assert.equal(
+    resolveSiteUrl("weather-sounds.html?source=footer#details", "https://youratmosphere.app/"),
+    "https://youratmosphere.app/weather-sounds?source=footer#details",
+  );
+  assert.equal(
+    resolveSiteUrl("privacy.html", "https://yessur3808.github.io/atmosphere/"),
+    "https://yessur3808.github.io/atmosphere/privacy.html",
+  );
+});
+
 test("leaves CDN, data, and blob URLs unchanged", () => {
   for (const url of [
     "https://cdn.coverr.co/example.mp4",

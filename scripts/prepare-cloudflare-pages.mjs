@@ -19,6 +19,26 @@ function normalizedSiteRoot(value) {
   return url.href;
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function useCleanProductionPageUrls(source, extension, siteRoot) {
+  const escapedSiteRoot = escapeRegExp(siteRoot);
+  const absoluteHtmlUrl = new RegExp(
+    `(${escapedSiteRoot}[^"'\\s<>?#]+)\\.html(?=([?#"'\\s<>)]|$))`,
+    "g",
+  );
+  let updated = source.replace(absoluteHtmlUrl, "$1");
+
+  if (extension === ".html") {
+    const relativeHtmlLink = /(\b(?:href|action)=["'])(?!https?:|\/\/|mailto:|tel:|#)((?:\.\/)?[^"'?#]+)\.html(?=(?:[?#][^"']*)?["'])/g;
+    updated = updated.replace(relativeHtmlLink, "$1$2");
+  }
+
+  return updated;
+}
+
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const nested = await Promise.all(entries.map(async (entry) => {
@@ -48,6 +68,7 @@ for (const filePath of await walk(outputRoot)) {
   if (!textExtensions.has(extension)) continue;
   const source = await readFile(filePath, "utf8");
   let updated = source.replaceAll(currentPublicRoot, siteRoot);
+  updated = useCleanProductionPageUrls(updated, extension, siteRoot);
   if (extension === ".html") {
     updated = updated.replace(/build\/bundle\.(js|css)(?:\?v=[^"' ]+)?/g, (_, assetType) => `build/bundle.${assetType}?v=${bundleRevision}`);
   }

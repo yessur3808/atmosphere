@@ -85,13 +85,19 @@ assert.match(index, new RegExp(`<link\\s+rel="canonical"\\s+href="${siteRoot.rep
 assert.ok(index.includes(`build/bundle.js?v=${bundleRevision}`), "homepage JavaScript cache key is stale");
 assert.ok(index.includes(`build/bundle.css?v=${bundleRevision}`), "homepage stylesheet cache key is stale");
 assert.ok(index.includes("cloudflare-web-analytics-loader.js"), "homepage is missing the regional Cloudflare Web Analytics loader");
-assert.ok(discoveryPage.includes(`${siteRoot}rain-sounds.html`), "discovery canonical does not use the Cloudflare production origin");
+assert.ok(discoveryPage.includes(`<link rel="canonical" href="${siteRoot}rain-sounds">`), "discovery canonical must use the clean Cloudflare production URL");
+assert.ok(discoveryPage.includes('href="brown-noise"'), "discovery page internal links must avoid redirecting .html URLs");
+assert.ok(!discoveryPage.includes(`${siteRoot}rain-sounds.html`), "discovery metadata still uses a redirecting .html URL");
 assert.ok(discoveryPage.includes("cloudflare-web-analytics-loader.js"), "discovery page is missing the regional Cloudflare Web Analytics loader");
 assert.ok(analyticsLoader.includes("/cdn-cgi/trace"), "analytics loader is missing its regional privacy gate");
 assert.ok(analyticsLoader.includes("c219499324d44a1eaae6d0a689627ddb"), "analytics loader uses the wrong Cloudflare Web Analytics token");
 assert.match(analyticsLoader, /if \(!country \|\| excludedRegions\.has\(country\)/, "analytics loader must fail closed in excluded regions");
 assert.ok(sitemap.includes(`<loc>${siteRoot}</loc>`), "sitemap does not use the Cloudflare production origin");
-for (const file of discoveryGuideFiles) assert.ok(sitemap.includes(`<loc>${siteRoot}${file}</loc>`), `sitemap is missing ${file}`);
+assert.doesNotMatch(sitemap, /\.html<\/loc>/, "Cloudflare sitemap must not submit redirecting .html URLs");
+for (const file of discoveryGuideFiles) {
+  const cleanPath = file.replace(/\.html$/, "");
+  assert.ok(sitemap.includes(`<loc>${siteRoot}${cleanPath}</loc>`), `sitemap is missing ${cleanPath}`);
+}
 assert.ok(robots.includes(`${siteRoot}sitemap.xml`), "robots.txt does not advertise the Cloudflare sitemap");
 assert.match(redirects, /^\/assets\/\* https:\/\/yessur3808\.github\.io\/atmosphere\/assets\/:splat 302/m);
 

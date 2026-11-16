@@ -1,4 +1,5 @@
 export const desktopMediaRoot = "https://yessur3808.github.io/atmosphere/";
+const cleanHtmlHostnames = new Set(["youratmosphere.app", "www.youratmosphere.app"]);
 
 export function isTauriRuntime(scope = typeof window !== "undefined" ? window : undefined) {
   return Boolean(scope?.__TAURI_INTERNALS__);
@@ -11,7 +12,11 @@ export function resolveSiteUrl(path, baseHref) {
   const documentBase = baseHref
     || (typeof document !== "undefined" ? document.baseURI : "http://localhost/");
   const siteRoot = new URL(".", documentBase);
-  return new URL(String(path).replace(/^\/+/, ""), siteRoot).href;
+  let normalizedPath = String(path).replace(/^\/+/, "");
+  if (cleanHtmlHostnames.has(siteRoot.hostname)) {
+    normalizedPath = normalizedPath.replace(/\.html(?=([?#]|$))/, "");
+  }
+  return new URL(normalizedPath, siteRoot).href;
 }
 
 export function siteUrl(path = "") {
